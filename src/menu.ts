@@ -1,0 +1,157 @@
+// FAEI menu — real items and prices from the official menu (April 10).
+// Prices are in fils: 1 JOD = 1000 fils, so 2.25 د.أ = 2250.
+
+export const categories = [
+  'شاورما',
+  'برغر سماش',
+  'تشكن برغر',
+  'السناك',
+  'بوكس فَيّ',
+  'بيتزا',
+  'كالزوني',
+  'مناقيش',
+  'ساندويش بارد',
+  'السلطات',
+] as const;
+
+export type Category = (typeof categories)[number];
+
+export type ProductOption = { label: string; priceFils: number };
+
+export type Product = {
+  id: string;
+  name: string;
+  category: Category;
+  // One entry per size or type. A product with one price has a single option.
+  options: ProductOption[];
+  image?: string;
+  alt?: string;
+  // Shows the "الأكثر طلباً" badge.
+  popular?: boolean;
+};
+
+// Best sellers: all shawarma, everything zinger, and all the boxes.
+function isPopular(id: string, category: Category): boolean {
+  return category === 'شاورما' || category === 'بوكس فَيّ' || id.includes('zinger');
+}
+
+// The four cards shown in the "الأكثر طلباً" section under the hero.
+export const featuredIds = ['shawarma-meal-super', 'shawarma-sandwich-super', 'snack-zinger', 'box-zinger'];
+
+// To add a photo, put the file in public/images and add its path here, e.g. 'smash-classic': '/images/classic-burger.jpeg'.
+const images: Partial<Record<string, string>> = {
+  'snack-alfredo': '/images/alfredo.jpeg',
+  'snack-bbq': '/images/barbecue.jpeg',
+  'snack-fajita': '/images/fajita.jpeg',
+  'snack-shish': '/images/shish.jpeg',
+};
+
+type Row = [id: string, name: string, ...prices: (number | null)[]];
+
+function build(category: Category, labels: string[], rows: Row[]): Product[] {
+  return rows.map(([id, name, ...prices]) => ({
+    id,
+    name,
+    category,
+    options: prices.flatMap((price, index) => price == null ? [] : [{ label: labels[index] ?? '', priceFils: Math.round(price * 1000) }]),
+    image: images[id],
+    popular: isPopular(id, category),
+  }));
+}
+
+export const products: Product[] = [
+  ...build('شاورما', [''], [
+    ['shawarma-sandwich', 'ساندويش شاورما عادي', 0.75],
+    ['shawarma-sandwich-super', 'ساندويش شاورما سوبر', 1.30],
+    ['shawarma-meal', 'وجبة شاورما عادي', 2.00],
+    ['shawarma-meal-super', 'وجبة شاورما سوبر', 2.75],
+    ['shawarma-meal-double', 'وجبة شاورما دبل', 3.45],
+    ['shawarma-shilla', 'وجبة شلة', 8.00],
+    ['shawarma-toast', 'وجبة شاورما توست', 3.00],
+    ['shawarma-italian', 'وجبة شاورما إيطالي', 3.50],
+    ['shawarma-halabi', 'وجبة شاورما حلبي', 3.50],
+  ]),
+  ...build('برغر سماش', ['ساندويش', 'وجبة'], [
+    ['smash-classic', 'كلاسيك برغر', 2.25, 3.00],
+    ['smash-cheese', 'تشيز برغر', 2.25, 3.00],
+    ['smash-hot-beef', 'هوت بيف', 2.25, 3.00],
+    ['smash-mushroom', 'ماشروم برغر', 2.50, 3.25],
+    ['smash-egg', 'برغر بيض', 2.50, 3.25],
+  ]),
+  ...build('تشكن برغر', ['ساندويش', 'وجبة'], [
+    ['chicken-grill', 'جريل تشكن', 2.25, 3.00],
+    ['chicken-honey-mayo', 'هاني مايو', 2.00, 2.75],
+    ['chicken-hot', 'هوت تشيكن', 2.00, 2.75],
+    ['hotdog-classic', 'هوت دوغ كلاسيك', 2.00, 2.75],
+    ['hotdog-faei', 'هوت دوغ فَيّ', 2.25, 3.00],
+  ]),
+  ...build('السناك', ['صغير', 'سوبر', 'تورتيلا'], [
+    ['snack-fajita', 'فاهيتا', 1.25, 1.50, 1.75],
+    ['snack-alfredo', 'ألفريدو', 1.25, 1.50, 1.75],
+    ['snack-zinger', 'زنجر', 1.25, 1.50, 1.75],
+    ['snack-zinger-plus', 'زنجر بلس +', null, 1.50, 1.75],
+    ['snack-zinger-bbq', 'زنجر باربيكيو', 1.25, 1.50, 1.75],
+    ['snack-escalope', 'سكالوب', null, 1.25, null],
+    ['snack-bbq', 'باربيكيو', 1.25, 1.50, 1.75],
+    ['snack-curry', 'دجاج بالكاري', 1.25, 1.50, 1.75],
+    ['snack-twister', 'تويستر', null, 1.75, null],
+    ['snack-shish', 'شيش', null, 1.50, 1.75],
+    ['snack-cordon-bleu', 'كوردن بلو', null, 1.50, null],
+  ]),
+  ...build('بوكس فَيّ', ['صغير', 'كبير'], [
+    ['box-zinger', 'بوكس زنجر', 2.00, 2.75],
+    ['box-alfredo', 'بوكس ألفريدو', 2.25, 3.25],
+    ['box-curry', 'بوكس كاري', 2.25, 3.25],
+    ['box-shawarma', 'بوكس شاورما', 2.25, 3.25],
+    ['box-mexican', 'بوكس مكسيكي', 2.25, 3.25],
+    ['box-edman', 'بوكس إدمان', 2.00, 2.75],
+    ['box-buffalo', 'بوكس بافلو', 2.25, 3.25],
+    ['box-honey-mustard', 'بوكس هاني ماسترد', 2.25, 2.75],
+    ['box-bbq', 'بوكس باربكيو', 2.25, 3.25],
+  ]),
+  ...build('بيتزا', [''], [
+    ['pizza-veggie', 'بيتزا خضار', 3.00],
+    ['pizza-pepperoni', 'بيتزا بيروني', 3.00],
+    ['pizza-salami', 'بيتزا سلامي', 3.00],
+    ['pizza-turkey', 'بيتزا تيركي', 3.00],
+    ['pizza-margherita', 'بيتزا مارغاريتا', 3.00],
+    ['pizza-cheese-mix', 'بيتزا مكس أجبان', 3.00],
+    ['pizza-shawarma', 'بيتزا شاورما', 3.00],
+    ['pizza-four-seasons', 'بيتزا الفصول الأربعة', 3.00],
+    ['pizza-alfredo', 'بيتزا ألفريدو', 3.00],
+    ['pizza-fajita', 'بيتزا فاهيتا', 3.00],
+    ['pizza-zinger', 'بيتزا زنجر', 3.00],
+    ['pizza-faei', 'بيتزا فَيّ', 3.00],
+  ]),
+  ...build('كالزوني', [''], [
+    ['calzone-alfredo', 'كالزوني ألفريدو', 3.00],
+    ['calzone-fajita', 'كالزوني فاهيتا', 3.00],
+    ['calzone-mexican', 'كالزوني مكسيكي', 3.00],
+    ['calzone-zinger', 'كالزوني زنجر', 3.00],
+  ]),
+  ...build('مناقيش', [''], [
+    ['manakish-cheese-mix', 'مكس أجبان', 1.50],
+    ['manakish-white-cheese', 'جبنة بيضاء', 1.50],
+    ['manakish-muhammara', 'محمرة وموزريلا', 1.50],
+    ['manakish-salami', 'سلامي', 1.50],
+    ['manakish-zaatar', 'زعتر', 0.75],
+    ['manakish-zaatar-cheese', 'زعتر وجبنة', 1.00],
+    ['manakish-turkey', 'تيركي', 1.50],
+  ]),
+  // The menu image doesn't name these two columns; "صغير / كبير" is our best reading — confirm with FAEI.
+  ...build('ساندويش بارد', ['صغير', 'كبير'], [
+    ['cold-luncheon-labneh', 'سنيورة ولبنة', 0.50, 0.60],
+    ['cold-kashkaval', 'قشقوان', 1.00, 1.25],
+    ['cold-cheese-mix', 'مكس أجبان', 1.00, 1.25],
+    ['cold-turkey', 'تيركي', 0.75, 1.00],
+    ['cold-turkey-cheese', 'تيركي وجبنة', 1.00, 1.25],
+  ]),
+  ...build('السلطات', [''], [
+    ['salad-caesar', 'سيزر', 1.50],
+    ['salad-rocket', 'جرجير', 1.50],
+    ['salad-greek', 'يونانية', 1.50],
+    ['salad-coleslaw', 'كولسلو', 1.50],
+    ['salad-fruit', 'فواكة', 1.50],
+    ['salad-nachos', 'ناتشوز', 2.75],
+  ]),
+];
