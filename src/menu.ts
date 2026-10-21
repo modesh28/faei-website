@@ -44,6 +44,7 @@ const images: Partial<Record<string, string>> = {
   'snack-bbq': '/images/barbecue.jpeg',
   'snack-fajita': '/images/fajita.jpeg',
   'snack-shish': '/images/shish.jpeg',
+  'snack-curry': '/images/chicken-curry.jpeg',
 };
 
 type Row = [id: string, name: string, ...prices: (number | null)[]];
