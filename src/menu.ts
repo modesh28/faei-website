@@ -38,6 +38,7 @@ function isPopular(id: string, category: Category): boolean {
 
 // To add a photo, put the file in public/images and add its path here, e.g. 'smash-classic': '/images/classic-burger.jpeg'.
 const images: Partial<Record<string, string>> = {
+  'shawarma-sandwich': '/images/menu/shawarma-sandwich.jpg',
   'shawarma-toast': '/images/menu/toast2.jpg',
   'shawarma-italian': '/images/menu/shawarma-italian.jpg',
   'snack-fajita': '/images/menu/fajita2.jpg',
