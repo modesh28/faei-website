@@ -29,6 +29,7 @@ const OFFER: { title: string; text: string; productId: string; optionIndex: numb
 const GALLERY = [
   { src: '/images/faei-seating.jpeg', alt: 'القعدة في FAEI مع إطلالة على الشجر' },
   { src: '/images/faei-sign.jpeg', alt: 'قارمة FAEI على الخشب' },
+  { src: '/images/faei-table.jpeg', alt: 'طاولة في FAEI قدام رسمة فيروز على الحيط', position: 'center 70%' },
 ];
 
 // Open Sunday–Thursday, 7:30–17:00 Jordan time.
@@ -331,7 +332,7 @@ function App() {
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {GALLERY.map((photo) => (
-                <img key={photo.src} src={photo.src} alt={photo.alt} loading="lazy" className="block aspect-[4/3] w-full rounded-xl object-cover" />
+                <img key={photo.src} src={photo.src} alt={photo.alt} loading="lazy" className="block aspect-[4/3] w-full rounded-xl object-cover" style={{ objectPosition: photo.position ?? 'center' }} />
               ))}
               <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-xl p-6 text-center" style={{ background: '#182b3a', color: '#fff' }} data-testid="link-instagram-gallery">
                 <InstagramIcon size={40} />
@@ -397,22 +398,6 @@ function App() {
                 <strong className="line-total">{money(option.priceFils * quantity)}</strong>
               </article>)}
               <section className="order-options" aria-label="تفاصيل الطلب">
-                <h3>كيف بدك تستلم طلبك؟</h3>
-                <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
-                  <button type="button" role="radio" aria-checked={!isDelivery} className={!isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('pickup')} data-testid="option-pickup">استلام من الكافيه</button>
-                  <button type="button" role="radio" aria-checked={isDelivery} className={isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('delivery')} data-testid="option-delivery">توصيل</button>
-                </div>
-                {isDelivery && <>
-                  <div className="segmented" role="radiogroup" aria-label="مكان التوصيل">
-                    <button type="button" role="radio" aria-checked={zone === 'inside'} className={zone === 'inside' ? 'is-active' : ''} onClick={() => setZone('inside')} data-testid="option-inside">جوا الجامعة · 1 د.أ</button>
-                    <button type="button" role="radio" aria-checked={zone === 'outside'} className={zone === 'outside' ? 'is-active' : ''} onClick={() => setZone('outside')} data-testid="option-outside">برا الجامعة</button>
-                  </div>
-                  {zone === 'outside' && <p className="order-hint">سعر التوصيل برا الجامعة حسب المكان وحجم الطلب، وبنتفق عليه على واتساب.</p>}
-                  <label className="order-field">
-                    <span>وين نوصلك؟</span>
-                    <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder={zone === 'inside' ? 'مثلاً: كلية الهندسة، الطابق الثاني، قاعة 204' : 'المنطقة والشارع وأقرب معلم'} data-testid="input-address" />
-                  </label>
-                </>}
                 <h3>إيمتى؟</h3>
                 <div className="segmented" role="radiogroup" aria-label="وقت الطلب">
                   <button type="button" role="radio" aria-checked={timeMode === 'asap'} className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="option-asap">بأسرع وقت</button>
@@ -428,7 +413,26 @@ function App() {
             </div>
             <div className="drawer-foot">
               <div className="drawer-actions"><span>تقدر تعدّل طلبك قبل الإرسال.</span><button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
-              {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span>{zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
+              <section className="order-options foot-options" aria-label="طريقة الاستلام">
+                <h3>استلام ولا توصيل؟</h3>
+                <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
+                  <button type="button" role="radio" aria-checked={!isDelivery} className={!isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('pickup')} data-testid="option-pickup">استلام من الكافيه</button>
+                  <button type="button" role="radio" aria-checked={isDelivery} className={isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('delivery')} data-testid="option-delivery">توصيل</button>
+                </div>
+                {isDelivery && <>
+                  <div className="segmented" role="radiogroup" aria-label="مكان التوصيل">
+                    <button type="button" role="radio" aria-checked={zone === 'inside'} className={zone === 'inside' ? 'is-active' : ''} onClick={() => setZone('inside')} data-testid="option-inside">جوا الجامعة · 1 د.أ</button>
+                    <button type="button" role="radio" aria-checked={zone === 'outside'} className={zone === 'outside' ? 'is-active' : ''} onClick={() => setZone('outside')} data-testid="option-outside">برا الجامعة</button>
+                  </div>
+                  {zone === 'outside' && <p className="order-hint">سعر التوصيل برا الجامعة حسب المكان وحجم الطلب، وبنتفق عليه على واتساب.</p>}
+                  <label className="order-field">
+                    <span>وين نوصلك؟</span>
+                    <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder={zone === 'inside' ? 'مثلاً: كلية الهندسة، الطابق الثاني، قاعة 204' : 'المنطقة والشارع وأقرب معلم'} data-testid="input-address" />
+                  </label>
+                </>}
+              </section>
+              <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>
+              <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
               {(missingAddress || missingTime) && <p className="order-warning">{missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
               <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب عبر واتساب <ArrowLeft size={18} /></button>

@@ -240,3 +240,9 @@
 .order-hint { margin: 0; font-size: 12px; line-height: 1.7; color: #6b5a1d; background: #fff3cc; border-radius: 6px; padding: 8px 10px; }
 .subtotal-row { display: flex; justify-content: space-between; font-size: 13px; color: #64747c; margin-bottom: 6px; }
 .order-warning { margin: 0 0 10px; font-size: 12px; color: #a74b43; }
+
+/* 7. Pickup / delivery choice pinned above the total */
+.foot-options { padding: 0 0 12px; gap: 8px; }
+.foot-options h3 { margin: 0; }
+.foot-options .order-field input { height: 40px; }
+@media (max-width: 700px) { .drawer-actions span { display: none; } .drawer-actions { justify-content: flex-end; margin-bottom: 8px; } }

@@ -43,6 +43,18 @@ const images: Partial<Record<string, string>> = {
   'snack-fajita': '/images/fajita.jpeg',
   'snack-shish': '/images/shish.jpeg',
   'snack-curry': '/images/chicken-curry.jpeg',
+  'smash-classic': '/images/smash-classic.jpeg',
+  'smash-cheese': '/images/smash-cheese.jpeg',
+  'chicken-hot': '/images/chicken-burger-2.jpeg',
+  'chicken-honey-mayo': '/images/chicken-burger.jpeg',
+  'pizza-zinger': '/images/pizza-zinger.jpeg',
+  'pizza-margherita': '/images/pizza-margherita.jpeg',
+  'box-mexican': '/images/box.jpeg',
+};
+
+// One photo for a whole category, used when an item has no photo of its own.
+const categoryImages: Partial<Record<Category, string>> = {
+  'كساديا': '/images/quesadilla.jpeg',
 };
 
 type Row = [id: string, name: string, ...prices: (number | null)[]];
@@ -53,7 +65,7 @@ function build(category: Category, labels: string[], rows: Row[]): Product[] {
     name,
     category,
     options: prices.flatMap((price, index) => price == null ? [] : [{ label: labels[index] ?? '', priceFils: Math.round(price * 1000) }]),
-    image: images[id],
+    image: images[id] ?? categoryImages[category],
     popular: isPopular(id, category),
   }));
 }
