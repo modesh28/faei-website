@@ -340,3 +340,4 @@
   .wayfinder-map-wrap { padding: 4px 4px 12px; }
   .faei-app .wayfinder-maps-link { position: static; display: block; text-align: center; margin: 4px 8px 0; }
 }
+.wayfinder-route-alt { fill: none; stroke: #1676b8; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 3 7; opacity: .75; }
