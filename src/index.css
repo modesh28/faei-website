@@ -358,3 +358,5 @@
 .toast-action { margin-inline-start: 6px; background: var(--gold); color: var(--ink); border: 0; border-radius: 4px; font-weight: 800; font-size: 12px; padding: 6px 10px; }
 .toast-message { width: max-content; max-width: calc(100vw - 32px); }
 .toast-action { white-space: nowrap; flex: none; }
+.foot-time-title { margin-top: 4px !important; }
+.drawer-foot { max-height: 70vh; overflow-y: auto; }

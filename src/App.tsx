@@ -506,19 +506,6 @@ function App() {
                 <p className="order-hint extras-hint">عصاير، مشروبات، شيبس، سكاكر… اكتب شو بدك وبنحكيلك السعر على واتساب.</p>
                 <textarea className="extras-input" rows={2} value={extras} onChange={(event) => setExtras(event.target.value)} placeholder="مثلاً: عصير برتقال، 2 شيبس، علكة" maxLength={300} data-testid="input-extras" />
               </section>
-              <section className="order-options" aria-label="تفاصيل الطلب">
-                <h3>إيمتى؟</h3>
-                <div className="segmented" role="radiogroup" aria-label="وقت الطلب">
-                  <button type="button" role="radio" aria-checked={timeMode === 'asap'} className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="option-asap">بأسرع وقت</button>
-                  <button type="button" role="radio" aria-checked={timeMode === 'later'} className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="option-later">بساعة معينة</button>
-                </div>
-                {timeMode === 'later' && (
-                  <label className="order-field">
-                    <span>الساعة</span>
-                    <input type="time" min="07:30" max="17:00" step={900} value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time" />
-                  </label>
-                )}
-              </section>
             </div>
             <div className="drawer-foot">
               <div className="drawer-actions"><span>تقدر تعدّل طلبك قبل الإرسال.</span><button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
@@ -539,6 +526,17 @@ function App() {
                     <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder={zone === 'inside' ? 'مثلاً: كلية الهندسة، الطابق الثاني، قاعة 204' : 'المنطقة والشارع وأقرب معلم'} data-testid="input-address" />
                   </label>
                 </>}
+                <h3 className="foot-time-title">إيمتى بدك إياه؟</h3>
+                <div className="segmented" role="radiogroup" aria-label="وقت الطلب">
+                  <button type="button" role="radio" aria-checked={timeMode === 'asap'} className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="option-asap">بأسرع وقت</button>
+                  <button type="button" role="radio" aria-checked={timeMode === 'later'} className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="option-later">بساعة معينة</button>
+                </div>
+                {timeMode === 'later' && (
+                  <label className="order-field">
+                    <span>الساعة</span>
+                    <input type="time" min="07:30" max="17:00" step={900} value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time" />
+                  </label>
+                )}
               </section>
               <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>
               <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>
