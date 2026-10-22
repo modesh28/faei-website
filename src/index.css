@@ -360,3 +360,5 @@
 .toast-action { white-space: nowrap; flex: none; }
 .foot-time-title { margin-top: 4px !important; }
 .drawer-foot { max-height: 70vh; overflow-y: auto; }
+.upgrade-button { border: 0; background: transparent; color: var(--blue); font-weight: 700; padding: 0 4px; text-decoration: underline; text-underline-offset: 3px; }
+.upgrade-button:hover { background: transparent; color: #0f5d93; }

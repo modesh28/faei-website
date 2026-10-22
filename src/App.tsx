@@ -239,8 +239,7 @@ function App() {
       return [...current, { id, quantity: 1 }];
     });
     setToast(`${resolveLine(id)?.name ?? product.name} انضاف للسلة`);
-    const upgrade = mealUpgrade(id);
-    setToastAction(upgrade ? { label: `خليها وجبة +${money(upgrade.extraFils)}`, run: () => upgradeLine(id) } : null);
+    setToastAction(null);
   }
   // Swap one sandwich in the cart for the meal version.
   function upgradeLine(id: string) {
