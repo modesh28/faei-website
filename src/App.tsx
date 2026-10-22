@@ -148,6 +148,9 @@ function App() {
   const [address, setAddress] = useState('');
   const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
   const [orderTime, setOrderTime] = useState('');
+  // Free-text extras from the cafeteria shelf (juices, chips, sweets), priced on WhatsApp.
+  const [extras, setExtras] = useState('');
+  const [extrasOpen, setExtrasOpen] = useState(false);
   const drawerRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -223,7 +226,8 @@ function App() {
   const grandTotalFils = totalFils + deliveryFils;
   const missingAddress = isDelivery && !address.trim();
   const missingTime = timeMode === 'later' && !orderTime;
-  const canCheckout = cartLines.length > 0 && !missingAddress && !missingTime;
+  const hasExtras = extras.trim().length > 0;
+  const canCheckout = (cartLines.length > 0 || hasExtras) && !missingAddress && !missingTime;
 
   function checkout() {
     if (!canCheckout) return;
@@ -237,7 +241,12 @@ function App() {
         ? `مجموع الأصناف: ${money(totalFils)}\nالتوصيل: ${money(deliveryFils)}\nالإجمالي النهائي: ${money(grandTotalFils)}`
         : `مجموع الأصناف: ${money(totalFils)}\nالتوصيل: بنتفق عليه\nالإجمالي قبل التوصيل: ${money(totalFils)}`
       : `الإجمالي النهائي: ${money(totalFils)}`;
-    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي:\n\n${lines}\n\n${how}\n${when}\n\n${totals}\n\nشكراً!`;
+    const extrasText = hasExtras ? `من الكافتيريا (السعر بيتأكد على واتساب):\n${extras.trim()}\n\n` : '';
+    const itemsText = lines ? `${lines}\n\n` : '';
+    const totalsText = !cartLines.length
+      ? `${isDelivery ? `التوصيل: ${zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}\n` : ''}الإجمالي: بيتأكد على واتساب`
+      : `${totals}${hasExtras ? ' + أغراض الكافتيريا' : ''}`;
+    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي:\n\n${itemsText}${extrasText}${how}\n${when}\n\n${totalsText}\n\nشكراً!`;
     const url = `https://wa.me/${WHATSAPP_DESTINATION}?text=${encodeURIComponent(message)}`;
     const popup = window.open(url, '_blank');
     if (popup) popup.opener = null;
@@ -316,6 +325,11 @@ function App() {
                 {categories.map((category) => <button key={category} type="button" className={`category-button${!query && selectedCategory === category ? ' is-active' : ''}`} onClick={() => selectCategory(category)} aria-pressed={!query && selectedCategory === category} data-testid={`button-category-${categories.indexOf(category)}`}>{category}</button>)}
                 <button type="button" className={`category-button${!query && selectedCategory === 'الكل' ? ' is-active' : ''}`} onClick={() => selectCategory('الكل')} aria-pressed={!query && selectedCategory === 'الكل'} data-testid="button-category-all">كل المنيو</button>
               </div>
+            </div>
+            <div className="extras-banner">
+              <span className="extras-emoji" aria-hidden="true">🥤🍫</span>
+              <div><strong>عنا كمان عصاير وشيبس وسكاكر</strong><span>اكتب شو بدك بالسلة تحت "من الكافتيريا" وبيجيك مع طلبك.</span></div>
+              <button type="button" className="button button-gold" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner">ضيف من الكافتيريا</button>
             </div>
             <div className="catalog-grid" aria-live="polite">
               {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
@@ -403,7 +417,7 @@ function App() {
         <button className="drawer-backdrop" type="button" aria-label="إغلاق السلة" onClick={() => setCartOpen(false)} />
         <aside className="cart-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="cart-title" data-testid="drawer-cart">
           <div className="drawer-head"><h2 id="cart-title">سلتك</h2><button className="icon-button" ref={closeRef} type="button" onClick={() => setCartOpen(false)} aria-label="إغلاق السلة" data-testid="button-close-cart"><X size={20} /></button></div>
-          {cartLines.length ? <>
+          {cartLines.length || extrasOpen || hasExtras ? <>
             <div className="cart-content" data-testid="list-cart-items">
               {cartLines.map(({ id, name, option, quantity }) => <article key={id} className="cart-line" data-testid={`row-cart-${id}`}>
                 <div><h3>{name}</h3><p className="line-unit">سعر الوحدة: {money(option.priceFils)}</p>
@@ -418,6 +432,11 @@ function App() {
                 </div>
                 <strong className="line-total">{money(option.priceFils * quantity)}</strong>
               </article>)}
+              <section className="order-options extras-box" aria-label="من الكافتيريا">
+                <h3>بدك إشي من الكافتيريا؟</h3>
+                <p className="order-hint extras-hint">عصاير، مشروبات، شيبس، سكاكر… اكتب شو بدك وبنحكيلك السعر على واتساب.</p>
+                <textarea className="extras-input" rows={2} value={extras} onChange={(event) => setExtras(event.target.value)} placeholder="مثلاً: عصير برتقال، 2 شيبس، علكة" maxLength={300} data-testid="input-extras" />
+              </section>
               <section className="order-options" aria-label="تفاصيل الطلب">
                 <h3>إيمتى؟</h3>
                 <div className="segmented" role="radiogroup" aria-label="وقت الطلب">
@@ -454,12 +473,13 @@ function App() {
               </section>
               <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>
               <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>
+              {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
               {(missingAddress || missingTime) && <p className="order-warning">{missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
               <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب عبر واتساب <ArrowLeft size={18} /></button>
               <p className="checkout-note">رح يفتح واتساب برسالة طلب جاهزة. الطلب بيتأكد لما FAEI يرد عليك.</p>
             </div>
-          </> : <div className="cart-empty"><ShoppingBag size={34} /><h3>السلة فاضية حالياً</h3><p>تصفّح المنيو وأضف الأصناف اللي بدك إياها.</p><button type="button" className="button button-gold" onClick={() => setCartOpen(false)}>تصفّح المنيو</button></div>}
+          </> : <div className="cart-empty"><ShoppingBag size={34} /><h3>السلة فاضية حالياً</h3><p>تصفّح المنيو وأضف الأصناف اللي بدك إياها.</p><button type="button" className="button button-gold" onClick={() => setCartOpen(false)}>تصفّح المنيو</button><button type="button" className="clear-button extras-only" onClick={() => setExtrasOpen(true)} data-testid="button-extras-only">بدي بس عصير أو سناك من الكافتيريا</button></div>}
         </aside>
       </>}
       {toast && <div className="toast-message" role="status" aria-live="polite"><Check size={16} /> {toast}</div>}

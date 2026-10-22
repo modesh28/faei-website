@@ -295,3 +295,19 @@
   .about-badge { animation: none; }
   .gallery-item img, .about-photo-small, .about-facts li { transition: none; }
 }
+
+/* 10. Cafeteria extras (juices, chips, sweets) */
+.extras-banner { display: flex; align-items: center; gap: 14px; margin: 0 0 22px; padding: 14px 18px; border-radius: 14px; background: #fff3cc; border: 1px solid #f1dc94; }
+.extras-emoji { font-size: 26px; flex: none; }
+.extras-banner strong { display: block; font-size: 15px; color: var(--ink); }
+.extras-banner div span { display: block; font-size: 13px; color: #6b5a1d; margin-top: 2px; }
+.extras-banner .button { margin-inline-start: auto; flex: none; min-height: 40px; padding: 0 16px; font-size: 14px; }
+.extras-box { border-bottom: 1px dashed #e1ddd3; padding-bottom: 16px; }
+.extras-hint { margin-top: -2px; }
+.extras-input { width: 100%; border: 1px solid #d8d5cc; border-radius: 6px; padding: 10px 12px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; resize: vertical; outline: 0; }
+.extras-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(22,118,184,.12); }
+.extras-only { margin-top: 12px; }
+@media (max-width: 700px) {
+  .extras-banner { flex-wrap: wrap; }
+  .extras-banner .button { width: 100%; margin-inline-start: 0; justify-content: center; }
+}
