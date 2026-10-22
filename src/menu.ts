@@ -49,7 +49,6 @@ const images: Partial<Record<string, string>> = {
   'shawarma-halabi': '/images/menu/shawarma-halabi.jpg',
   'hotdog-classic': '/images/menu/hotdog.jpg',
   'hotdog-faei': '/images/menu/hotdog.jpg',
-  'cold-halloumi': '/images/menu/halloumi.jpg',
 };
 
 // One photo for a whole category, used when an item has no photo of its own.
@@ -58,6 +57,7 @@ const categoryImages: Partial<Record<Category, string>> = {
   'برغر سماش': '/images/menu/smash2.jpg',
   'تشكن برغر': '/images/menu/chicken2.jpg',
   'السناك': '/images/menu/bbq2.jpg',
+  'ساندويش بارد': '/images/menu/halloumi.jpg',
   'بوكس فَيّ': '/images/menu/boxes2.jpg',
   'كساديا': '/images/menu/quesadilla2.jpg',
   'بيتزا': '/images/menu/pizza2.jpg',
