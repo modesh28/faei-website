@@ -126,21 +126,23 @@ function Stairs({ x0, x1, yStart, depth, n, rise, color = '#e9e2d2' }: { x0: num
   );
 }
 
-// Walk: faculty entrance → along the sidewalk → down the cafeteria stairs → wooden canopy (FAEI).
-const ROUTE: [number, number][] = [[44, 60], [69.8, 60], [69.8, 30]];
+// Walk: faculty entrance → a few steps right → down the cafeteria stairs → wooden canopy (FAEI).
+const ROUTE: [number, number][] = [[44, 59.5], [50, 59.5], [50.5, 54], [61, 54]];
 // From the stairs coming down from the upper area, across the road to the entrance.
-const ROUTE_TOP: [number, number][] = [[44, 72], [44, 60]];
+const ROUTE_TOP: [number, number][] = [[44, 72], [44, 59.5]];
 
 function routePath(route: [number, number][]): string {
   return route.map(([x, y], i) => `${i ? 'L' : 'M'}${iso(x, y).join(' ')}`).join(' ');
 }
 
 function IsoMap() {
-  const [pinX, pinY] = iso(71.5, 27, 15);
-  const [baseX, baseY] = iso(71.5, 27, 6.5);
+  const [px, py] = iso(62, 54, 12);
+  const pinX = px + 48;
+  const pinY = py - 6;
+  const [baseX, baseY] = iso(62, 54, 5.2);
   const mainPath = routePath(ROUTE);
   return (
-    <svg className="wayfinder-map" viewBox="-255 -20 545 400" role="img" aria-label="خريطة بسيطة: من الدرج اللي بنزل من فوق، اقطع الشارع لمدخل كلية تكنولوجيا المعلومات، امشي على الرصيف يمين، وانزل درج الكافتيريا لحد المظلة الخشبية، وهناك كافتيريا FAEI">
+    <svg className="wayfinder-map" viewBox="-215 -12 420 318" role="img" aria-label="خريطة بسيطة: من الدرج اللي بنزل من فوق، اقطع الشارع لمدخل كلية تكنولوجيا المعلومات، وعلى يمين القرميد على طول انزل درج الكافتيريا لحد المظلة الخشبية، وهناك كافتيريا FAEI">
       {/* ground */}
       <polygon points={pts([[0, 0], [100, 0], [100, 100], [0, 100]])} fill="#efe9dc" />
       {/* parking behind the faculty */}
@@ -148,13 +150,6 @@ function IsoMap() {
       <Label x={47} y={7} text="مواقف" size={12} color="#64747c" />
       {/* annex building at the back right */}
       <Box x0={78} y0={4} x1={94} y1={22} h={22} top="#ebe5d8" left="#d6ccb8" right="#c2b7a1" />
-      {/* side alley that goes down to FAEI, with steps */}
-      <polygon points={pts([[68, 22], [75, 22], [75, 52], [68, 52]])} fill="#b98a74" />
-      {Array.from({ length: 9 }, (_, i) => 34 + i * 2).map((y) => <polygon key={y} points={pts([[68, y], [75, y], [75, y + 1], [68, y + 1]])} fill="#e3d3c2" />)}
-      {/* FAEI seating area under the wooden canopy */}
-      <polygon points={pts([[68, 22], [75, 22], [75, 33], [68, 33]])} fill="#a77b62" />
-      <Box x0={68} y0={22} x1={75} y1={33} h={1} z0={5.5} top="#c88a4a" left="#a86f36" right="#94602d" />
-      {[24, 28, 32].map((y) => <polygon key={y} points={front(y, 68.4, 68.9, 0, 5.5)} fill="#7a5530" />)}
       <Faculty />
       {/* sidewalk in front of the faculty */}
       <polygon points={pts([[0, 52], [100, 52], [100, 61], [0, 61]])} fill="#e4ddcf" />
@@ -168,11 +163,17 @@ function IsoMap() {
       <Box x0={ENTRY.x0 - 1} y0={52} x1={ENTRY.x1 + 1} y1={56} h={1.2} z0={5} top="#c4572f" left="#a8462a" right="#93391f" />
       <Stairs x0={ENTRY.x0 + 0.5} x1={ENTRY.x1 - 0.5} yStart={55.5} depth={1.1} n={4} rise={0.4} color="#f6f0e2" />
       {[ENTRY.x0 - 0.5, ENTRY.x1 + 0.3].map((x) => <path key={x} d={`M${iso(x, 55.6).join(' ')} L${iso(x, 55.6, 5).join(' ')}`} stroke="#5b4a3a" strokeWidth="2" />)}
+      {/* FAEI: steps going down right next to the entrance, under the wooden canopy, along the faculty wall */}
+      <polygon points={pts([[49.5, 52], [67, 52], [67, 56], [49.5, 56]])} fill="#9c6f58" />
+      {Array.from({ length: 7 }, (_, i) => 50 + i * 1.1).map((x) => <polygon key={x} points={pts([[x, 52], [x + 0.55, 52], [x + 0.55, 56], [x, 56]])} fill="#e7d8c6" />)}
+      <Box x0={49.5} y0={56} x1={67} y1={56.7} h={0.7} top="#efe6d3" left="#d6cab2" right="#c4b79c" />
+      <Box x0={57} y0={52} x1={67} y1={56} h={0.8} z0={4.2} top="#c88a4a" left="#a86f36" right="#94602d" />
+      {[58, 66.3].map((x) => <path key={x} d={`M${iso(x, 55.6).join(' ')} L${iso(x, 55.6, 4.2).join(' ')}`} stroke="#7a5530" strokeWidth="2" />)}
       {/* trees and benches along the front */}
       <Palm x={30} y={53.5} />
       <Palm x={35} y={53.5} />
-      {[23, 52, 57, 62].map((x) => <Cypress key={x} x={x} y={53.5} />)}
-      {[25, 54, 60].map((x) => <Bench key={x} x={x} y={58.5} />)}
+      {[23, 26].map((x) => <Cypress key={x} x={x} y={53.5} />)}
+      {[24, 31, 61].map((x) => <Bench key={x} x={x} y={58.5} />)}
       {/* upper area across the road: terraces and the stairs coming down */}
       <Box x0={4} y0={70.5} x1={40} y1={78} h={1} top="#d6e5c4" left="#d9cfbb" right="#c9bea8" />
       <Box x0={48} y0={70.5} x1={96} y1={78} h={1} top="#d6e5c4" left="#d9cfbb" right="#c9bea8" />
@@ -193,11 +194,11 @@ function IsoMap() {
         <animateMotion dur="5s" repeatCount="indefinite" path={mainPath} />
       </circle>
       {/* labels */}
-      <Label x={33} y={88} z={5} text="الدرج من فوق" size={13} />
+      <Label x={58} y={82} z={4} text="الدرج من فوق" size={13} />
       <Label x={34} y={59} z={1.5} text="درج الكلية" size={12} />
-      <Label x={82} y={46} z={1} text="درج الكافتيريا ↓" size={12} />
-      <StepDot x={44} y={60} n={1} />
-      <StepDot x={69.8} y={50} n={2} />
+      <Label x={62} y={63} z={0} text="درج الكافتيريا ↓" size={12} />
+      <StepDot x={44} y={59.5} n={1} />
+      <StepDot x={50.5} y={54.5} n={2} />
       {/* FAEI pin */}
       <g className="wayfinder-pin">
         <line x1={pinX} y1={pinY} x2={baseX} y2={baseY} stroke="#182b3a" strokeWidth="2" strokeDasharray="3 3" />
@@ -212,7 +213,7 @@ function IsoMap() {
 
 const STEPS = [
   { title: 'وصلت كلية تكنولوجيا المعلومات', text: 'هاد المدخل الرئيسي لكلية الأمير عبدالله بن غازي، اللي فيه المظلة الحمرا.', img: '/images/route/1-faculty.jpg', alt: 'المدخل الرئيسي لكلية تكنولوجيا المعلومات', position: 'center 70%' },
-  { title: 'امشي جنب المبنى وانزل الممر', text: 'خليك ماشي جنب حيط الكلية لحد ما تشوف ممر نازل وفوقه مظلة خشب.', img: '/images/route/2-alley.jpg', alt: 'الممر النازل تحت المظلة الخشبية جنب الكلية', position: 'center 60%' },
+  { title: 'على يمين القرميد، انزل الدرج', text: 'جنب المدخل على طول، في درج نازل جنب حيط الكلية وفوقه مظلة خشب.', img: '/images/route/2-alley.jpg', alt: 'الممر النازل تحت المظلة الخشبية جنب الكلية', position: 'center 60%' },
   { title: 'أهلاً فيك بالفَيّ!', text: 'تحت المظلة الخشبية على طول. اطلب، اقعد، وانبسط.', img: '/images/faei-seating.jpeg', alt: 'القعدة في كافتيريا FAEI', position: 'center' },
 ];
 
