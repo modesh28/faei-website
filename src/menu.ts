@@ -47,6 +47,8 @@ const images: Partial<Record<string, string>> = {
   'shawarma-toast': '/images/menu/toast2.jpg',
   'shawarma-italian': '/images/menu/shawarma-italian.jpg',
   'shawarma-halabi': '/images/menu/shawarma-halabi.jpg',
+  'hotdog-classic': '/images/menu/hotdog.jpg',
+  'hotdog-faei': '/images/menu/hotdog.jpg',
   'snack-fajita': '/images/menu/fajita2.jpg',
   'snack-alfredo': '/images/menu/alfredo2.jpg',
   'snack-bbq': '/images/menu/bbq2.jpg',
