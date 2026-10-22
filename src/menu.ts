@@ -40,6 +40,9 @@ function isPopular(id: string, category: Category): boolean {
 const images: Partial<Record<string, string>> = {
   'shawarma-sandwich': '/images/menu/shawarma-sandwich.jpg',
   'shawarma-sandwich-super': '/images/menu/shawarma-sandwich.jpg',
+  'shawarma-meal': '/images/menu/shawarma-meal.jpg',
+  'shawarma-meal-super': '/images/menu/shawarma-meal.jpg',
+  'shawarma-meal-double': '/images/menu/shawarma-meal.jpg',
   'shawarma-toast': '/images/menu/toast2.jpg',
   'shawarma-italian': '/images/menu/shawarma-italian.jpg',
   'snack-fajita': '/images/menu/fajita2.jpg',
