@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, Clock, Flame, MapPin, Menu, Minus, Plus, Search, ShoppingBag, Tag, Trash2, X } from 'lucide-react';
-import { categories, featuredIds, products, type Category, type Product } from './menu';
+import { ArrowLeft, Check, Clock, Flame, MapPin, Menu, Minus, Plus, Search, ShoppingBag, Tag, Trash2, Truck, X } from 'lucide-react';
+import { categories, products, type Category, type Product } from './menu';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
@@ -10,6 +10,12 @@ const INSTAGRAM_URL = 'https://www.instagram.com/faei_cafe/';
 const LOCATION_QUERY = 'كلية الأمير عبدالله بن غازي لتكنولوجيا المعلومات، جامعة البلقاء التطبيقية، السلط';
 const MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(LOCATION_QUERY)}`;
 const HOURS_TEXT = 'من الأحد للخميس، 7:30 الصبح لـ 5:00 العصر';
+// Delivery inside the university costs 1 JD; outside it is agreed on WhatsApp.
+const DELIVERY_INSIDE_FILS = 1000;
+const DELIVERY_TEXT = 'توصيل جوا الجامعة بدينار، وبرا الجامعة حسب المكان وحجم الطلب.';
+
+type Fulfillment = 'pickup' | 'delivery';
+type DeliveryZone = 'inside' | 'outside';
 
 // Offer of the day. Change the text and the product id here; set OFFER to null to hide the band.
 const OFFER: { title: string; text: string; productId: string; optionIndex: number } | null = {
@@ -126,6 +132,11 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const [fulfillment, setFulfillment] = useState<Fulfillment>('pickup');
+  const [zone, setZone] = useState<DeliveryZone>('inside');
+  const [address, setAddress] = useState('');
+  const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
+  const [orderTime, setOrderTime] = useState('');
   const drawerRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -194,19 +205,34 @@ function App() {
     setCart((current) => current.flatMap((entry) => entry.id !== id ? [entry] : entry.quantity + delta <= 0 ? [] : [{ ...entry, quantity: Math.min(99, entry.quantity + delta) }]));
   }
   function removeProduct(id: string) { setCart((current) => current.filter((entry) => entry.id !== id)); }
-  function openCart() { setMobileNavOpen(false); setCartOpen(true); }
+  function openCart() { setMobileNavOpen(false); setToast(''); setCartOpen(true); }
+
+  const isDelivery = fulfillment === 'delivery';
+  const deliveryFils = isDelivery && zone === 'inside' ? DELIVERY_INSIDE_FILS : 0;
+  const grandTotalFils = totalFils + deliveryFils;
+  const missingAddress = isDelivery && !address.trim();
+  const missingTime = timeMode === 'later' && !orderTime;
+  const canCheckout = cartLines.length > 0 && !missingAddress && !missingTime;
 
   function checkout() {
-    if (!cartLines.length) return;
+    if (!canCheckout) return;
     const lines = cartLines.map(({ name, option, quantity }) => `• ${name} × ${quantity}\n  سعر الوحدة: ${money(option.priceFils)} — المجموع: ${money(option.priceFils * quantity)}`).join('\n');
-    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي:\n\n${lines}\n\nالإجمالي النهائي: ${money(totalFils)}\n\nشكراً!`;
+    const how = isDelivery
+      ? `طريقة الاستلام: توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}\nالعنوان: ${address.trim()}`
+      : 'طريقة الاستلام: استلام من الكافيه';
+    const when = `الوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${orderTime}`}`;
+    const totals = isDelivery
+      ? zone === 'inside'
+        ? `مجموع الأصناف: ${money(totalFils)}\nالتوصيل: ${money(deliveryFils)}\nالإجمالي النهائي: ${money(grandTotalFils)}`
+        : `مجموع الأصناف: ${money(totalFils)}\nالتوصيل: بنتفق عليه\nالإجمالي قبل التوصيل: ${money(totalFils)}`
+      : `الإجمالي النهائي: ${money(totalFils)}`;
+    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي:\n\n${lines}\n\n${how}\n${when}\n\n${totals}\n\nشكراً!`;
     const url = `https://wa.me/${WHATSAPP_DESTINATION}?text=${encodeURIComponent(message)}`;
     const popup = window.open(url, '_blank');
     if (popup) popup.opener = null;
     else window.location.assign(url);
   }
 
-  const featuredProducts = featuredIds.flatMap((id) => productMap.get(id) ?? []);
   const offerProduct = OFFER ? productMap.get(OFFER.productId) : undefined;
 
   function selectCategory(category: Category | 'الكل') {
@@ -265,21 +291,10 @@ function App() {
           </aside>
         )}
 
-        <section className="section" id="popular" aria-labelledby="popular-title" style={{ background: '#fff' }}>
-          <div className="faei-shell">
-            <div className="section-head">
-              <div><span className="section-kicker">اللي الكل بطلبه</span><h2 id="popular-title" className="flex items-center gap-2">الأكثر طلباً <Flame size={30} color="#f4c542" aria-hidden="true" /></h2><p>الشاورما، الزنجر، والبوكسات.</p></div>
-            </div>
-            <div className="catalog-grid">
-              {featuredProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} />)}
-            </div>
-          </div>
-        </section>
-
         <section className="section menu-section" id="menu" aria-labelledby="menu-title">
           <div className="faei-shell">
             <div className="section-head">
-              <div><span className="section-kicker">اختار اللي على مزاجك</span><h2 id="menu-title">المنيو</h2><p>اختار الصنف والحجم، وابعت طلبك على واتساب.</p></div>
+              <div><span className="section-kicker">اختار اللي على مزاجك</span><h2 id="menu-title">المنيو</h2><p>اختار الصنف والحجم، وابعت طلبك على واتساب. {DELIVERY_TEXT}</p></div>
             </div>
             <div className="menu-tools">
               <label className="search-wrap">
@@ -342,6 +357,7 @@ function App() {
                 <h3><MapPin size={20} /> موقع FAEI</h3>
                 <p>كلية الأمير عبدالله بن غازي لتكنولوجيا المعلومات، جامعة البلقاء التطبيقية، الأردن.</p>
                 <p className="mt-2 flex flex-wrap items-center gap-2"><Clock size={16} aria-hidden="true" /> {HOURS_TEXT} <OpenStatus /></p>
+                <p className="mt-2 flex flex-wrap items-center gap-2"><Truck size={16} aria-hidden="true" /> {DELIVERY_TEXT}</p>
               </div>
               <a className="button button-ink" style={{ color: '#fff', background: '#182b3a' }} href={MAPS_URL} target="_blank" rel="noreferrer" data-testid="link-location">افتح الموقع على الخريطة <MapPin size={17} /></a>
             </div>
@@ -380,11 +396,42 @@ function App() {
                 </div>
                 <strong className="line-total">{money(option.priceFils * quantity)}</strong>
               </article>)}
+              <section className="order-options" aria-label="تفاصيل الطلب">
+                <h3>كيف بدك تستلم طلبك؟</h3>
+                <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
+                  <button type="button" role="radio" aria-checked={!isDelivery} className={!isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('pickup')} data-testid="option-pickup">استلام من الكافيه</button>
+                  <button type="button" role="radio" aria-checked={isDelivery} className={isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('delivery')} data-testid="option-delivery">توصيل</button>
+                </div>
+                {isDelivery && <>
+                  <div className="segmented" role="radiogroup" aria-label="مكان التوصيل">
+                    <button type="button" role="radio" aria-checked={zone === 'inside'} className={zone === 'inside' ? 'is-active' : ''} onClick={() => setZone('inside')} data-testid="option-inside">جوا الجامعة · 1 د.أ</button>
+                    <button type="button" role="radio" aria-checked={zone === 'outside'} className={zone === 'outside' ? 'is-active' : ''} onClick={() => setZone('outside')} data-testid="option-outside">برا الجامعة</button>
+                  </div>
+                  {zone === 'outside' && <p className="order-hint">سعر التوصيل برا الجامعة حسب المكان وحجم الطلب، وبنتفق عليه على واتساب.</p>}
+                  <label className="order-field">
+                    <span>وين نوصلك؟</span>
+                    <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder={zone === 'inside' ? 'مثلاً: كلية الهندسة، الطابق الثاني، قاعة 204' : 'المنطقة والشارع وأقرب معلم'} data-testid="input-address" />
+                  </label>
+                </>}
+                <h3>إيمتى؟</h3>
+                <div className="segmented" role="radiogroup" aria-label="وقت الطلب">
+                  <button type="button" role="radio" aria-checked={timeMode === 'asap'} className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="option-asap">بأسرع وقت</button>
+                  <button type="button" role="radio" aria-checked={timeMode === 'later'} className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="option-later">بساعة معينة</button>
+                </div>
+                {timeMode === 'later' && (
+                  <label className="order-field">
+                    <span>الساعة</span>
+                    <input type="time" min="07:30" max="17:00" step={900} value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time" />
+                  </label>
+                )}
+              </section>
             </div>
             <div className="drawer-foot">
               <div className="drawer-actions"><span>تقدر تعدّل طلبك قبل الإرسال.</span><button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
-              <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(totalFils)}</strong></div>
-              <button className="button wa-button" type="button" onClick={checkout} disabled={!cartLines.length} data-testid="button-whatsapp-checkout">إرسال الطلب عبر واتساب <ArrowLeft size={18} /></button>
+              {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span>{zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
+              <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
+              {(missingAddress || missingTime) && <p className="order-warning">{missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
+              <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب عبر واتساب <ArrowLeft size={18} /></button>
               <p className="checkout-note">رح يفتح واتساب برسالة طلب جاهزة. الطلب بيتأكد لما FAEI يرد عليك.</p>
             </div>
           </> : <div className="cart-empty"><ShoppingBag size={34} /><h3>السلة فاضية حالياً</h3><p>تصفّح المنيو وأضف الأصناف اللي بدك إياها.</p><button type="button" className="button button-gold" onClick={() => setCartOpen(false)}>تصفّح المنيو</button></div>}

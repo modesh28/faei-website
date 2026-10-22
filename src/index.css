@@ -227,3 +227,16 @@
   .location-card { padding: 16px; }
   .location-card .button { width: 100%; }
 }
+
+/* 6. Order options in the cart: pickup / delivery, address and time */
+.order-options { padding: 18px 0 6px; display: flex; flex-direction: column; gap: 10px; }
+.order-options h3 { margin: 6px 0 0; font-size: 14px; }
+.segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.segmented button { min-height: 42px; border: 1px solid #d9d5cc; background: #fff; color: #53636b; border-radius: 6px; font-size: 13px; font-weight: 700; padding: 0 8px; }
+.segmented button.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.order-field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.order-field input { height: 44px; border: 1px solid #d8d5cc; border-radius: 6px; padding: 0 12px; background: #fff; color: var(--ink); outline: 0; }
+.order-field input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(22,118,184,.12); }
+.order-hint { margin: 0; font-size: 12px; line-height: 1.7; color: #6b5a1d; background: #fff3cc; border-radius: 6px; padding: 8px 10px; }
+.subtotal-row { display: flex; justify-content: space-between; font-size: 13px; color: #64747c; margin-bottom: 6px; }
+.order-warning { margin: 0 0 10px; font-size: 12px; color: #a74b43; }

@@ -7,6 +7,7 @@ export const categories = [
   'تشكن برغر',
   'السناك',
   'بوكس فَيّ',
+  'كساديا',
   'بيتزا',
   'كالزوني',
   'مناقيش',
@@ -34,9 +35,6 @@ export type Product = {
 function isPopular(id: string, category: Category): boolean {
   return category === 'شاورما' || category === 'بوكس فَيّ' || id.includes('zinger');
 }
-
-// The four cards shown in the "الأكثر طلباً" section under the hero.
-export const featuredIds = ['shawarma-meal-super', 'shawarma-sandwich-super', 'snack-zinger', 'box-zinger'];
 
 // To add a photo, put the file in public/images and add its path here, e.g. 'smash-classic': '/images/classic-burger.jpeg'.
 const images: Partial<Record<string, string>> = {
@@ -73,10 +71,10 @@ export const products: Product[] = [
     ['shawarma-halabi', 'وجبة شاورما حلبي', 3.50],
   ]),
   ...build('برغر سماش', ['ساندويش', 'وجبة'], [
-    ['smash-classic', 'كلاسيك برغر', 2.25, 3.00],
-    ['smash-cheese', 'تشيز برغر', 2.25, 3.00],
-    ['smash-hot-beef', 'هوت بيف', 2.25, 3.00],
-    ['smash-mushroom', 'ماشروم برغر', 2.50, 3.25],
+    ['smash-classic', 'كلاسيك برغر', 2.50, 3.00],
+    ['smash-cheese', 'تشيز برغر', 2.50, 3.00],
+    ['smash-hot-beef', 'هوت بيف', 2.50, 3.00],
+    ['smash-mushroom', 'ماشروم برغر', 2.75, 3.25],
     ['smash-egg', 'برغر بيض', 2.50, 3.25],
   ]),
   ...build('تشكن برغر', ['ساندويش', 'وجبة'], [
@@ -109,6 +107,11 @@ export const products: Product[] = [
     ['box-buffalo', 'بوكس بافلو', 2.25, 3.25],
     ['box-honey-mustard', 'بوكس هاني ماسترد', 2.25, 2.75],
     ['box-bbq', 'بوكس باربكيو', 2.25, 3.25],
+  ]),
+  ...build('كساديا', [''], [
+    ['quesadilla-veggie', 'كساديا خضار', 1.50],
+    ['quesadilla-alfredo', 'كساديا ألفريدو', 2.00],
+    ['quesadilla-honey-mustard', 'كساديا هاني ماسترد', 2.00],
   ]),
   ...build('بيتزا', [''], [
     ['pizza-veggie', 'بيتزا خضار', 3.00],
@@ -146,13 +149,18 @@ export const products: Product[] = [
     ['cold-cheese-mix', 'مكس أجبان', 1.00, 1.25],
     ['cold-turkey', 'تيركي', 0.75, 1.00],
     ['cold-turkey-cheese', 'تيركي وجبنة', 1.00, 1.25],
+    ['cold-halloumi', 'حلوم', 1.00, 1.25],
+  ]),
+  ...build('ساندويش بارد', [''], [
+    ['cold-zaatar', 'ساندويش زعتر', 1.50],
+    ['cold-white-cheese', 'ساندويش جبنة بيضاء', 1.50],
   ]),
   ...build('السلطات', [''], [
-    ['salad-caesar', 'سيزر', 1.50],
-    ['salad-rocket', 'جرجير', 1.50],
-    ['salad-greek', 'يونانية', 1.50],
-    ['salad-coleslaw', 'كولسلو', 1.50],
-    ['salad-fruit', 'فواكة', 1.50],
+    ['salad-caesar', 'سيزر', 2.00],
+    ['salad-rocket', 'جرجير', 2.00],
+    ['salad-greek', 'يونانية', 2.00],
+    ['salad-coleslaw', 'كولسلو', 2.00],
+    ['salad-fruit', 'فواكة', 2.00],
     ['salad-nachos', 'ناتشوز', 2.75],
   ]),
 ];
