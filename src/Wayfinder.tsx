@@ -203,7 +203,7 @@ function IsoMap() {
       <g className="wayfinder-pin">
         <line x1={pinX} y1={pinY} x2={baseX} y2={baseY} stroke="#182b3a" strokeWidth="2" strokeDasharray="3 3" />
         <circle cx={pinX} cy={pinY - 26} r="30" fill="#182b3a" stroke="#f4c542" strokeWidth="3" />
-        <image href="/images/faei-logo.png" x={pinX - 22} y={pinY - 44} width="44" height="36" preserveAspectRatio="xMidYMid meet" />
+        <image href="/images/faei-logo.webp" x={pinX - 22} y={pinY - 44} width="44" height="36" preserveAspectRatio="xMidYMid meet" />
         <circle cx={pinX + 24} cy={pinY - 48} r="11" fill="#f4c542" stroke="#182b3a" strokeWidth="2" />
         <text x={pinX + 24} y={pinY - 43} textAnchor="middle" fontSize="12" fontWeight={900} fill="#182b3a">3</text>
       </g>
@@ -212,9 +212,9 @@ function IsoMap() {
 }
 
 const STEPS = [
-  { title: 'وصلت كلية تكنولوجيا المعلومات', text: 'هاد المدخل الرئيسي لكلية الأمير عبدالله بن غازي، اللي فيه المظلة الحمرا.', img: '/images/route/1-faculty.jpg', alt: 'المدخل الرئيسي لكلية تكنولوجيا المعلومات', position: 'center 70%' },
-  { title: 'على يمين القرميد، انزل الدرج', text: 'جنب المدخل على طول، في درج نازل جنب حيط الكلية وفوقه مظلة خشب.', img: '/images/route/2-alley.jpg', alt: 'الممر النازل تحت المظلة الخشبية جنب الكلية', position: 'center 60%' },
-  { title: 'أهلاً فيك بالفَيّ!', text: 'تحت المظلة الخشبية على طول. اطلب، اقعد، وانبسط.', img: '/images/faei-seating.jpeg', alt: 'القعدة في كافتيريا FAEI', position: 'center' },
+  { title: 'وصلت كلية تكنولوجيا المعلومات', text: 'هاد المدخل الرئيسي لكلية الأمير عبدالله بن غازي، اللي فيه المظلة الحمرا.', img: '/images/route/1-faculty.webp', alt: 'المدخل الرئيسي لكلية تكنولوجيا المعلومات', position: 'center 70%' },
+  { title: 'على يمين القرميد، انزل الدرج', text: 'جنب المدخل على طول، في درج نازل جنب حيط الكلية وفوقه مظلة خشب.', img: '/images/route/2-alley.webp', alt: 'الممر النازل تحت المظلة الخشبية جنب الكلية', position: 'center 60%' },
+  { title: 'أهلاً فيك بالفَيّ!', text: 'تحت المظلة الخشبية على طول. اطلب، اقعد، وانبسط.', img: '/images/faei-seating.webp', alt: 'القعدة في كافتيريا FAEI', position: 'center' },
 ];
 
 export default function Wayfinder({ mapsUrl }: { mapsUrl: string }) {

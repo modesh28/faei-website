@@ -341,3 +341,20 @@
   .faei-app .wayfinder-maps-link { position: static; display: block; text-align: center; margin: 4px 8px 0; }
 }
 .wayfinder-route-alt { fill: none; stroke: #1676b8; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 3 7; opacity: .75; }
+
+/* 12. Upsell: meal upgrade + quick add-ons */
+.upgrade-button { margin-inline-start: auto; border: 1px solid #f1dc94; background: #fff3cc; color: #6b5a1d; font-size: 12px; font-weight: 800; border-radius: 6px; min-height: 32px; padding: 0 10px; }
+.upgrade-button:hover { background: #ffe9a3; }
+.suggest-box { padding: 16px 0 4px; border-bottom: 1px dashed #e1ddd3; }
+.suggest-box h3 { margin: 0 0 10px; font-size: 14px; }
+.suggest-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.suggest-chip { display: flex; align-items: center; gap: 8px; text-align: start; background: #fff; border: 1px solid #e1ddd3; border-radius: 10px; padding: 6px 8px; color: var(--ink); transition: border-color .15s ease, transform .15s ease; }
+.suggest-chip:hover { border-color: var(--blue); transform: translateY(-1px); }
+.suggest-chip img, .suggest-emoji { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 22px; background: #fff3cc; }
+.suggest-chip span:not(.suggest-emoji) { flex: 1; min-width: 0; }
+.suggest-chip strong { display: block; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.suggest-chip small { display: block; font-size: 12px; color: #64747c; }
+.suggest-chip svg { flex: none; color: var(--blue); }
+.toast-action { margin-inline-start: 6px; background: var(--gold); color: var(--ink); border: 0; border-radius: 4px; font-weight: 800; font-size: 12px; padding: 6px 10px; }
+.toast-message { width: max-content; max-width: calc(100vw - 32px); }
+.toast-action { white-space: nowrap; flex: none; }

@@ -30,12 +30,12 @@ const DEFAULT_OFFER: Offer = {
 
 // Photos for the "قعدة الفَيّ" gallery (files in public/images). size: big = 2x2, tall = 1x2, normal = 1x1.
 const GALLERY: { src: string; alt: string; caption: string; size?: 'big' | 'tall'; position?: string }[] = [
-  { src: '/images/faei-seating.jpeg', alt: 'القعدة في FAEI مع إطلالة على الشجر', caption: 'قعدة بين الشجر', size: 'big' },
-  { src: '/images/faei-table.jpeg', alt: 'طاولة في FAEI قدام رسمة فيروز على الحيط', caption: 'فيروز والشلة والأكل', size: 'tall', position: 'center 60%' },
-  { src: '/images/faei-sign.jpeg', alt: 'قارمة FAEI على الخشب', caption: 'أهلاً بالفَيّ', position: 'center 75%' },
-  { src: '/images/smash-classic.jpeg', alt: 'سماش برغر طازة من FAEI', caption: 'سماش طازة' },
-  { src: '/images/smash-cheese.jpeg', alt: 'تحضير السماش برغر على الصاج', caption: 'بينعمل قدامك' },
-  { src: '/images/pizza-zinger.jpeg', alt: 'بيتزا زنجر من FAEI', caption: 'بيتزا زنجر' },
+  { src: '/images/faei-seating.webp', alt: 'القعدة في FAEI مع إطلالة على الشجر', caption: 'قعدة بين الشجر', size: 'big' },
+  { src: '/images/faei-table.webp', alt: 'طاولة في FAEI قدام رسمة فيروز على الحيط', caption: 'فيروز والشلة والأكل', size: 'tall', position: 'center 60%' },
+  { src: '/images/faei-sign.webp', alt: 'قارمة FAEI على الخشب', caption: 'أهلاً بالفَيّ', position: 'center 75%' },
+  { src: '/images/smash-classic.webp', alt: 'سماش برغر طازة من FAEI', caption: 'سماش طازة' },
+  { src: '/images/smash-cheese.webp', alt: 'تحضير السماش برغر على الصاج', caption: 'بينعمل قدامك' },
+  { src: '/images/pizza-zinger.webp', alt: 'بيتزا زنجر من FAEI', caption: 'بيتزا زنجر' },
 ];
 
 // Quick facts shown in the about section.
@@ -84,6 +84,24 @@ function resolveLine(id: string) {
   const option = product?.options[Number(index)];
   return product && option ? { product, option, name: option.label ? `${product.name} — ${option.label}` : product.name } : undefined;
 }
+
+// Sandwich → meal upgrades. Burgers and chicken have both options on one card; shawarma meals are separate items.
+const SHAWARMA_MEAL: Record<string, string> = { 'shawarma-sandwich': 'shawarma-meal', 'shawarma-sandwich-super': 'shawarma-meal-super' };
+function mealUpgrade(id: string): { id: string; extraFils: number } | undefined {
+  const line = resolveLine(id);
+  if (!line) return undefined;
+  const mealProductId = SHAWARMA_MEAL[line.product.id];
+  const target = mealProductId
+    ? productMap.get(mealProductId) && `${mealProductId}::0`
+    : line.option.label === 'ساندويش' && line.product.options.findIndex((option) => option.label === 'وجبة') >= 0
+      ? `${line.product.id}::${line.product.options.findIndex((option) => option.label === 'وجبة')}`
+      : undefined;
+  const targetLine = target ? resolveLine(target) : undefined;
+  return target && targetLine ? { id: target, extraFils: targetLine.option.priceFils - line.option.priceFils } : undefined;
+}
+
+// Quick add-ons offered in the cart when they aren't already in it.
+const SUGGESTED_IDS = ['salad-coleslaw::0', 'salad-fruit::0', 'salad-nachos::0'];
 
 function readCart(): CartEntry[] {
   try {
@@ -146,6 +164,7 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const [toastAction, setToastAction] = useState<{ label: string; run: () => void } | null>(null);
   const [fulfillment, setFulfillment] = useState<Fulfillment>('pickup');
   const [zone, setZone] = useState<DeliveryZone>('inside');
   const [address, setAddress] = useState('');
@@ -163,7 +182,7 @@ function App() {
 
   useEffect(() => {
     if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(''), 2300);
+    const timeout = window.setTimeout(() => { setToast(''); setToastAction(null); }, toastAction ? 4500 : 2300);
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
@@ -201,6 +220,9 @@ function App() {
     const line = resolveLine(entry.id);
     return line && entry.quantity > 0 && entry.quantity <= 99 ? [{ ...line, id: entry.id, quantity: entry.quantity }] : [];
   });
+  const suggestions = cartLines.length
+    ? SUGGESTED_IDS.filter((id) => !cartLines.some((line) => line.id === id)).flatMap((id) => { const line = resolveLine(id); return line ? [{ ...line, id }] : []; }).slice(0, 3)
+    : [];
   const totalFils = cartLines.reduce((sum, line) => sum + line.option.priceFils * line.quantity, 0);
   const itemCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
   const query = search.trim().toLocaleLowerCase('ar');
@@ -217,12 +239,28 @@ function App() {
       return [...current, { id, quantity: 1 }];
     });
     setToast(`${resolveLine(id)?.name ?? product.name} انضاف للسلة`);
+    const upgrade = mealUpgrade(id);
+    setToastAction(upgrade ? { label: `خليها وجبة +${money(upgrade.extraFils)}`, run: () => upgradeLine(id) } : null);
+  }
+  // Swap one sandwich in the cart for the meal version.
+  function upgradeLine(id: string) {
+    const upgrade = mealUpgrade(id);
+    if (!upgrade) return;
+    setCart((current) => {
+      const source = current.find((entry) => entry.id === id);
+      if (!source) return current;
+      const rest = current.flatMap((entry) => entry.id !== id ? [entry] : entry.quantity > 1 ? [{ ...entry, quantity: entry.quantity - 1 }] : []);
+      const existing = rest.find((entry) => entry.id === upgrade.id);
+      return existing ? rest.map((entry) => entry.id === upgrade.id ? { ...entry, quantity: Math.min(99, entry.quantity + 1) } : entry) : [...rest, { id: upgrade.id, quantity: 1 }];
+    });
+    setToast(`صارت وجبة: ${resolveLine(upgrade.id)?.name ?? ''}`);
+    setToastAction(null);
   }
   function changeQuantity(id: string, delta: number) {
     setCart((current) => current.flatMap((entry) => entry.id !== id ? [entry] : entry.quantity + delta <= 0 ? [] : [{ ...entry, quantity: Math.min(99, entry.quantity + delta) }]));
   }
   function removeProduct(id: string) { setCart((current) => current.filter((entry) => entry.id !== id)); }
-  function openCart() { setMobileNavOpen(false); setToast(''); setCartOpen(true); }
+  function openCart() { setMobileNavOpen(false); setToast(''); setToastAction(null); setCartOpen(true); }
 
   const isDelivery = fulfillment === 'delivery';
   const deliveryFils = isDelivery && zone === 'inside' ? DELIVERY_INSIDE_FILS : 0;
@@ -275,7 +313,7 @@ function App() {
       <header className="topbar">
         <div className="faei-shell topbar-inner">
           <a className="brand" href="#home" aria-label="FAEI — الرئيسية">
-            <img src="/images/faei-logo.png" alt="شعار FAEI للمطعم والمقهى" />
+            <img src="/images/faei-logo.webp" alt="شعار FAEI للمطعم والمقهى" />
           </a>
           <nav className={`nav-links${mobileNavOpen ? ' is-open' : ''}`} aria-label="التنقل الرئيسي">
             <a href="#home" onClick={() => setMobileNavOpen(false)}>الرئيسية</a>
@@ -307,7 +345,7 @@ function App() {
               <div className="hero-foot flex flex-wrap items-center gap-3"><OpenStatus dark /> <Clock size={15} aria-hidden="true" /> {HOURS_TEXT}</div>
             </div>
             <div className="hero-media">
-              <img src="/images/faei-sign.jpeg" alt="قارمة FAEI على واجهة المطعم" fetchPriority="high" style={{ objectPosition: 'center 75%' }} />
+              <img src="/images/faei-sign.webp" alt="قارمة FAEI على واجهة المطعم" fetchPriority="high" style={{ objectPosition: 'center 75%' }} />
             </div>
           </div>
         </section>
@@ -350,9 +388,9 @@ function App() {
         <section className="section about-section" id="about" aria-labelledby="about-title">
           <div className="faei-shell about-layout">
             <div className="about-photos">
-              <img className="about-photo-main" src="/images/faei-table.jpeg" alt="طاولة في FAEI قدام رسمة فيروز" loading="lazy" />
-              <img className="about-photo-small" src="/images/smash-classic.jpeg" alt="سماش برغر من FAEI" loading="lazy" />
-              <div className="about-badge"><img src="/images/faei-logo.png" alt="" /></div>
+              <img className="about-photo-main" src="/images/faei-table.webp" alt="طاولة في FAEI قدام رسمة فيروز" loading="lazy" />
+              <img className="about-photo-small" src="/images/smash-classic.webp" alt="سماش برغر من FAEI" loading="lazy" />
+              <div className="about-badge"><img src="/images/faei-logo.webp" alt="" /></div>
             </div>
             <div className="about-copy">
               <span className="section-kicker">قصة الفَيّ</span>
@@ -414,7 +452,7 @@ function App() {
 
       <footer className="footer">
         <div className="faei-shell footer-inner">
-          <a href="#home" aria-label="FAEI — إلى الرئيسية"><img src="/images/faei-logo.png" alt="FAEI" loading="lazy" /></a>
+          <a href="#home" aria-label="FAEI — إلى الرئيسية"><img src="/images/faei-logo.webp" alt="FAEI" loading="lazy" /></a>
           <p>FAEI · مطعم ومقهى · {HOURS_TEXT}</p>
           <div className="footer-links flex items-center gap-4">
             <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="انستغرام FAEI"><InstagramIcon size={20} /></a>
@@ -439,10 +477,30 @@ function App() {
                       <button type="button" onClick={() => changeQuantity(id, 1)} aria-label={`زيادة كمية ${name}`} data-testid={`button-increase-${id}`}><Plus size={15} /></button>
                     </div>
                     <button className="remove-button" type="button" onClick={() => removeProduct(id)} data-testid={`button-remove-${id}`}><Trash2 size={14} /> إزالة</button>
+                    {mealUpgrade(id) && <button className="upgrade-button" type="button" onClick={() => upgradeLine(id)} data-testid={`button-upgrade-${id}`}>خليها وجبة +{money(mealUpgrade(id)!.extraFils)}</button>}
                   </div>
                 </div>
                 <strong className="line-total">{money(option.priceFils * quantity)}</strong>
               </article>)}
+              {suggestions.length > 0 && (
+                <section className="suggest-box" aria-label="اقتراحات">
+                  <h3>بتكمّل طلبك؟</h3>
+                  <div className="suggest-chips">
+                    {suggestions.map((line) => (
+                      <button key={line.id} type="button" className="suggest-chip" onClick={() => addProduct(line.product, Number(line.id.split('::')[1]))} data-testid={`button-suggest-${line.id}`}>
+                        {line.product.image && <img src={line.product.image} alt="" loading="lazy" />}
+                        <span><strong>{line.name}</strong><small>{money(line.option.priceFils)}</small></span>
+                        <Plus size={16} aria-hidden="true" />
+                      </button>
+                    ))}
+                    <button type="button" className="suggest-chip" onClick={() => { setExtras((current) => current.includes('مشروب') ? current : `${current ? `${current}، ` : ''}مشروب: `); window.setTimeout(() => document.querySelector<HTMLTextAreaElement>('[data-testid=input-extras]')?.focus(), 0); }} data-testid="button-suggest-drink">
+                      <span className="suggest-emoji" aria-hidden="true">🥤</span>
+                      <span><strong>مشروب بارد؟</strong><small>اكتبه تحت</small></span>
+                      <Plus size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                </section>
+              )}
               <section className="order-options extras-box" aria-label="من الكافتيريا">
                 <h3>بدك إشي من الكافتيريا؟</h3>
                 <p className="order-hint extras-hint">عصاير، مشروبات، شيبس، سكاكر… اكتب شو بدك وبنحكيلك السعر على واتساب.</p>
@@ -493,7 +551,7 @@ function App() {
           </> : <div className="cart-empty"><ShoppingBag size={34} /><h3>السلة فاضية حالياً</h3><p>تصفّح المنيو وأضف الأصناف اللي بدك إياها.</p><button type="button" className="button button-gold" onClick={() => setCartOpen(false)}>تصفّح المنيو</button><button type="button" className="clear-button extras-only" onClick={() => setExtrasOpen(true)} data-testid="button-extras-only">بدي بس عصير أو سناك من الكافتيريا</button></div>}
         </aside>
       </>}
-      {toast && <div className="toast-message" role="status" aria-live="polite"><Check size={16} /> {toast}</div>}
+      {toast && <div className="toast-message" role="status" aria-live="polite"><Check size={16} /> {toast}{toastAction && <button type="button" className="toast-action" onClick={() => toastAction.run()} data-testid="button-toast-upgrade">{toastAction.label}</button>}</div>}
     </div>
   );
 }
