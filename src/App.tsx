@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, Clock, Flame, MapPin, Menu, Minus, Plus, Search, ShoppingBag, Tag, Trash2, Truck, X } from 'lucide-react';
 import { categories, products, type Category, type Product } from './menu';
+import Wayfinder from './Wayfinder';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
@@ -388,15 +389,16 @@ function App() {
                 <a className="button button-outline" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="تابع FAEI على انستغرام">تابعنا على انستغرام <InstagramIcon size={17} /></a>
               </div>
             </div>
-            <div className="location-card flex flex-wrap items-center justify-between gap-4" id="location">
-              <div className="location-info">
-                <h3><MapPin size={20} /> موقع FAEI</h3>
-                <p>كلية الأمير عبدالله بن غازي لتكنولوجيا المعلومات، جامعة البلقاء التطبيقية، الأردن.</p>
-                <p className="mt-2 flex flex-wrap items-center gap-2"><Clock size={16} aria-hidden="true" /> {HOURS_TEXT} <OpenStatus /></p>
-                <p className="mt-2 flex flex-wrap items-center gap-2"><Truck size={16} aria-hidden="true" /> {DELIVERY_TEXT}</p>
-              </div>
-              <a className="button button-ink" style={{ color: '#fff', background: '#182b3a' }} href={MAPS_URL} target="_blank" rel="noreferrer" data-testid="link-location">افتح الموقع على الخريطة <MapPin size={17} /></a>
+            <div className="contact-meta">
+              <span><Clock size={16} aria-hidden="true" /> {HOURS_TEXT} <OpenStatus /></span>
+              <span><Truck size={16} aria-hidden="true" /> {DELIVERY_TEXT}</span>
             </div>
+            <div className="wayfinder-head">
+              <span className="section-kicker">مش لاقينا؟</span>
+              <h2>كيف توصل الفَيّ؟</h2>
+              <p>إحنا جوا كلية تكنولوجيا المعلومات، بس مخبّايين شوي. اتبع الخط الأزرق.</p>
+            </div>
+            <Wayfinder mapsUrl={MAPS_URL} />
           </div>
         </section>
       </main>
