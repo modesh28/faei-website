@@ -38,33 +38,27 @@ function isPopular(id: string, category: Category): boolean {
 
 // To add a photo, put the file in public/images and add its path here, e.g. 'smash-classic': '/images/classic-burger.jpeg'.
 const images: Partial<Record<string, string>> = {
-  'snack-alfredo': '/images/menu/alfredo.jpg',
-  'snack-bbq': '/images/menu/bbq.jpg',
-  'snack-fajita': '/images/menu/fajita.jpg',
-  'shawarma-toast': '/images/menu/shawarma-toast.jpg',
-  'cold-halloumi': '/images/menu/halloumi.jpg',
+  'shawarma-toast': '/images/menu/toast2.jpg',
+  'shawarma-italian': '/images/menu/shawarma-italian.jpg',
+  'snack-fajita': '/images/menu/fajita2.jpg',
+  'snack-alfredo': '/images/menu/alfredo2.jpg',
+  'snack-bbq': '/images/menu/bbq2.jpg',
   'snack-shish': '/images/shish.jpeg',
   'snack-curry': '/images/chicken-curry.jpeg',
-  'smash-classic': '/images/smash-classic.jpeg',
-  'smash-cheese': '/images/smash-cheese.jpeg',
-  'chicken-hot': '/images/chicken-burger-2.jpeg',
-  'chicken-honey-mayo': '/images/chicken-burger.jpeg',
-  'pizza-zinger': '/images/pizza-zinger.jpeg',
-  'pizza-margherita': '/images/pizza-margherita.jpeg',
-  'box-mexican': '/images/box.jpeg',
+  'cold-halloumi': '/images/menu/halloumi.jpg',
 };
 
 // One photo for a whole category, used when an item has no photo of its own.
 const categoryImages: Partial<Record<Category, string>> = {
   'شاورما': '/images/menu/shawarma.jpg',
-  'برغر سماش': '/images/menu/smash.jpg',
-  'تشكن برغر': '/images/menu/chicken-burger-ai.jpg',
-  'بوكس فَيّ': '/images/menu/boxes.jpg',
-  'كساديا': '/images/menu/quesadilla.jpg',
-  'بيتزا': '/images/menu/pizza.jpg',
+  'برغر سماش': '/images/menu/smash2.jpg',
+  'تشكن برغر': '/images/menu/chicken2.jpg',
+  'بوكس فَيّ': '/images/menu/boxes2.jpg',
+  'كساديا': '/images/menu/quesadilla2.jpg',
+  'بيتزا': '/images/menu/pizza2.jpg',
   'كالزوني': '/images/menu/calzone.jpg',
   'مناقيش': '/images/menu/manakeesh.jpg',
-  'السلطات': '/images/menu/salads.jpg',
+  'السلطات': '/images/menu/salads2.jpg',
 };
 
 // Items that don't look like their category's photo, so they stay without one.
