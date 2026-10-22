@@ -38,9 +38,11 @@ function isPopular(id: string, category: Category): boolean {
 
 // To add a photo, put the file in public/images and add its path here, e.g. 'smash-classic': '/images/classic-burger.jpeg'.
 const images: Partial<Record<string, string>> = {
-  'snack-alfredo': '/images/alfredo.jpeg',
-  'snack-bbq': '/images/barbecue.jpeg',
-  'snack-fajita': '/images/fajita.jpeg',
+  'snack-alfredo': '/images/menu/alfredo.jpg',
+  'snack-bbq': '/images/menu/bbq.jpg',
+  'snack-fajita': '/images/menu/fajita.jpg',
+  'shawarma-toast': '/images/menu/shawarma-toast.jpg',
+  'cold-halloumi': '/images/menu/halloumi.jpg',
   'snack-shish': '/images/shish.jpeg',
   'snack-curry': '/images/chicken-curry.jpeg',
   'smash-classic': '/images/smash-classic.jpeg',
@@ -54,8 +56,19 @@ const images: Partial<Record<string, string>> = {
 
 // One photo for a whole category, used when an item has no photo of its own.
 const categoryImages: Partial<Record<Category, string>> = {
-  'كساديا': '/images/quesadilla.jpeg',
+  'شاورما': '/images/menu/shawarma.jpg',
+  'برغر سماش': '/images/menu/smash.jpg',
+  'تشكن برغر': '/images/menu/chicken-burger-ai.jpg',
+  'بوكس فَيّ': '/images/menu/boxes.jpg',
+  'كساديا': '/images/menu/quesadilla.jpg',
+  'بيتزا': '/images/menu/pizza.jpg',
+  'كالزوني': '/images/menu/calzone.jpg',
+  'مناقيش': '/images/menu/manakeesh.jpg',
+  'السلطات': '/images/menu/salads.jpg',
 };
+
+// Items that don't look like their category's photo, so they stay without one.
+const noCategoryImage = new Set(['hotdog-classic', 'hotdog-faei', 'salad-nachos']);
 
 type Row = [id: string, name: string, ...prices: (number | null)[]];
 
@@ -65,7 +78,7 @@ function build(category: Category, labels: string[], rows: Row[]): Product[] {
     name,
     category,
     options: prices.flatMap((price, index) => price == null ? [] : [{ label: labels[index] ?? '', priceFils: Math.round(price * 1000) }]),
-    image: images[id] ?? categoryImages[category],
+    image: images[id] ?? (noCategoryImage.has(id) ? undefined : categoryImages[category]),
     popular: isPopular(id, category),
   }));
 }
