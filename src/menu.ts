@@ -49,11 +49,6 @@ const images: Partial<Record<string, string>> = {
   'shawarma-halabi': '/images/menu/shawarma-halabi.jpg',
   'hotdog-classic': '/images/menu/hotdog.jpg',
   'hotdog-faei': '/images/menu/hotdog.jpg',
-  'snack-fajita': '/images/menu/fajita2.jpg',
-  'snack-alfredo': '/images/menu/alfredo2.jpg',
-  'snack-bbq': '/images/menu/bbq2.jpg',
-  'snack-shish': '/images/shish.jpeg',
-  'snack-curry': '/images/chicken-curry.jpeg',
   'cold-halloumi': '/images/menu/halloumi.jpg',
 };
 
@@ -62,6 +57,7 @@ const categoryImages: Partial<Record<Category, string>> = {
   'شاورما': '/images/menu/shawarma.jpg',
   'برغر سماش': '/images/menu/smash2.jpg',
   'تشكن برغر': '/images/menu/chicken2.jpg',
+  'السناك': '/images/menu/bbq2.jpg',
   'بوكس فَيّ': '/images/menu/boxes2.jpg',
   'كساديا': '/images/menu/quesadilla2.jpg',
   'بيتزا': '/images/menu/pizza2.jpg',
