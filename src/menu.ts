@@ -61,6 +61,8 @@ const images: Partial<Record<string, string>> = {
   'salad-nachos': '/images/menu/nachos.jpg',
   'salad-greek': '/images/menu/salad-greek.jpg',
   'salad-caesar': '/images/menu/salad-caesar.jpg',
+  'salad-fruit': '/images/menu/salad-fruit.jpg',
+  'salad-coleslaw': '/images/menu/salad-coleslaw.jpg',
 };
 
 // One photo for a whole category, used when an item has no photo of its own.
