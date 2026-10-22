@@ -246,3 +246,52 @@
 .foot-options h3 { margin: 0; }
 .foot-options .order-field input { height: 40px; }
 @media (max-width: 700px) { .drawer-actions span { display: none; } .drawer-actions { justify-content: flex-end; margin-bottom: 8px; } }
+
+/* 8. About: photo collage + quick facts */
+.about-section { background: linear-gradient(180deg, #f7f5ef 0%, #e7f2f6 100%); overflow: hidden; }
+.about-photos { position: relative; min-height: 460px; }
+.about-photo-main { position: absolute; inset-block: 0 40px; inset-inline-start: 0; width: 72%; height: calc(100% - 40px); object-fit: cover; object-position: center 60%; border-radius: 18px; box-shadow: 0 24px 50px rgba(9,20,28,.22); }
+.about-photo-small { position: absolute; inset-block-end: 0; inset-inline-end: 0; width: 46%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 16px; border: 6px solid #fff; box-shadow: 0 18px 40px rgba(9,20,28,.25); transform: rotate(-3deg); transition: transform .3s ease; }
+.about-photos:hover .about-photo-small { transform: rotate(0deg) scale(1.03); }
+.about-badge { position: absolute; inset-block-start: 22px; inset-inline-end: 8%; width: 104px; height: 104px; border-radius: 50%; background: var(--ink); display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px rgba(9,20,28,.3); animation: badge-float 4s ease-in-out infinite; }
+.about-badge img { width: 74%; height: auto; }
+@keyframes badge-float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+.about-copy h2 span { color: var(--blue); }
+.about-facts { list-style: none; margin: 22px 0 26px; padding: 0; display: grid; gap: 12px; }
+.about-facts li { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #e3e0d7; border-radius: 12px; padding: 12px 14px; transition: transform .2s ease, box-shadow .2s ease; }
+.about-facts li:hover { transform: translateX(-4px); box-shadow: 0 10px 24px rgba(9,20,28,.08); }
+.about-fact-icon { flex: none; width: 42px; height: 42px; border-radius: 10px; background: #fff3cc; color: #9a7310; display: flex; align-items: center; justify-content: center; }
+.about-facts strong { display: block; font-size: 15px; color: var(--ink); }
+.about-facts li span:not(.about-fact-icon) { display: block; font-size: 13px; color: #64747c; }
+.faei-app .about-cta { display: inline-flex; align-items: center; gap: 8px; }
+
+/* 9. Gallery: bento grid with captions and hover zoom */
+.gallery-section { background: #fff; }
+.gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 210px; grid-auto-flow: dense; gap: 14px; }
+.gallery-item { position: relative; margin: 0; overflow: hidden; border-radius: 16px; background: #182b3a; }
+.gallery-item.is-big { grid-column: span 2; grid-row: span 2; }
+.gallery-item.is-tall { grid-row: span 2; }
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s ease; }
+.gallery-item:hover img { transform: scale(1.07); }
+.gallery-item figcaption { position: absolute; inset-inline: 0; inset-block-end: 0; padding: 40px 16px 14px; color: #fff; font-weight: 800; font-size: 15px; background: linear-gradient(transparent, rgba(9,20,28,.75)); transform: translateY(6px); opacity: .92; transition: transform .3s ease, opacity .3s ease; }
+.gallery-item:hover figcaption { transform: translateY(0); opacity: 1; }
+.faei-app .gallery-insta { grid-column: span 2; display: flex; align-items: center; gap: 16px; padding: 24px; color: #fff; background: linear-gradient(135deg, #182b3a 0%, #1f4a66 60%, #1676b8 100%); text-decoration: none; }
+.gallery-insta strong { display: block; font-size: 20px; }
+.gallery-insta div span { display: block; font-size: 13px; color: rgba(255,255,255,.78); margin-top: 4px; }
+.gallery-insta-cta { margin-inline-start: auto; flex: none; background: var(--gold); color: var(--ink); font-weight: 800; font-size: 14px; border-radius: 8px; padding: 10px 18px; transition: transform .2s ease; }
+.gallery-insta:hover .gallery-insta-cta { transform: scale(1.06); }
+
+@media (max-width: 900px) {
+  .about-photos { min-height: 380px; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 170px; gap: 10px; }
+}
+@media (max-width: 700px) {
+  .about-photos { min-height: 320px; }
+  .about-badge { width: 80px; height: 80px; inset-block-start: 12px; }
+  .gallery-insta { flex-wrap: wrap; }
+  .gallery-insta-cta { margin-inline-start: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .about-badge { animation: none; }
+  .gallery-item img, .about-photo-small, .about-facts li { transition: none; }
+}

@@ -25,11 +25,21 @@ const OFFER: { title: string; text: string; productId: string; optionIndex: numb
   optionIndex: 0,
 };
 
-// Photos for the "قعدة الفَيّ" gallery (files in public/images).
-const GALLERY = [
-  { src: '/images/faei-seating.jpeg', alt: 'القعدة في FAEI مع إطلالة على الشجر' },
-  { src: '/images/faei-sign.jpeg', alt: 'قارمة FAEI على الخشب' },
-  { src: '/images/faei-table.jpeg', alt: 'طاولة في FAEI قدام رسمة فيروز على الحيط', position: 'center 70%' },
+// Photos for the "قعدة الفَيّ" gallery (files in public/images). size: big = 2x2, tall = 1x2, normal = 1x1.
+const GALLERY: { src: string; alt: string; caption: string; size?: 'big' | 'tall'; position?: string }[] = [
+  { src: '/images/faei-seating.jpeg', alt: 'القعدة في FAEI مع إطلالة على الشجر', caption: 'قعدة بين الشجر', size: 'big' },
+  { src: '/images/faei-table.jpeg', alt: 'طاولة في FAEI قدام رسمة فيروز على الحيط', caption: 'فيروز والشلة والأكل', size: 'tall', position: 'center 60%' },
+  { src: '/images/faei-sign.jpeg', alt: 'قارمة FAEI على الخشب', caption: 'أهلاً بالفَيّ', position: 'center 75%' },
+  { src: '/images/smash-classic.jpeg', alt: 'سماش برغر طازة من FAEI', caption: 'سماش طازة' },
+  { src: '/images/smash-cheese.jpeg', alt: 'تحضير السماش برغر على الصاج', caption: 'بينعمل قدامك' },
+  { src: '/images/pizza-zinger.jpeg', alt: 'بيتزا زنجر من FAEI', caption: 'بيتزا زنجر' },
+];
+
+// Quick facts shown in the about section.
+const ABOUT_FACTS = [
+  { icon: Tag, title: 'أسعار طلاب', text: 'ساندويش الشاورما من 0.75 د.أ' },
+  { icon: Truck, title: 'توصيل جوا الجامعة', text: 'لباب القاعة بدينار واحد' },
+  { icon: Clock, title: 'من الصبح للعصر', text: 'الأحد لِلخميس، 7:30 لـ 5:00' },
 ];
 
 // Open Sunday–Thursday, 7:30–17:00 Jordan time.
@@ -315,30 +325,41 @@ function App() {
 
         <section className="section about-section" id="about" aria-labelledby="about-title">
           <div className="faei-shell about-layout">
-            <div className="about-mark"><img src="/images/faei-logo.png" alt="شعار FAEI الرسمي" loading="lazy" /></div>
+            <div className="about-photos">
+              <img className="about-photo-main" src="/images/faei-table.jpeg" alt="طاولة في FAEI قدام رسمة فيروز" loading="lazy" />
+              <img className="about-photo-small" src="/images/smash-classic.jpeg" alt="سماش برغر من FAEI" loading="lazy" />
+              <div className="about-badge"><img src="/images/faei-logo.png" alt="" /></div>
+            </div>
             <div className="about-copy">
-              <span className="section-kicker">قريبين من يومكم الجامعي</span>
-              <h2 id="about-title">FAEI، لخدمة مجتمع الجامعة.</h2>
-              <p>FAEI مطعم ومقهى يخدم مجتمع جامعة البلقاء التطبيقية. مساحة لطلب قهوتك أو وجبتك خلال يومك الجامعي، بخيارات تقدر تتصفحها وترسل طلبك بشأنها مباشرة عبر واتساب.</p>
-              <p className="about-note">تعي نقعد بالفَيّ: برغر، شاورما، بيتزا، مناقيش وأكثر، وكله بأسعار طلاب.</p>
+              <span className="section-kicker">قصة الفَيّ</span>
+              <h2 id="about-title">مش بس أكل… <span>قعدة.</span></h2>
+              <p>بين محاضرة ومحاضرة، الفَيّ هو المكان اللي بتلاقي فيه أكل طيب وسعر طلاب وقعدة حلوة مع الشلة. من الشاورما للسماش للمناقيش، كله بينعمل طازة قدامك.</p>
+              <ul className="about-facts">
+                {ABOUT_FACTS.map(({ icon: Icon, title, text }) => (
+                  <li key={title}><span className="about-fact-icon"><Icon size={20} /></span><div><strong>{title}</strong><span>{text}</span></div></li>
+                ))}
+              </ul>
+              <a className="button button-gold about-cta" href="#menu">شوف المنيو <ArrowLeft size={18} /></a>
             </div>
           </div>
         </section>
 
-        <section className="section" id="gallery" aria-labelledby="gallery-title" style={{ background: '#fff' }}>
+        <section className="section gallery-section" id="gallery" aria-labelledby="gallery-title">
           <div className="faei-shell">
             <div className="section-head">
-              <div><span className="section-kicker">تعي نقعد بالفَيّ</span><h2 id="gallery-title">قعدة الفَيّ</h2><p>قعدة بين الشجر، وإطلالة، وأكل طيب بين المحاضرات.</p></div>
+              <div><span className="section-kicker">تعي نقعد بالفَيّ</span><h2 id="gallery-title">قعدة الفَيّ</h2><p>شجر، ورسومات على الحيطان، وأكل طازة بين المحاضرات.</p></div>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="gallery-grid">
               {GALLERY.map((photo) => (
-                <img key={photo.src} src={photo.src} alt={photo.alt} loading="lazy" className="block aspect-[4/3] w-full rounded-xl object-cover" style={{ objectPosition: photo.position ?? 'center' }} />
+                <figure key={photo.src} className={`gallery-item${photo.size ? ` is-${photo.size}` : ''}`}>
+                  <img src={photo.src} alt={photo.alt} loading="lazy" style={{ objectPosition: photo.position ?? 'center' }} />
+                  <figcaption>{photo.caption}</figcaption>
+                </figure>
               ))}
-              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-xl p-6 text-center" style={{ background: '#182b3a', color: '#fff' }} data-testid="link-instagram-gallery">
-                <InstagramIcon size={40} />
-                <strong className="text-lg">@faei_cafe</strong>
-                <span className="text-sm" style={{ color: 'rgba(255,255,255,.75)' }}>شوف آخر الصور والعروض على انستغرام</span>
-                <span className="mt-1 rounded-md px-4 py-2 text-sm font-bold" style={{ background: '#f4c542', color: '#182b3a' }}>تابعنا</span>
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="gallery-item gallery-insta" data-testid="link-instagram-gallery">
+                <InstagramIcon size={34} />
+                <div><strong>@faei_cafe</strong><span>كل يوم صور وعروض جديدة على انستغرام</span></div>
+                <span className="gallery-insta-cta">تابعنا</span>
               </a>
             </div>
           </div>
