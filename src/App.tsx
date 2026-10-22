@@ -18,12 +18,14 @@ const DELIVERY_TEXT = 'توصيل جوا الجامعة بدينار، وبرا 
 type Fulfillment = 'pickup' | 'delivery';
 type DeliveryZone = 'inside' | 'outside';
 
-// Offer of the day. Change the text and the product id here; set OFFER to null to hide the band.
-const OFFER: { title: string; text: string; productId: string; optionIndex: number } | null = {
+// Offer of the day. The live text comes from public/offer.json (edit it on GitHub, no code needed);
+// this is only the fallback while it loads or if the file is broken.
+type Offer = { show: boolean; title: string; text: string; productId?: string; optionIndex?: number };
+const DEFAULT_OFFER: Offer = {
+  show: true,
   title: 'عرض اليوم',
   text: 'وجبة شلة: شاورما بتكفّي الشلة كلها بـ 8 د.أ بس.',
   productId: 'shawarma-shilla',
-  optionIndex: 0,
 };
 
 // Photos for the "قعدة الفَيّ" gallery (files in public/images). size: big = 2x2, tall = 1x2, normal = 1x1.
@@ -254,7 +256,14 @@ function App() {
     else window.location.assign(url);
   }
 
-  const offerProduct = OFFER ? productMap.get(OFFER.productId) : undefined;
+  const [offer, setOffer] = useState<Offer>(DEFAULT_OFFER);
+  useEffect(() => {
+    fetch('/offer.json', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: Partial<Offer> | null) => { if (data && typeof data.text === 'string') setOffer({ ...DEFAULT_OFFER, ...data }); })
+      .catch(() => {});
+  }, []);
+  const offerProduct = offer.productId ? productMap.get(offer.productId) : undefined;
 
   function selectCategory(category: Category | 'الكل') {
     setSelectedCategory(category);
@@ -303,11 +312,11 @@ function App() {
           </div>
         </section>
 
-        {OFFER && offerProduct && (
-          <aside className="bg-[#f4c542] text-[#182b3a]" aria-label={OFFER.title}>
+        {offer.show && offer.text.trim() && (
+          <aside className="bg-[#f4c542] text-[#182b3a]" aria-label={offer.title}>
             <div className="faei-shell flex flex-wrap items-center justify-between gap-3 py-4">
-              <p className="m-0 flex items-center gap-2 text-sm font-semibold sm:text-base"><Tag size={18} aria-hidden="true" /><strong>{OFFER.title}:</strong> {OFFER.text}</p>
-              <button type="button" className="button" style={{ background: '#182b3a', color: '#fff', minHeight: 42 }} onClick={() => addProduct(offerProduct, OFFER.optionIndex)} data-testid="button-add-offer">أضفها للسلة <Plus size={16} /></button>
+              <p className="m-0 flex items-center gap-2 text-sm font-semibold sm:text-base"><Tag size={18} aria-hidden="true" /><strong>{offer.title}:</strong> {offer.text}</p>
+              {offerProduct && <button type="button" className="button" style={{ background: '#182b3a', color: '#fff', minHeight: 42 }} onClick={() => addProduct(offerProduct, offer.optionIndex ?? 0)} data-testid="button-add-offer">أضفها للسلة <Plus size={16} /></button>}
             </div>
           </aside>
         )}
