@@ -8,8 +8,8 @@ type CartEntry = { id: string; quantity: number };
 const CART_KEY = 'faei-cart-v2';
 const WHATSAPP_DESTINATION = '962797607843';
 const INSTAGRAM_URL = 'https://www.instagram.com/faei_cafe/';
-const LOCATION_QUERY = 'كلية الأمير عبدالله بن غازي لتكنولوجيا المعلومات، جامعة البلقاء التطبيقية، السلط';
-const MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(LOCATION_QUERY)}`;
+// FAEI's own pin on Google Maps.
+const MAPS_URL = 'https://maps.app.goo.gl/5dB3uh3ELugdSyEWA';
 const HOURS_TEXT = 'من الأحد للخميس، 7:30 الصبح لـ 5:00 العصر';
 // Delivery inside the university costs 1 JD; outside it is agreed on WhatsApp.
 const DELIVERY_INSIDE_FILS = 1000;
