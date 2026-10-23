@@ -372,8 +372,8 @@ function App() {
           <nav className={`nav-links${mobileNavOpen ? ' is-open' : ''}`} aria-label="التنقل الرئيسي">
             <a href="#home" onClick={() => setMobileNavOpen(false)}>الرئيسية</a>
             <a href="#menu" onClick={() => setMobileNavOpen(false)}>المنيو</a>
-            <a href="#about" onClick={() => setMobileNavOpen(false)}>عن FAEI</a>
-            <a href="#contact" onClick={() => setMobileNavOpen(false)}>تواصل معنا</a>
+            <a href="#gallery" onClick={() => setMobileNavOpen(false)}>قعدة الفَيّ</a>
+            <a href="#contact" onClick={() => setMobileNavOpen(false)}>وين إحنا</a>
           </nav>
           <button className="cart-trigger" type="button" onClick={openCart} aria-label={`افتح السلة، ${itemCount} صنف`} data-testid="button-open-cart">
             <ShoppingBag size={18} aria-hidden="true" /><span className="cart-label">السلة</span><span className="cart-count" data-testid="text-cart-count">{itemCount}</span>
@@ -390,7 +390,7 @@ function App() {
           <div className="hero-content">
             <div className="hero-copy">
               <h1 id="hero-title">تعي نقعد <em>بالفَيّ</em></h1>
-              <p>اختار أكلك، وابعت طلبك على واتساب بكبسة. توصيل جوا الجامعة بدينار.</p>
+              <button type="button" className="hero-extras" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner"><span aria-hidden="true">🥤</span> عنا كمان عصاير وشيبس وسكاكر</button>
               <div className="hero-actions">
                 <a className="button button-gold" href="#menu">تصفّح المنيو <ArrowLeft size={17} /></a>
               </div>
@@ -429,25 +429,6 @@ function App() {
             <div className="catalog-grid" aria-live="polite">
               {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} showCategory={!!query || selectedCategory === 'الكل'} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
             </div>
-            <div className="extras-banner after-menu">
-              <span className="extras-emoji" aria-hidden="true">🥤🍫</span>
-              <div><strong>عنا كمان عصاير وشيبس وسكاكر</strong><span>اكتب شو بدك بالسلة تحت "من الكافتيريا" وبيجيك مع طلبك.</span></div>
-              <button type="button" className="button button-gold" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner">ضيف من الكافتيريا</button>
-            </div>
-          </div>
-        </section>
-
-        <section className="section about-section" id="about" aria-labelledby="about-title">
-          <div className="faei-shell about-layout">
-            <div className="about-photos">
-              <img className="about-photo-main" src="/images/faei-table.webp" alt="طاولة في FAEI قدام رسمة فيروز" loading="lazy" />
-              <img className="about-photo-small" src="/images/smash-classic.webp" alt="سماش برغر من FAEI" loading="lazy" />
-              <div className="about-badge"><img src="/images/faei-logo.webp" alt="" /></div>
-            </div>
-            <div className="about-copy">
-              <h2 id="about-title">مش بس أكل… <span>قعدة.</span></h2>
-              <p>بين محاضرة ومحاضرة، الفَيّ هو المكان اللي بتلاقي فيه أكل طيب وسعر طلاب وقعدة حلوة مع الشلة. من الشاورما للسماش للمناقيش، كله بينعمل طازة قدامك.</p>
-            </div>
           </div>
         </section>
 
@@ -456,34 +437,24 @@ function App() {
             <div className="section-head">
               <div><h2 id="gallery-title">قعدة الفَيّ</h2></div>
             </div>
-            <div className="gallery-grid">
-              {GALLERY.map((photo) => (
-                <figure key={photo.src} className={`gallery-item${photo.size ? ` is-${photo.size}` : ''}`}>
-                  <img src={photo.src} alt={photo.alt} loading="lazy" style={{ objectPosition: photo.position ?? 'center' }} />
+          </div>
+          <div className="gallery-marquee" aria-label="صور من FAEI">
+            <div className="gallery-track">
+              {[...GALLERY, ...GALLERY].map((photo, index) => (
+                <figure key={index} className="marquee-item" aria-hidden={index >= GALLERY.length}>
+                  <img src={photo.src} alt={index < GALLERY.length ? photo.alt : ''} loading="lazy" style={{ objectPosition: photo.position ?? 'center' }} />
                   <figcaption>{photo.caption}</figcaption>
                 </figure>
               ))}
-              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="gallery-item gallery-insta" data-testid="link-instagram-gallery">
-                <InstagramIcon size={34} />
-                <div><strong>@faei_cafe</strong><span>كل يوم صور وعروض جديدة على انستغرام</span></div>
-                <span className="gallery-insta-cta">تابعنا</span>
-              </a>
             </div>
           </div>
         </section>
 
         <section className="section contact-section" id="contact" aria-labelledby="contact-title">
           <div className="faei-shell">
-            <div className="contact-panel">
-              <div><h2 id="contact-title">عندك سؤال؟</h2><p>احكي معنا على واتساب، أو تابعنا على انستغرام.</p></div>
-              <div className="contact-actions flex flex-wrap gap-3">
-                <a className="button button-gold" href={`https://wa.me/${WHATSAPP_DESTINATION}`} target="_blank" rel="noreferrer" aria-label="تواصل مع FAEI عبر واتساب">واتساب <ArrowLeft size={17} /></a>
-                <a className="button button-outline" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="تابع FAEI على انستغرام">انستغرام <InstagramIcon size={17} /></a>
-              </div>
-            </div>
             <div className="wayfinder-head">
-              <h2>كيف توصل الفَيّ؟</h2>
-              <p>إحنا جوا كلية تكنولوجيا المعلومات، بس مخبّايين شوي. اتبع الخط الأزرق.</p>
+              <h2 id="contact-title">كيف توصل الفَيّ؟</h2>
+              <p>جوا كلية تكنولوجيا المعلومات. اتبع الخط الأزرق.</p>
             </div>
             <Wayfinder mapsUrl={MAPS_URL} />
           </div>
@@ -493,11 +464,11 @@ function App() {
       <footer className="footer">
         <div className="faei-shell footer-inner">
           <a href="#home" aria-label="FAEI — إلى الرئيسية"><img src="/images/faei-logo.webp" alt="FAEI" loading="lazy" /></a>
-          <p>FAEI · مطعم ومقهى · {HOURS_TEXT}</p>
-          <div className="footer-links flex items-center gap-4">
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="انستغرام FAEI"><InstagramIcon size={20} /></a>
-            <a href={MAPS_URL} target="_blank" rel="noreferrer" aria-label="موقع FAEI على الخريطة"><MapPin size={20} /></a>
-            <a href="#menu">ارجع للمنيو</a>
+          <p>{HOURS_TEXT}</p>
+          <div className="footer-actions">
+            <a className="button button-gold" href={`https://wa.me/${WHATSAPP_DESTINATION}`} target="_blank" rel="noreferrer" aria-label="تواصل مع FAEI عبر واتساب">واتساب</a>
+            <a className="button button-outline" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="تابع FAEI على انستغرام"><InstagramIcon size={17} /> انستغرام</a>
+            <a className="button button-outline" href={MAPS_URL} target="_blank" rel="noreferrer" aria-label="موقع FAEI على الخريطة"><MapPin size={17} /> الخريطة</a>
           </div>
         </div>
       </footer>
