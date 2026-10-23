@@ -436,13 +436,13 @@ function App() {
                 <button type="button" className={`category-button${!query && selectedCategory === 'الكل' ? ' is-active' : ''}`} onClick={() => selectCategory('الكل')} aria-pressed={!query && selectedCategory === 'الكل'} data-testid="button-category-all">كل المنيو</button>
               </div>
             </div>
-            <div className="extras-banner">
+            <div className="catalog-grid" aria-live="polite">
+              {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
+            </div>
+            <div className="extras-banner after-menu">
               <span className="extras-emoji" aria-hidden="true">🥤🍫</span>
               <div><strong>عنا كمان عصاير وشيبس وسكاكر</strong><span>اكتب شو بدك بالسلة تحت "من الكافتيريا" وبيجيك مع طلبك.</span></div>
               <button type="button" className="button button-gold" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner">ضيف من الكافتيريا</button>
-            </div>
-            <div className="catalog-grid" aria-live="polite">
-              {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
             </div>
           </div>
         </section>
