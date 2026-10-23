@@ -17,7 +17,12 @@ const DELIVERY_TEXT = 'توصيل جوا الجامعة بدينار، وبرا 
 
 // Edited on GitHub in public/settings.json: the Google Sheet that logs orders, and the CliQ alias for paying.
 type Settings = { sheetUrl: string; cliqAlias: string; cliqName: string };
-const DEFAULT_SETTINGS: Settings = { sheetUrl: '', cliqAlias: '', cliqName: '' };
+// Built-in values, so CliQ and order logging work even if settings.json fails to load.
+const DEFAULT_SETTINGS: Settings = {
+  sheetUrl: 'https://script.google.com/macros/s/AKfycbz2zj4JEFhsCRhKHdzBCkgbHvB7geVle4i3grIsjgwWy9AT03spE9v3WJkQ-55z0U5q/exec',
+  cliqAlias: '0797607843',
+  cliqName: '',
+};
 // Where the visitor came from, e.g. ?from=qr on the table cards.
 const VISIT_SOURCE = new URLSearchParams(window.location.search).get('from') ?? '';
 
@@ -557,9 +562,6 @@ function App() {
                 <p className="order-hint extras-hint">عصاير، مشروبات، شيبس، سكاكر… اكتب شو بدك وبنحكيلك السعر على واتساب.</p>
                 <textarea className="extras-input" rows={2} value={extras} onChange={(event) => setExtras(event.target.value)} placeholder="مثلاً: عصير برتقال، 2 شيبس، علكة" maxLength={300} data-testid="input-extras" />
               </section>
-            </div>
-            <div className="drawer-foot">
-              <div className="drawer-actions"><span>تقدر تعدّل طلبك قبل الإرسال.</span><button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
               <section className="order-options foot-options" aria-label="طريقة الاستلام">
                 <h3>استلام ولا توصيل؟</h3>
                 <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
@@ -607,6 +609,9 @@ function App() {
                   )}
                 </>}
               </section>
+            </div>
+            <div className="drawer-foot">
+              <div className="drawer-actions"><span>تقدر تعدّل طلبك قبل الإرسال.</span><button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
               <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>
               <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
