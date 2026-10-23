@@ -113,7 +113,13 @@ function mealUpgrade(id: string): { id: string; extraFils: number } | undefined 
 }
 
 // Quick add-ons offered in the cart when they aren't already in it.
-const SUGGESTED_IDS = ['salad-coleslaw::0', 'salad-fruit::0', 'salad-nachos::0'];
+const SUGGESTED_IDS = ['salad-coleslaw::0'];
+// Drinks from the shop's own fridge. No fixed prices, so they go into the extras note.
+const SHOP_DRINKS = [
+  { name: 'مشروب غازي', emoji: '🥤' },
+  { name: 'عصير', emoji: '🧃' },
+  { name: 'مي', emoji: '💧' },
+];
 
 function readCart(): CartEntry[] {
   try {
@@ -538,7 +544,7 @@ function App() {
                 </div>
                 <strong className="line-total">{money(option.priceFils * quantity)}</strong>
               </article>)}
-              {suggestions.length > 0 && (
+              {cartLines.length > 0 && (
                 <section className="suggest-box" aria-label="اقتراحات">
                   <h3>بتكمّل طلبك؟</h3>
                   <div className="suggest-chips">
@@ -549,11 +555,16 @@ function App() {
                         <Plus size={16} aria-hidden="true" />
                       </button>
                     ))}
-                    <button type="button" className="suggest-chip" onClick={() => { setExtras((current) => current.includes('مشروب') ? current : `${current ? `${current}، ` : ''}مشروب: `); window.setTimeout(() => document.querySelector<HTMLTextAreaElement>('[data-testid=input-extras]')?.focus(), 0); }} data-testid="button-suggest-drink">
-                      <span className="suggest-emoji" aria-hidden="true">🥤</span>
-                      <span><strong>مشروب بارد؟</strong><small>اكتبه تحت</small></span>
-                      <Plus size={16} aria-hidden="true" />
-                    </button>
+                    {SHOP_DRINKS.map((drink) => {
+                      const added = extras.includes(drink.name);
+                      return (
+                        <button key={drink.name} type="button" className={`suggest-chip${added ? ' is-added' : ''}`} onClick={() => { if (!added) setExtras((current) => `${current.trim() ? `${current.trim()}، ` : ''}${drink.name}`); }} aria-pressed={added} data-testid={`button-suggest-drink-${drink.name}`}>
+                          <span className="suggest-emoji" aria-hidden="true">{drink.emoji}</span>
+                          <span><strong>{drink.name}</strong><small>{added ? 'انضاف ✓' : 'من ثلاجة فَيّ'}</small></span>
+                          {added ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
+                        </button>
+                      );
+                    })}
                   </div>
                 </section>
               )}
