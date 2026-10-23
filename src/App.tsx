@@ -556,11 +556,12 @@ function App() {
                       </button>
                     ))}
                     {SHOP_DRINKS.map((drink) => {
-                      const added = extras.includes(drink.name);
+                      const parts = extras.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
+                      const added = parts.includes(drink.name);
                       return (
-                        <button key={drink.name} type="button" className={`suggest-chip${added ? ' is-added' : ''}`} onClick={() => { if (!added) setExtras((current) => `${current.trim() ? `${current.trim()}، ` : ''}${drink.name}`); }} aria-pressed={added} data-testid={`button-suggest-drink-${drink.name}`}>
+                        <button key={drink.name} type="button" className={`suggest-chip${added ? ' is-added' : ''}`} onClick={() => setExtras(added ? parts.filter((part) => part !== drink.name).join('، ') : [...parts, drink.name].join('، '))} aria-pressed={added} data-testid={`button-suggest-drink-${drink.name}`}>
                           <span className="suggest-emoji" aria-hidden="true">{drink.emoji}</span>
-                          <span><strong>{drink.name}</strong><small>{added ? 'انضاف ✓' : 'من ثلاجة فَيّ'}</small></span>
+                          <span><strong>{drink.name}</strong><small>{added ? 'انضاف ✓ · اكبس للإلغاء' : 'من ثلاجة فَيّ'}</small></span>
                           {added ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
                         </button>
                       );
