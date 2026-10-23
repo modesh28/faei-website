@@ -49,6 +49,71 @@ const GALLERY: { src: string; alt: string; caption: string; size?: 'big' | 'tall
   { src: '/images/pizza-zinger.webp', alt: 'بيتزا زنجر من FAEI', caption: 'بيتزا زنجر' },
 ];
 
+// Swipe or drag the photos; each one snaps into place, and the strip loops forever.
+// Three copies of the list are rendered and the scroll position is quietly moved
+// back to the middle copy whenever it drifts into the first or last one.
+function GalleryCarousel() {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ x: number; left: number } | null>(null);
+  const setWidth = () => (trackRef.current ? trackRef.current.scrollWidth / 3 : 0);
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const center = () => { track.scrollLeft = setWidth(); };
+    center();
+    let timer = 0;
+    const onScroll = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const w = setWidth();
+        if (track.scrollLeft < w * 0.5) track.scrollLeft += w;
+        else if (track.scrollLeft > w * 1.5) track.scrollLeft -= w;
+      }, 140);
+    };
+    track.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', center);
+    return () => { track.removeEventListener('scroll', onScroll); window.removeEventListener('resize', center); window.clearTimeout(timer); };
+  }, []);
+  function step(direction: 1 | -1) {
+    const track = trackRef.current;
+    const item = track?.querySelector<HTMLElement>('.carousel-item');
+    if (!track || !item) return;
+    track.scrollBy({ left: direction * (item.offsetWidth + 14), behavior: 'smooth' });
+  }
+  // Mouse drag on desktop; touch devices use native swiping.
+  function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.pointerType !== 'mouse' || !trackRef.current) return;
+    drag.current = { x: event.clientX, left: trackRef.current.scrollLeft };
+    trackRef.current.classList.add('is-dragging');
+  }
+  function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (!drag.current || !trackRef.current) return;
+    trackRef.current.scrollLeft = drag.current.left - (event.clientX - drag.current.x);
+  }
+  function endDrag() {
+    if (!drag.current || !trackRef.current) return;
+    drag.current = null;
+    trackRef.current.classList.remove('is-dragging');
+  }
+  return (
+    <div className="gallery-carousel">
+      <div className="carousel-track" ref={trackRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerLeave={endDrag} aria-label="صور من FAEI، اسحب لتشوف أكثر">
+        {[...GALLERY, ...GALLERY, ...GALLERY].map((photo, index) => {
+          const copy = Math.floor(index / GALLERY.length);
+          return (
+            <figure key={index} className="carousel-item" aria-hidden={copy !== 1}>
+              <img src={photo.src} alt={copy === 1 ? photo.alt : ''} draggable={false} loading="lazy" style={{ objectPosition: photo.position ?? 'center' }} />
+              <figcaption>{photo.caption}</figcaption>
+            </figure>
+          );
+        })}
+      </div>
+      <button type="button" className="carousel-arrow is-left" onClick={() => step(-1)} aria-label="الصورة اللي عاليسار"><ArrowLeft size={18} /></button>
+      <button type="button" className="carousel-arrow is-right" onClick={() => step(1)} aria-label="الصورة اللي عاليمين"><ArrowLeft size={18} style={{ transform: 'scaleX(-1)' }} /></button>
+    </div>
+  );
+}
+
 // Open Sunday–Thursday, 7:30–17:00 Jordan time.
 function isOpenNow(date = new Date()): boolean {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
@@ -390,7 +455,6 @@ function App() {
           <div className="hero-content">
             <div className="hero-copy">
               <h1 id="hero-title">تعي نقعد <em>بالفَيّ</em></h1>
-              <button type="button" className="hero-extras" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner"><span aria-hidden="true">🥤</span> عنا كمان عصاير وشيبس وسكاكر</button>
               <div className="hero-actions">
                 <a className="button button-gold" href="#menu">تصفّح المنيو <ArrowLeft size={17} /></a>
               </div>
@@ -414,7 +478,8 @@ function App() {
         <section className="section menu-section" id="menu" aria-labelledby="menu-title">
           <div className="faei-shell">
             <div className="section-head">
-              <div><h2 id="menu-title">المنيو</h2></div>
+              <h2 id="menu-title">المنيو</h2>
+              <button type="button" className="menu-extras" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner"><span aria-hidden="true">🥤</span> عنا كمان عصاير وشيبس وسكاكر</button>
             </div>
             <div className="menu-tools">
               <label className="search-wrap">
@@ -438,16 +503,7 @@ function App() {
               <div><h2 id="gallery-title">قعدة الفَيّ</h2></div>
             </div>
           </div>
-          <div className="gallery-marquee" aria-label="صور من FAEI">
-            <div className="gallery-track">
-              {[...GALLERY, ...GALLERY].map((photo, index) => (
-                <figure key={index} className="marquee-item" aria-hidden={index >= GALLERY.length}>
-                  <img src={photo.src} alt={index < GALLERY.length ? photo.alt : ''} loading="lazy" style={{ objectPosition: photo.position ?? 'center' }} />
-                  <figcaption>{photo.caption}</figcaption>
-                </figure>
-              ))}
-            </div>
-          </div>
+          <GalleryCarousel />
         </section>
 
         <section className="section contact-section" id="contact" aria-labelledby="contact-title">

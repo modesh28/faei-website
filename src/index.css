@@ -395,17 +395,21 @@
 }
 
 /* 15. Hero extras pill, endless gallery strip, compact steps, footer actions */
-.hero-extras { display: inline-flex; align-items: center; gap: 6px; margin: 2px 0 22px; padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(244,197,66,.45); background: rgba(244,197,66,.12); color: #f4c542; font-size: 13px; font-weight: 700; cursor: pointer; }
-.hero-extras:hover { background: rgba(244,197,66,.2); }
-.gallery-marquee { overflow: hidden; direction: ltr; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
-.gallery-track { display: flex; gap: 14px; width: max-content; animation: faei-marquee 38s linear infinite; }
-.gallery-marquee:hover .gallery-track { animation-play-state: paused; }
-.marquee-item { position: relative; margin: 0; flex: none; width: 260px; height: 320px; border-radius: 18px; overflow: hidden; }
-.marquee-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.marquee-item figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 26px 14px 12px; direction: rtl; color: #fff; font-weight: 800; font-size: 14px; background: linear-gradient(transparent, rgba(9,20,28,.75)); }
-@keyframes faei-marquee { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 7px)); } }
-@media (prefers-reduced-motion: reduce) { .gallery-track { animation: none; } .gallery-marquee { overflow-x: auto; } }
-@media (max-width: 700px) { .marquee-item { width: 200px; height: 250px; } }
+.menu-section .section-head { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between; gap: 10px; flex-wrap: nowrap; }
+.menu-section .section-head h2 { margin: 0; }
+.menu-extras { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; border: 1px solid #efd98f; background: #fff7dc; color: #6b5a1d; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.menu-extras:hover { background: #fff1c2; }
+.gallery-carousel { position: relative; }
+.carousel-track { display: flex; gap: 14px; overflow-x: auto; direction: ltr; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 4px 16px 8px; cursor: grab; overscroll-behavior-x: contain; }
+.carousel-track::-webkit-scrollbar { display: none; }
+.carousel-track.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+.carousel-item { position: relative; margin: 0; flex: none; width: 260px; height: 320px; border-radius: 18px; overflow: hidden; scroll-snap-align: center; scroll-snap-stop: always; user-select: none; }
+.carousel-item img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.carousel-item figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 26px 14px 12px; direction: rtl; color: #fff; font-weight: 800; font-size: 14px; background: linear-gradient(transparent, rgba(9,20,28,.75)); }
+.carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(255,255,255,.92); color: var(--ink); box-shadow: 0 6px 18px rgba(0,0,0,.18); cursor: pointer; }
+.carousel-arrow.is-left { left: 12px; }
+.carousel-arrow.is-right { right: 12px; }
+@media (max-width: 700px) { .carousel-item { width: 72vw; height: 300px; } .carousel-arrow { display: none; } }
 .wayfinder-steps { gap: 8px; }
 .wayfinder-steps li { padding: 8px; gap: 12px; }
 .wayfinder-steps img { width: 64px !important; height: 64px !important; }
