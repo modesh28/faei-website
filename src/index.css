@@ -373,3 +373,23 @@
 .cliq-note { font-size: 11.5px; color: #6b7a86; margin-top: 4px !important; }
 .suggest-chip.is-added { border-color: #2f9e5b; background: #f1faf4; }
 .extras-banner.after-menu { margin: 26px 0 0; }
+
+/* 14. Calmer UI: one radius, fewer borders, compact offer bar */
+:root { --radius: 12px; }
+.button, .icon-button, .search-input, .category-button, .qty-control, .add-button, .segmented, .segmented button, .order-field input, .extras-input, .order-hint { border-radius: var(--radius) !important; }
+.button { min-height: 48px; }
+.offer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.offer-row p { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.5; min-width: 0; }
+.offer-row p strong { white-space: nowrap; }
+.offer-row p span { overflow: hidden; text-overflow: ellipsis; }
+.offer-add { flex: none; display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 999px; background: #182b3a; color: #fff; font-weight: 800; font-size: 13px; padding: 8px 14px; }
+.section-head p:empty { display: none; }
+.product-card { border-radius: 16px; }
+.product-meta:empty { display: none; }
+@media (max-width: 700px) {
+  .hero-media { aspect-ratio: 16 / 9; max-height: 220px; }
+  .hero h1 { margin-bottom: 10px; }
+  .hero-actions .button { width: 100%; }
+  .section { padding-block: 44px; }
+  .offer-row p { font-size: 13px; }
+}

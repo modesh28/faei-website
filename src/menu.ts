@@ -31,9 +31,11 @@ export type Product = {
   popular?: boolean;
 };
 
-// Best sellers: all shawarma, everything zinger, and all the boxes.
-function isPopular(id: string, category: Category): boolean {
-  return category === 'شاورما' || category === 'بوكس فَيّ' || id.includes('zinger');
+// Best sellers get the "الأكثر طلباً" badge.
+// Few badges, so they still stand out.
+const POPULAR_IDS = new Set(['shawarma-meal', 'shawarma-shilla', 'snack-zinger', 'box-zinger']);
+function isPopular(id: string, _category: Category): boolean {
+  return POPULAR_IDS.has(id);
 }
 
 // To add a photo, put the file in public/images and add its path here, e.g. 'smash-classic': '/images/classic-burger.jpeg'.

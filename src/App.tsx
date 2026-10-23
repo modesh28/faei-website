@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, Clock, Flame, MapPin, Menu, Minus, Plus, Search, ShoppingBag, Tag, Trash2, Truck, X } from 'lucide-react';
+import { ArrowLeft, Check, Clock, Flame, MapPin, Menu, Minus, Plus, Search, ShoppingBag, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
 
@@ -13,7 +13,6 @@ const MAPS_URL = 'https://maps.app.goo.gl/5dB3uh3ELugdSyEWA';
 const HOURS_TEXT = 'من الأحد للخميس، 7:30 الصبح لـ 5:00 العصر';
 // Delivery inside the university costs 1 JD; outside it is agreed on WhatsApp.
 const DELIVERY_INSIDE_FILS = 1000;
-const DELIVERY_TEXT = 'توصيل جوا الجامعة بدينار، وبرا الجامعة حسب المكان وحجم الطلب.';
 
 // Edited on GitHub in public/settings.json: the Google Sheet that logs orders, and the CliQ alias for paying.
 type Settings = { sheetUrl: string; cliqAlias: string; cliqName: string };
@@ -48,13 +47,6 @@ const GALLERY: { src: string; alt: string; caption: string; size?: 'big' | 'tall
   { src: '/images/smash-classic.webp', alt: 'سماش برغر طازة من FAEI', caption: 'سماش طازة' },
   { src: '/images/smash-cheese.webp', alt: 'تحضير السماش برغر على الصاج', caption: 'بينعمل قدامك' },
   { src: '/images/pizza-zinger.webp', alt: 'بيتزا زنجر من FAEI', caption: 'بيتزا زنجر' },
-];
-
-// Quick facts shown in the about section.
-const ABOUT_FACTS = [
-  { icon: Tag, title: 'أسعار طلاب', text: 'ساندويش الشاورما من 0.75 د.أ' },
-  { icon: Truck, title: 'توصيل جوا الجامعة', text: 'لباب القاعة بدينار واحد' },
-  { icon: Clock, title: 'من الصبح للعصر', text: 'الأحد لِلخميس، 7:30 لـ 5:00' },
 ];
 
 // Open Sunday–Thursday, 7:30–17:00 Jordan time.
@@ -158,7 +150,7 @@ function money(fils: number): string {
   return `${dinars}${remainder ? `.${String(remainder).padStart(3, '0').replace(/0+$/, '')}` : ''} د.أ`;
 }
 
-function ProductCard({ product, onAdd }: { product: Product; onAdd: (product: Product, optionIndex: number) => void }) {
+function ProductCard({ product, onAdd, showCategory }: { product: Product; onAdd: (product: Product, optionIndex: number) => void; showCategory: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   return (
     <article className="product-card" data-testid={`card-product-${product.id}`}>
@@ -168,10 +160,10 @@ function ProductCard({ product, onAdd }: { product: Product; onAdd: (product: Pr
         </div>
       )}
       <div className="product-body">
-        <div className="product-meta">
-          <span>{product.category}</span>
+        {(showCategory || product.popular) && <div className="product-meta">
+          {showCategory && <span>{product.category}</span>}
           {product.popular && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-800"><Flame size={12} aria-hidden="true" /> الأكثر طلباً</span>}
-        </div>
+        </div>}
         <h3>{product.name}</h3>
         <ul className="option-list">
           {product.options.map((option, index) => (
@@ -397,12 +389,10 @@ function App() {
         <section id="home" className="hero" aria-labelledby="hero-title">
           <div className="hero-content">
             <div className="hero-copy">
-              <span className="eyebrow">FAEI · لخدمتكم في الجامعة</span>
               <h1 id="hero-title">تعي نقعد <em>بالفَيّ</em></h1>
-              <p>قهوتك ووجبتك المفضلة في مكان واحد. تصفّح القائمة، جهّز طلبك، وأرسله لنا مباشرة على واتساب.</p>
+              <p>اختار أكلك، وابعت طلبك على واتساب بكبسة. توصيل جوا الجامعة بدينار.</p>
               <div className="hero-actions">
                 <a className="button button-gold" href="#menu">تصفّح المنيو <ArrowLeft size={17} /></a>
-                <button className="button button-outline" type="button" onClick={openCart}>اطلب الآن <ShoppingBag size={17} /></button>
               </div>
               <div className="hero-foot flex flex-wrap items-center gap-3"><OpenStatus dark /> <Clock size={15} aria-hidden="true" /> {HOURS_TEXT}</div>
             </div>
@@ -414,9 +404,9 @@ function App() {
 
         {offer.show && offer.text.trim() && (
           <aside className="bg-[#f4c542] text-[#182b3a]" aria-label={offer.title}>
-            <div className="faei-shell flex flex-wrap items-center justify-between gap-3 py-4">
-              <p className="m-0 flex items-center gap-2 text-sm font-semibold sm:text-base"><Tag size={18} aria-hidden="true" /><strong>{offer.title}:</strong> {offer.text}</p>
-              {offerProduct && <button type="button" className="button" style={{ background: '#182b3a', color: '#fff', minHeight: 42 }} onClick={() => addProduct(offerProduct, offer.optionIndex ?? 0)} data-testid="button-add-offer">أضفها للسلة <Plus size={16} /></button>}
+            <div className="faei-shell offer-row">
+              <p><Tag size={16} aria-hidden="true" /><strong>{offer.title}</strong><span>{offer.text}</span></p>
+              {offerProduct && <button type="button" className="offer-add" onClick={() => addProduct(offerProduct, offer.optionIndex ?? 0)} data-testid="button-add-offer">أضف <Plus size={15} /></button>}
             </div>
           </aside>
         )}
@@ -424,7 +414,7 @@ function App() {
         <section className="section menu-section" id="menu" aria-labelledby="menu-title">
           <div className="faei-shell">
             <div className="section-head">
-              <div><span className="section-kicker">اختار اللي على مزاجك</span><h2 id="menu-title">المنيو</h2><p>اختار الصنف والحجم، وابعت طلبك على واتساب. {DELIVERY_TEXT}</p></div>
+              <div><h2 id="menu-title">المنيو</h2></div>
             </div>
             <div className="menu-tools">
               <label className="search-wrap">
@@ -437,7 +427,7 @@ function App() {
               </div>
             </div>
             <div className="catalog-grid" aria-live="polite">
-              {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
+              {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} showCategory={!!query || selectedCategory === 'الكل'} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
             </div>
             <div className="extras-banner after-menu">
               <span className="extras-emoji" aria-hidden="true">🥤🍫</span>
@@ -455,15 +445,8 @@ function App() {
               <div className="about-badge"><img src="/images/faei-logo.webp" alt="" /></div>
             </div>
             <div className="about-copy">
-              <span className="section-kicker">قصة الفَيّ</span>
               <h2 id="about-title">مش بس أكل… <span>قعدة.</span></h2>
               <p>بين محاضرة ومحاضرة، الفَيّ هو المكان اللي بتلاقي فيه أكل طيب وسعر طلاب وقعدة حلوة مع الشلة. من الشاورما للسماش للمناقيش، كله بينعمل طازة قدامك.</p>
-              <ul className="about-facts">
-                {ABOUT_FACTS.map(({ icon: Icon, title, text }) => (
-                  <li key={title}><span className="about-fact-icon"><Icon size={20} /></span><div><strong>{title}</strong><span>{text}</span></div></li>
-                ))}
-              </ul>
-              <a className="button button-gold about-cta" href="#menu">شوف المنيو <ArrowLeft size={18} /></a>
             </div>
           </div>
         </section>
@@ -471,7 +454,7 @@ function App() {
         <section className="section gallery-section" id="gallery" aria-labelledby="gallery-title">
           <div className="faei-shell">
             <div className="section-head">
-              <div><span className="section-kicker">تعي نقعد بالفَيّ</span><h2 id="gallery-title">قعدة الفَيّ</h2><p>شجر، ورسومات على الحيطان، وأكل طازة بين المحاضرات.</p></div>
+              <div><h2 id="gallery-title">قعدة الفَيّ</h2></div>
             </div>
             <div className="gallery-grid">
               {GALLERY.map((photo) => (
@@ -492,18 +475,13 @@ function App() {
         <section className="section contact-section" id="contact" aria-labelledby="contact-title">
           <div className="faei-shell">
             <div className="contact-panel">
-              <div><span className="section-kicker">نحن على واتساب</span><h2 id="contact-title">عندك سؤال عن صنف؟</h2><p>تواصل مع FAEI مباشرة. تقدر كمان تبعث طلبك من السلة بعد مراجعة التفاصيل.</p></div>
+              <div><h2 id="contact-title">عندك سؤال؟</h2><p>احكي معنا على واتساب، أو تابعنا على انستغرام.</p></div>
               <div className="contact-actions flex flex-wrap gap-3">
-                <a className="button button-gold" href={`https://wa.me/${WHATSAPP_DESTINATION}`} target="_blank" rel="noreferrer" aria-label="تواصل مع FAEI عبر واتساب">تواصل عبر واتساب <ArrowLeft size={17} /></a>
-                <a className="button button-outline" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="تابع FAEI على انستغرام">تابعنا على انستغرام <InstagramIcon size={17} /></a>
+                <a className="button button-gold" href={`https://wa.me/${WHATSAPP_DESTINATION}`} target="_blank" rel="noreferrer" aria-label="تواصل مع FAEI عبر واتساب">واتساب <ArrowLeft size={17} /></a>
+                <a className="button button-outline" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="تابع FAEI على انستغرام">انستغرام <InstagramIcon size={17} /></a>
               </div>
             </div>
-            <div className="contact-meta">
-              <span><Clock size={16} aria-hidden="true" /> {HOURS_TEXT} <OpenStatus /></span>
-              <span><Truck size={16} aria-hidden="true" /> {DELIVERY_TEXT}</span>
-            </div>
             <div className="wayfinder-head">
-              <span className="section-kicker">مش لاقينا؟</span>
               <h2>كيف توصل الفَيّ؟</h2>
               <p>إحنا جوا كلية تكنولوجيا المعلومات، بس مخبّايين شوي. اتبع الخط الأزرق.</p>
             </div>
@@ -623,7 +601,7 @@ function App() {
               </section>
             </div>
             <div className="drawer-foot">
-              <div className="drawer-actions"><span>تقدر تعدّل طلبك قبل الإرسال.</span><button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
+              <div className="drawer-actions"><span /><button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
               <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>
               <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
