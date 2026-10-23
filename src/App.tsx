@@ -15,7 +15,14 @@ const HOURS_TEXT = 'من الأحد للخميس، 7:30 الصبح لـ 5:00 ا�
 const DELIVERY_INSIDE_FILS = 1000;
 const DELIVERY_TEXT = 'توصيل جوا الجامعة بدينار، وبرا الجامعة حسب المكان وحجم الطلب.';
 
+// Edited on GitHub in public/settings.json: the Google Sheet that logs orders, and the CliQ alias for paying.
+type Settings = { sheetUrl: string; cliqAlias: string; cliqName: string };
+const DEFAULT_SETTINGS: Settings = { sheetUrl: '', cliqAlias: '', cliqName: '' };
+// Where the visitor came from, e.g. ?from=qr on the table cards.
+const VISIT_SOURCE = new URLSearchParams(window.location.search).get('from') ?? '';
+
 type Fulfillment = 'pickup' | 'delivery';
+type Payment = 'cash' | 'cliq';
 type DeliveryZone = 'inside' | 'outside';
 
 // Offer of the day. The live text comes from public/offer.json (edit it on GitHub, no code needed);
@@ -120,6 +127,20 @@ function readCart(): CartEntry[] {
   }
 }
 
+// Short order number shared by the WhatsApp message and the sheet, e.g. "1432-7".
+function makeOrderId(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}-${Math.floor(Math.random() * 90 + 10)}`;
+}
+
+// Sends the order to the Google Sheet script. Fire-and-forget: WhatsApp still opens if this fails.
+function logOrder(sheetUrl: string, order: Record<string, string | number>) {
+  if (!sheetUrl) return;
+  try {
+    fetch(sheetUrl, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(order) }).catch(() => {});
+  } catch { /* Logging must never block the order. */ }
+}
+
 function money(fils: number): string {
   const dinars = Math.floor(fils / 1000);
   const remainder = fils % 1000;
@@ -170,6 +191,15 @@ function App() {
   const [address, setAddress] = useState('');
   const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
   const [orderTime, setOrderTime] = useState('');
+  const [payment, setPayment] = useState<Payment>('cash');
+  const [cliqCopied, setCliqCopied] = useState(false);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  useEffect(() => {
+    fetch('/settings.json', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: Partial<Settings> | null) => { if (data) setSettings({ ...DEFAULT_SETTINGS, ...data }); })
+      .catch(() => {});
+  }, []);
   // Free-text extras from the cafeteria shelf (juices, chips, sweets), priced on WhatsApp.
   const [extras, setExtras] = useState('');
   const [extrasOpen, setExtrasOpen] = useState(false);
@@ -267,6 +297,12 @@ function App() {
   const missingAddress = isDelivery && !address.trim();
   const missingTime = timeMode === 'later' && !orderTime;
   const hasExtras = extras.trim().length > 0;
+  const isCliq = payment === 'cliq' && !!settings.cliqAlias;
+  // The amount the customer can transfer now; outside delivery and extras are settled on WhatsApp.
+  const cliqAmountKnown = cartLines.length > 0 && !hasExtras && !(isDelivery && zone === 'outside');
+  function copyCliq() {
+    navigator.clipboard?.writeText(settings.cliqAlias).then(() => { setCliqCopied(true); window.setTimeout(() => setCliqCopied(false), 1800); }).catch(() => {});
+  }
   const canCheckout = (cartLines.length > 0 || hasExtras) && !missingAddress && !missingTime;
 
   function checkout() {
@@ -286,7 +322,23 @@ function App() {
     const totalsText = !cartLines.length
       ? `${isDelivery ? `التوصيل: ${zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}\n` : ''}الإجمالي: بيتأكد على واتساب`
       : `${totals}${hasExtras ? ' + أغراض الكافتيريا' : ''}`;
-    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي:\n\n${itemsText}${extrasText}${how}\n${when}\n\n${totalsText}\n\nشكراً!`;
+    const orderId = makeOrderId();
+    const paid = isCliq ? `الدفع: كليك على ${settings.cliqAlias} (رح أبعت صورة التحويل)` : 'الدفع: كاش عند الاستلام';
+    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي (رقم ${orderId}):\n\n${itemsText}${extrasText}${how}\n${when}\n${paid}\n\n${totalsText}\n\nشكراً!`;
+    logOrder(settings.sheetUrl, {
+      orderId,
+      items: cartLines.map(({ name, option, quantity }) => `${name}${option.label ? ` (${option.label})` : ''} × ${quantity}`).join('، '),
+      pieces: cartLines.reduce((sum, line) => sum + line.quantity, 0),
+      itemsTotal: totalFils / 1000,
+      delivery: isDelivery ? (zone === 'inside' ? deliveryFils / 1000 : 'بنتفق عليه') : 0,
+      total: grandTotalFils / 1000,
+      fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}` : 'استلام',
+      address: isDelivery ? address.trim() : '',
+      time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
+      payment: isCliq ? 'كليك' : 'كاش',
+      extras: extras.trim(),
+      source: VISIT_SOURCE,
+    });
     const url = `https://wa.me/${WHATSAPP_DESTINATION}?text=${encodeURIComponent(message)}`;
     const popup = window.open(url, '_blank');
     if (popup) popup.opener = null;
@@ -536,6 +588,24 @@ function App() {
                     <input type="time" min="07:30" max="17:00" step={900} value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time" />
                   </label>
                 )}
+                {settings.cliqAlias && <>
+                  <h3 className="foot-time-title">كيف بدك تدفع؟</h3>
+                  <div className="segmented" role="radiogroup" aria-label="طريقة الدفع">
+                    <button type="button" role="radio" aria-checked={payment === 'cash'} className={payment === 'cash' ? 'is-active' : ''} onClick={() => setPayment('cash')} data-testid="option-cash">كاش</button>
+                    <button type="button" role="radio" aria-checked={payment === 'cliq'} className={payment === 'cliq' ? 'is-active' : ''} onClick={() => setPayment('cliq')} data-testid="option-cliq">كليك CliQ</button>
+                  </div>
+                  {isCliq && (
+                    <div className="cliq-box" data-testid="cliq-box">
+                      <p>حوّل {cliqAmountKnown ? <strong>{money(grandTotalFils)}</strong> : 'المبلغ'} على كليك:</p>
+                      <button type="button" className="cliq-alias" onClick={copyCliq} data-testid="button-copy-cliq">
+                        <span dir="ltr">{settings.cliqAlias}</span>
+                        <small>{cliqCopied ? 'انتسخ ✓' : 'اضغط للنسخ'}</small>
+                      </button>
+                      {settings.cliqName && <p className="cliq-name">باسم: {settings.cliqName}</p>}
+                      <p className="cliq-note">{cliqAmountKnown ? 'وبعدها ابعت صورة التحويل على واتساب مع الطلب.' : 'بنأكدلك المبلغ النهائي على واتساب، وبعدها حوّل وابعت صورة التحويل.'}</p>
+                    </div>
+                  )}
+                </>}
               </section>
               <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>
               <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>

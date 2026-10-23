@@ -362,3 +362,12 @@
 .drawer-foot { max-height: 70vh; overflow-y: auto; }
 .upgrade-button { border: 0; background: transparent; color: var(--blue); font-weight: 700; padding: 0 4px; text-decoration: underline; text-underline-offset: 3px; }
 .upgrade-button:hover { background: transparent; color: #0f5d93; }
+
+/* 13. CliQ payment box in the cart */
+.cliq-box { margin-top: 8px; background: #eef4f8; border: 1px solid #d3e1ea; border-radius: 10px; padding: 10px 12px; font-size: 13px; color: #182b3a; }
+.cliq-box p { margin: 0; line-height: 1.7; }
+.cliq-alias { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; padding: 8px 12px; border: 1px dashed #14273a; border-radius: 8px; background: #fff; cursor: pointer; }
+.cliq-alias span { font-weight: 800; font-size: 16px; letter-spacing: .3px; }
+.cliq-alias small { color: #6b7a86; font-size: 11px; }
+.cliq-name { font-size: 12px; color: #4a5b68; }
+.cliq-note { font-size: 11.5px; color: #6b7a86; margin-top: 4px !important; }
