@@ -279,6 +279,23 @@ function isOpenNow(date = new Date()): boolean {
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'].includes(get('weekday')) && minutes >= 450 && minutes < 1020;
 }
 
+// When the shop opens next, in words, e.g. "بكرا الساعة 7:30 الصبح".
+function nextOpenText(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const names = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const today = days.indexOf(get('weekday'));
+  const minutes = Number(get('hour')) * 60 + Number(get('minute'));
+  for (let ahead = 0; ahead < 7; ahead++) {
+    const day = (today + ahead) % 7;
+    if (day > 4 || (ahead === 0 && minutes >= 450)) continue;
+    const when = ahead === 0 ? 'اليوم' : ahead === 1 ? 'بكرا' : `يوم ${names[day]}`;
+    return `${when} الساعة 7:30 الصبح`;
+  }
+  return 'يوم الأحد الساعة 7:30 الصبح';
+}
+
 // Inline styles on purpose: older rules such as `.hero-foot span` would otherwise squash this badge.
 function OpenStatus({ dark = false }: { dark?: boolean }) {
   const open = isOpenNow();
@@ -563,7 +580,8 @@ function App() {
       : `${totals}${hasExtras ? ' + أغراض الكافتيريا' : ''}`;
     const orderId = makeOrderId();
     const paid = isCliq ? `الدفع: كليك على ${settings.cliqAlias} (رح أبعت صورة التحويل)` : 'الدفع: كاش عند الاستلام';
-    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي (رقم ${orderId}):\n\n${itemsText}${extrasText}${how}\n${when}\n${paid}\n\n${totalsText}\n\nشكراً!`;
+    const closedNote = isOpenNow() ? '' : '\n(طلب مسبق، انبعت والمحل مسكّر)';
+    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي (رقم ${orderId}):${closedNote}\n\n${itemsText}${extrasText}${how}\n${when}\n${paid}\n\n${totalsText}\n\nشكراً!`;
     logOrder(settings.sheetUrl, {
       orderId,
       items: cartLines.map(({ name, option, quantity }) => `${name}${option.label ? ` (${option.label})` : ''} × ${quantity}`).join('، '),
@@ -814,6 +832,7 @@ function App() {
               <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
+              {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هلأ وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هلأ، وبنرد عليك أول ما نفتح.</p>}
               {(missingAddress || missingTime) && <p className="order-warning">{missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
               <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب عبر واتساب <ArrowLeft size={18} /></button>
               <p className="checkout-note">رح يفتح واتساب برسالة طلب جاهزة. الطلب بيتأكد لما FAEI يرد عليك.</p>
