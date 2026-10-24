@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, Clock, Flame, MapPin, Menu, Minus, Plus, Search, ShoppingBag, Tag, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
 
@@ -52,21 +52,92 @@ const GALLERY: { src: string; alt: string; caption: string; size?: 'big' | 'tall
   { src: '/images/pizza-zinger.webp', alt: 'بيتزا زنجر من FAEI', caption: 'بيتزا زنجر' },
 ];
 
-// "Add to home screen": Android gets a real install button; iPhone gets the Share-menu hint.
+// "Add to home screen". One button for everyone: it installs directly where the browser
+// allows it (Chrome on Android), and otherwise opens short steps for this phone's browser.
 type InstallEvent = Event & { prompt: () => Promise<void> };
+type Step = { icon: React.ReactNode; text: React.ReactNode };
+function installSteps(): { title: string; steps: Step[]; copyLink?: boolean } {
+  const ua = navigator.userAgent;
+  const ios = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const inApp = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|Line\//i.test(ua);
+  const add = <SquarePlus size={18} />;
+  if (inApp) return {
+    title: 'افتح الموقع بالمتصفح أول',
+    copyLink: true,
+    steps: [
+      { icon: <Ellipsis size={18} />, text: <>اكبس <b>⋯</b> فوق عاليمين</> },
+      { icon: <Compass size={18} />, text: <>اختار <b>{ios ? 'Open in Safari' : 'Open in Chrome'}</b> (افتح بالمتصفح)</> },
+      { icon: add, text: <>بالمتصفح، اكبس زر <b>نزّل FAEI</b> مرة ثانية</> },
+    ],
+  };
+  if (ios && /CriOS|FxiOS|EdgiOS/.test(ua)) return {
+    title: 'على الآيفون',
+    steps: [
+      { icon: <Share size={18} />, text: <>اكبس زر <b>المشاركة</b> فوق جنب الرابط</> },
+      { icon: add, text: <>اختار <b>إضافة إلى الشاشة الرئيسية</b></> },
+      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة FAEI</> },
+    ],
+  };
+  if (ios) return {
+    title: 'على الآيفون',
+    steps: [
+      { icon: <Share size={18} />, text: <>اكبس زر <b>المشاركة</b> تحت (أو <b>⋯</b> ثم مشاركة)</> },
+      { icon: add, text: <>انزل لتحت واختار <b>إضافة إلى الشاشة الرئيسية</b></> },
+      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة FAEI</> },
+    ],
+  };
+  if (/SamsungBrowser/.test(ua)) return {
+    title: 'على سامسونج',
+    steps: [
+      { icon: <Menu size={18} />, text: <>اكبس <b>☰</b> تحت</> },
+      { icon: add, text: <>اختار <b>إضافة الصفحة إلى</b> ثم <b>الشاشة الرئيسية</b></> },
+      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة FAEI</> },
+    ],
+  };
+  return {
+    title: 'على أندرويد',
+    steps: [
+      { icon: <EllipsisVertical size={18} />, text: <>اكبس <b>⋮</b> فوق عاليمين</> },
+      { icon: add, text: <>اختار <b>تثبيت التطبيق</b> أو <b>إضافة إلى الشاشة الرئيسية</b></> },
+      { icon: <Check size={18} />, text: <>اكبس <b>تثبيت</b>، وبتطلع أيقونة FAEI</> },
+    ],
+  };
+}
+
 function InstallApp() {
   const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null);
-  const standalone = typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true);
-  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
   useEffect(() => {
     const onPrompt = (event: Event) => { event.preventDefault(); setInstallEvent(event as InstallEvent); };
     window.addEventListener('beforeinstallprompt', onPrompt);
     return () => window.removeEventListener('beforeinstallprompt', onPrompt);
   }, []);
   if (standalone) return null;
-  if (installEvent) return <button type="button" className="install-app" onClick={() => { void installEvent.prompt(); setInstallEvent(null); }} data-testid="button-install">📲 نزّل FAEI على تلفونك</button>;
-  if (isIos) return <p className="install-hint">📲 لتنزّل FAEI على تلفونك: اكبس زر المشاركة ثم "إضافة إلى الشاشة الرئيسية"</p>;
-  return null;
+  const guide = guideOpen ? installSteps() : null;
+  function start() {
+    if (installEvent) { void installEvent.prompt(); setInstallEvent(null); return; }
+    setGuideOpen(true);
+  }
+  function copyLink() {
+    void navigator.clipboard?.writeText(location.origin).then(() => setCopied(true)).catch(() => {});
+  }
+  return (
+    <>
+      <button type="button" className="install-app" onClick={start} data-testid="button-install"><Smartphone size={16} /> نزّل FAEI على تلفونك</button>
+      {guide && <>
+        <button type="button" className="sheet-backdrop" aria-label="إغلاق" onClick={() => setGuideOpen(false)} />
+        <div className="install-sheet" role="dialog" aria-modal="true" aria-labelledby="install-title" data-testid="install-guide">
+          <img src="/icon-192.png" alt="" className="install-icon" />
+          <h3 id="install-title">{guide.title}</h3>
+          <ol>{guide.steps.map((step, index) => <li key={index}><span className="install-num">{index + 1}</span><span className="install-step-icon">{step.icon}</span><span>{step.text}</span></li>)}</ol>
+          {guide.copyLink && <button type="button" className="install-copy" onClick={copyLink}><Copy size={15} /> {copied ? 'انتسخ الرابط ✓' : 'أو انسخ الرابط والصقه بالمتصفح'}</button>}
+          <button type="button" className="install-done" onClick={() => setGuideOpen(false)}>تمام</button>
+        </div>
+      </>}
+    </>
+  );
 }
 
 // Swipe or drag the photos; each one snaps into place, and the strip loops forever.

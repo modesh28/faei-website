@@ -428,5 +428,15 @@
 .reorder-row p strong { color: #182b3a; font-size: 14px; }
 .reorder-row p span { color: #5b6b78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .reorder-row button { flex: none; border: 0; border-radius: 999px; background: #f4c542; color: #182b3a; font-weight: 800; font-size: 13px; padding: 9px 18px; }
-.install-app { border: 1px solid rgba(244,197,66,.6); border-radius: 999px; background: transparent; color: #f4c542; font-weight: 800; font-size: 13px; padding: 8px 16px; }
-.install-hint { margin: 0; font-size: 12px; opacity: .75; text-align: center; }
+.install-app { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(244,197,66,.6); border-radius: 999px; background: transparent; color: #f4c542; font-weight: 800; font-size: 13px; padding: 8px 16px; }
+.sheet-backdrop { position: fixed; inset: 0; z-index: 80; border: 0; background: rgba(9,20,28,.5); }
+.install-sheet { position: fixed; z-index: 81; inset-inline: 0; bottom: 0; margin-inline: auto; max-width: 440px; background: #fff; color: #182b3a; border-radius: 22px 22px 0 0; padding: 22px 20px calc(18px + env(safe-area-inset-bottom)); text-align: center; animation: sheet-up .28s cubic-bezier(.2,.8,.2,1); box-shadow: 0 -10px 40px rgba(9,20,28,.25); }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+.install-icon { width: 56px !important; height: 56px !important; max-width: none; object-fit: cover; display: block; border-radius: 14px; margin: 0 auto 8px; box-shadow: 0 6px 16px rgba(9,20,28,.2); }
+.install-sheet h3 { margin: 0 0 14px; font-size: 18px; font-weight: 800; }
+.install-sheet ol { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; text-align: start; }
+.install-sheet li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #f3f6f8; font-size: 14px; line-height: 1.5; }
+.install-num { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #182b3a; color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
+.install-step-icon { flex: none; width: 34px; height: 34px; border-radius: 9px; background: #fff; color: #2f7fd3; display: grid; place-items: center; border: 1px solid rgba(24,43,58,.1); }
+.install-copy { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; color: #2f7fd3; font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+.install-done { width: 100%; border: 0; border-radius: 12px; background: #f4c542; color: #182b3a; font-weight: 800; font-size: 15px; padding: 12px; }
