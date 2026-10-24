@@ -52,35 +52,101 @@ const GALLERY: { src: string; alt: string; caption: string; size?: 'big' | 'tall
 // Swipe or drag the photos; each one snaps into place, and the strip loops forever.
 // Three copies of the list are rendered and the scroll position is quietly moved
 // back to the middle copy whenever it drifts into the first or last one.
+// The photo in the middle is full size, the others shrink and fade a little, and a
+// soft click (plus a tiny vibration on Android) marks each photo passing the center.
+let clickAudio: AudioContext | null = null;
+function playTick() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    clickAudio ??= new Ctx();
+    if (clickAudio.state === 'suspended') void clickAudio.resume();
+    const ctx = clickAudio;
+    const length = Math.floor(ctx.sampleRate * 0.025);
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (length / 9));
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 3200;
+    band.Q.value = 1.4;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.35;
+    source.connect(band).connect(gain).connect(ctx.destination);
+    source.start();
+  } catch { /* Sound is a nicety; ignore if the browser blocks it. */ }
+  navigator.vibrate?.(6);
+}
+
 function GalleryCarousel() {
   const trackRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; left: number } | null>(null);
-  const setWidth = () => (trackRef.current ? trackRef.current.scrollWidth / 3 : 0);
+  const interacted = useRef(false);
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
-    const center = () => { track.scrollLeft = setWidth(); };
-    center();
+    const items = Array.from(track.querySelectorAll<HTMLElement>('.carousel-item'));
+    const count = GALLERY.length;
+    const setWidth = () => track.scrollWidth / 3;
+    let lastIndex = -1;
+    let frame = 0;
     let timer = 0;
+    // Scale and fade each photo by its distance from the middle, and click when a new one reaches it.
+    const paint = () => {
+      frame = 0;
+      const middle = track.scrollLeft + track.clientWidth / 2;
+      let nearest = 0;
+      let best = Infinity;
+      items.forEach((item, index) => {
+        const distance = (item.offsetLeft + item.offsetWidth / 2 - middle) / item.offsetWidth;
+        const amount = Math.min(Math.abs(distance), 1.4);
+        item.style.transform = `scale(${1 - amount * 0.1}) rotateY(${Math.max(-1, Math.min(1, distance)) * -10}deg)`;
+        item.style.opacity = String(1 - amount * 0.32);
+        if (Math.abs(distance) < best) { best = Math.abs(distance); nearest = index; }
+      });
+      const photo = nearest % count;
+      if (photo !== lastIndex) {
+        if (lastIndex !== -1 && interacted.current) playTick();
+        lastIndex = photo;
+      }
+    };
+    const center = () => { track.scrollLeft = setWidth() + (track.scrollLeft % setWidth()); paint(); };
+    track.scrollLeft = setWidth();
+    paint();
     const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(paint);
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         const w = setWidth();
+        // Jump by exactly one copy, so the same photo stays in view and no click plays.
         if (track.scrollLeft < w * 0.5) track.scrollLeft += w;
         else if (track.scrollLeft > w * 1.5) track.scrollLeft -= w;
-      }, 140);
+      }, 160);
     };
+    const markInteraction = () => { interacted.current = true; };
     track.addEventListener('scroll', onScroll, { passive: true });
+    track.addEventListener('pointerdown', markInteraction);
+    track.addEventListener('touchstart', markInteraction, { passive: true });
     window.addEventListener('resize', center);
-    return () => { track.removeEventListener('scroll', onScroll); window.removeEventListener('resize', center); window.clearTimeout(timer); };
+    return () => {
+      track.removeEventListener('scroll', onScroll);
+      track.removeEventListener('pointerdown', markInteraction);
+      track.removeEventListener('touchstart', markInteraction);
+      window.removeEventListener('resize', center);
+      window.clearTimeout(timer);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
   function step(direction: 1 | -1) {
     const track = trackRef.current;
     const item = track?.querySelector<HTMLElement>('.carousel-item');
     if (!track || !item) return;
+    interacted.current = true;
     track.scrollBy({ left: direction * (item.offsetWidth + 14), behavior: 'smooth' });
   }
-  // Mouse drag on desktop; touch devices use native swiping.
+  // Mouse drag on desktop; touch devices use native swiping with momentum.
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.pointerType !== 'mouse' || !trackRef.current) return;
     drag.current = { x: event.clientX, left: trackRef.current.scrollLeft };
