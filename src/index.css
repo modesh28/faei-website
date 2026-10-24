@@ -469,3 +469,55 @@
 .button, .add-button, .category-button, .offer-add, .menu-extras, .cart-bar, .reorder-row button, .install-app { transition: transform .12s ease; }
 .button:active, .add-button:active, .category-button:active, .offer-add:active, .menu-extras:active, .cart-bar:active, .reorder-row button:active, .install-app:active, .sticky-cats button:active { transform: scale(.95); }
 @media (prefers-reduced-motion: reduce) { .cart-bar, .cart-bar-count, .card-stepper, .card-stepper span { animation: none; } .product-image img { transition: none; } }
+
+/* 18. Group order, folded directions */
+.share-cart { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(22,118,184,.3); background: #eef6fc; color: #1676b8; font-weight: 800; font-size: 12.5px; border-radius: 999px; padding: 6px 12px; }
+.group-notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; padding: 10px 12px; border-radius: 12px; background: #eef6fc; color: #12466d; font-size: 13px; line-height: 1.6; }
+.group-notice span { flex: 1; }
+.group-notice button { border: 0; background: none; color: inherit; padding: 2px; }
+.contact-section { padding-block: 36px !important; }
+.where-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 18px 20px; border: 1px solid #e3e0d7; border-radius: 16px; background: #f7f5ef; }
+.where-card h2 { margin: 0; font-size: 22px; font-weight: 800; }
+.where-card p { margin: 4px 0 0; color: #697984; font-size: 13.5px; }
+.where-actions { display: flex; gap: 8px; }
+.where-toggle, .faei-app .where-map { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; font-weight: 800; font-size: 13.5px; padding: 9px 16px; }
+.where-toggle { border: 0; background: #182b3a; color: #fff; }
+.where-toggle svg { transition: transform .25s ease; }
+.where-toggle.is-open svg { transform: rotate(180deg); }
+.faei-app .where-map { border: 1px solid rgba(24,43,58,.2); background: #fff; color: #182b3a; }
+.wayfinder-reveal { margin-top: 18px; animation: fade-in .3s ease; }
+
+/* 19. Dark mode: follows the phone's setting. Gold and blue stay as accents. */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; }
+  body { background: #0f1b25; color: #e8eef3; }
+  .faei-app { --paper: #0f1b25; color: #e8eef3; }
+  .faei-app h1, .faei-app h2, .faei-app h3 { color: #f1f5f8; }
+  .menu-section, .gallery-section, .contact-section, .about-section { background: #0f1b25 !important; }
+  .section-head p, .wayfinder-head p, .where-card p, .option-label, .reorder-row p span { color: #9fb0bf !important; }
+  .product-card, .reorder-row, .where-card, .wayfinder-steps li, .install-sheet, .cart-drawer, .drawer-foot, .location-card { background: #172633 !important; border-color: #2a3f52 !important; color: #e8eef3; }
+  .product-image { background: #1e3142; }
+  .option-list li + li, .option-row { border-color: #2a3f52 !important; }
+  .price, .reorder-row p strong, .cart-empty h3, .qty-control button, .install-sheet { color: #f1f5f8 !important; }
+  .search-input, .category-button, .segmented button, .order-field input, .extras-input, .sticky-cats button, .faei-app .where-map, .install-step-icon, .qty-control { background: #1e3142 !important; border-color: #2f4659 !important; color: #e8eef3 !important; }
+  .search-input::placeholder, .extras-input::placeholder, .order-field input::placeholder { color: #7f93a4; }
+  .category-button.is-active, .sticky-cats button.is-active, .segmented button.is-active, .segmented button[aria-pressed="true"] { background: #f4c542 !important; color: #182b3a !important; border-color: #f4c542 !important; }
+  .sticky-cats { background: rgba(15,27,37,.94); }
+  .menu-extras, .order-hint, .upgrade-button, .extras-banner { background: #2b2614 !important; border-color: #5a4a17 !important; color: #f4d77a !important; }
+  .closed-note, .install-sheet li, .cliq-box, .group-notice, .share-cart { background: #1e3142 !important; border-color: #2f4659 !important; color: #c9d6e1 !important; }
+  .share-cart, .install-copy { color: #6fb8ea !important; }
+  .suggest-chip { background: #1e3142 !important; border-color: #2f4659 !important; color: #e8eef3; }
+  .suggest-chip.is-added { background: #173226 !important; border-color: #2f9e5b !important; }
+  .where-toggle, .card-stepper { background: #f4c542; color: #182b3a; }
+  .card-stepper button { color: #182b3a; }
+  .card-stepper button:active { background: rgba(24,43,58,.12); }
+  .cart-bar { background: #f4c542; color: #182b3a; }
+  .cart-bar-count { background: #182b3a; color: #f4c542; }
+  .wayfinder-map-wrap { filter: brightness(.88); }
+  .carousel-item { box-shadow: 0 14px 34px rgba(0,0,0,.45); }
+  .product-card:hover { box-shadow: 0 16px 34px rgba(0,0,0,.4); }
+  .toast-message { background: #e8eef3; color: #182b3a; }
+  .icon-button, .wayfinder-steps strong, .about-facts strong, .extras-banner strong { color: #f1f5f8 !important; border-color: #2f4659 !important; }
+  .wayfinder-steps p { color: #9fb0bf !important; }
+  .carousel-arrow { background: #1e3142 !important; color: #f1f5f8 !important; }
+}

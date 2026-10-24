@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
 
@@ -369,6 +369,21 @@ function readCart(): CartEntry[] {
   }
 }
 
+// Group order: a cart travels in the link as ?cart=shawarma-sandwich.0~2,box-zinger.0~1
+function encodeCart(cart: CartEntry[]): string {
+  return cart.map((entry) => `${entry.id.replace('::', '.')}~${entry.quantity}`).join(',');
+}
+function readSharedCart(): CartEntry[] {
+  const raw = new URLSearchParams(window.location.search).get('cart');
+  if (!raw) return [];
+  return raw.split(',').flatMap((part) => {
+    const [key, qty] = part.split('~');
+    const id = key?.replace(/\.(\d+)$/, '::$1') ?? '';
+    const quantity = Number(qty);
+    return resolveLine(id) && Number.isSafeInteger(quantity) && quantity > 0 && quantity <= 99 ? [{ id, quantity }] : [];
+  });
+}
+
 function readLastOrder(): LastOrder | null {
   try {
     const parsed = JSON.parse(localStorage.getItem(LAST_ORDER_KEY) ?? 'null') as Partial<LastOrder> | null;
@@ -444,6 +459,41 @@ function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { p
 
 function App() {
   const [cart, setCart] = useState<CartEntry[]>(readCart);
+  // Opening a shared group-order link adds its items to this phone's cart once.
+  useEffect(() => {
+    const shared = readSharedCart();
+    if (!shared.length) return;
+    setCart((current) => {
+      const merged = current.map((entry) => ({ ...entry }));
+      for (const item of shared) {
+        const found = merged.find((entry) => entry.id === item.id);
+        if (found) found.quantity = Math.min(99, found.quantity + item.quantity);
+        else merged.push(item);
+      }
+      return merged;
+    });
+    const url = new URL(window.location.href);
+    url.searchParams.delete('cart');
+    window.history.replaceState(null, '', url);
+    setGroupNotice(true);
+    setCartOpen(true);
+  }, []);
+  const [groupNotice, setGroupNotice] = useState(false);
+  // The walking directions stay folded until someone asks for them, or follows a #contact link.
+  const [wayOpen, setWayOpen] = useState(() => window.location.hash === '#contact');
+  useEffect(() => {
+    const onHash = () => { if (window.location.hash === '#contact') setWayOpen(true); };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  const [shareCopied, setShareCopied] = useState(false);
+  function shareCart() {
+    const link = `${window.location.origin}/?from=group&cart=${encodeURIComponent(encodeCart(cart))}`;
+    const text = `هاي سلة طلب الشلة من FAEI 🍔\nافتح الرابط، زيد أكلك، وابعت الطلب:\n${link}`;
+    if (navigator.share) { navigator.share({ title: 'طلب الشلة من FAEI', text }).catch(() => {}); return; }
+    navigator.clipboard?.writeText(text).then(() => { setShareCopied(true); window.setTimeout(() => setShareCopied(false), 1800); }).catch(() => {});
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  }
   const [selectedCategory, setSelectedCategory] = useState<Category | 'الكل'>(categories[0]);
   const [search, setSearch] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
@@ -664,7 +714,7 @@ function App() {
             <a href="#home" onClick={() => setMobileNavOpen(false)}>الرئيسية</a>
             <a href="#menu" onClick={() => setMobileNavOpen(false)}>المنيو</a>
             <a href="#gallery" onClick={() => setMobileNavOpen(false)}>قعدة الفَيّ</a>
-            <a href="#contact" onClick={() => setMobileNavOpen(false)}>وين إحنا</a>
+            <a href="#contact" onClick={() => { setMobileNavOpen(false); setWayOpen(true); }}>وين إحنا</a>
           </nav>
           <button className="cart-trigger" type="button" onClick={openCart} aria-label={`افتح السلة، ${itemCount} صنف`} data-testid="button-open-cart">
             <ShoppingBag size={18} aria-hidden="true" /><span className="cart-label">السلة</span><span className="cart-count" data-testid="text-cart-count">{itemCount}</span>
@@ -743,11 +793,17 @@ function App() {
 
         <section className="section contact-section" id="contact" aria-labelledby="contact-title">
           <div className="faei-shell">
-            <div className="wayfinder-head">
-              <h2 id="contact-title">كيف توصل الفَيّ؟</h2>
-              <p>جوا كلية تكنولوجيا المعلومات. اتبع الخط الأزرق.</p>
+            <div className="where-card">
+              <div>
+                <h2 id="contact-title">وين إحنا؟</h2>
+                <p>جوا كلية تكنولوجيا المعلومات، جامعة البلقاء.</p>
+              </div>
+              <div className="where-actions">
+                <button type="button" className={`where-toggle${wayOpen ? ' is-open' : ''}`} onClick={() => setWayOpen((open) => !open)} aria-expanded={wayOpen} data-testid="button-wayfinder">كيف توصل؟ <ChevronDown size={16} /></button>
+                <a className="where-map" href={MAPS_URL} target="_blank" rel="noreferrer"><MapPin size={16} /> الخريطة</a>
+              </div>
             </div>
-            <Wayfinder mapsUrl={MAPS_URL} />
+            {wayOpen && <div className="wayfinder-reveal"><Wayfinder mapsUrl={MAPS_URL} /></div>}
           </div>
         </section>
       </main>
@@ -771,6 +827,7 @@ function App() {
           <div className="drawer-head"><h2 id="cart-title">سلتك</h2><button className="icon-button" ref={closeRef} type="button" onClick={() => setCartOpen(false)} aria-label="إغلاق السلة" data-testid="button-close-cart"><X size={20} /></button></div>
           {cartLines.length || extrasOpen || hasExtras ? <>
             <div className="cart-content" data-testid="list-cart-items">
+              {groupNotice && <p className="group-notice" data-testid="group-notice"><Users size={16} /> <span>هاي سلة الشلة. زيد أكلك من المنيو، وبعدين ابعت الطلب أو شاركها مرة ثانية.</span><button type="button" onClick={() => setGroupNotice(false)} aria-label="إخفاء"><X size={14} /></button></p>}
               {cartLines.map(({ id, name, option, quantity }) => <article key={id} className="cart-line" data-testid={`row-cart-${id}`}>
                 <div><h3>{name}</h3><p className="line-unit">سعر الوحدة: {money(option.priceFils)}</p>
                   <div className="line-controls">
@@ -864,7 +921,7 @@ function App() {
               </section>
             </div>
             <div className="drawer-foot">
-              <div className="drawer-actions"><span /><button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
+              <div className="drawer-actions">{cartLines.length ? <button type="button" className="share-cart" onClick={shareCart} data-testid="button-share-cart"><Users size={15} /> {shareCopied ? 'انتسخ الرابط ✓' : 'شارك السلة مع الشلة'}</button> : <span />}<button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
               <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>
               <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
