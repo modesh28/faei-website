@@ -402,13 +402,14 @@ function money(fils: number): string {
   return `${dinars}${remainder ? `.${String(remainder).padStart(3, '0').replace(/0+$/, '')}` : ''} د.أ`;
 }
 
-function ProductCard({ product, onAdd, showCategory }: { product: Product; onAdd: (product: Product, optionIndex: number) => void; showCategory: boolean }) {
+function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { product: Product; onAdd: (product: Product, optionIndex: number) => void; onChange: (id: string, delta: number) => void; quantities: Map<string, number>; showCategory: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   return (
     <article className="product-card" data-testid={`card-product-${product.id}`}>
       {product.image && !imageFailed && (
-        <div className="product-image">
-          <img src={product.image} alt={product.alt ?? product.name} loading="lazy" onError={() => setImageFailed(true)} />
+        <div className={`product-image${imageLoaded ? ' is-loaded' : ''}`}>
+          <img src={product.image} alt={product.alt ?? product.name} loading="lazy" onLoad={() => setImageLoaded(true)} onError={() => setImageFailed(true)} />
         </div>
       )}
       <div className="product-body">
@@ -422,9 +423,17 @@ function ProductCard({ product, onAdd, showCategory }: { product: Product; onAdd
             <li key={index} className="option-row">
               {option.label && <span className="option-label">{option.label}</span>}
               <span className="price" data-testid={`text-price-${product.id}-${index}`}>{money(option.priceFils)}</span>
-              <button className="add-button" type="button" aria-label={`أضف ${product.name}${option.label ? ` ${option.label}` : ''} إلى السلة`} onClick={() => onAdd(product, index)} data-testid={`button-add-${product.id}-${index}`}>
-                <Plus size={16} aria-hidden="true" /><span>أضف</span>
-              </button>
+              {quantities.get(lineId(product, index)) ? (
+                <div className="card-stepper" data-testid={`stepper-${product.id}-${index}`}>
+                  <button type="button" onClick={() => onChange(lineId(product, index), 1)} aria-label="زيد واحد"><Plus size={15} /></button>
+                  <span key={quantities.get(lineId(product, index))}>{quantities.get(lineId(product, index))}</span>
+                  <button type="button" onClick={() => onChange(lineId(product, index), -1)} aria-label="نقّص واحد"><Minus size={15} /></button>
+                </div>
+              ) : (
+                <button className="add-button" type="button" aria-label={`أضف ${product.name}${option.label ? ` ${option.label}` : ''} إلى السلة`} onClick={() => onAdd(product, index)} data-testid={`button-add-${product.id}-${index}`}>
+                  <Plus size={16} aria-hidden="true" /><span>أضف</span>
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -511,6 +520,7 @@ function App() {
     : [];
   const totalFils = cartLines.reduce((sum, line) => sum + line.option.priceFils * line.quantity, 0);
   const itemCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
+  const quantities = new Map(cart.map((entry) => [entry.id, entry.quantity]));
   const query = search.trim().toLocaleLowerCase('ar');
   // A search looks through the whole menu; otherwise only the chosen category is shown.
   const visibleProducts = products.filter((product) => query
@@ -524,8 +534,7 @@ function App() {
       if (found) return current.map((entry) => entry.id === id ? { ...entry, quantity: Math.min(entry.quantity + 1, 99) } : entry);
       return [...current, { id, quantity: 1 }];
     });
-    setToast(`${resolveLine(id)?.name ?? product.name} انضاف للسلة`);
-    setToastAction(null);
+    navigator.vibrate?.(8);
   }
   // Swap one sandwich in the cart for the meal version.
   function upgradeLine(id: string) {
@@ -618,6 +627,31 @@ function App() {
     setSelectedCategory(category);
     setSearch('');
   }
+  // A slim category bar sticks under the header once the big category grid scrolls away,
+  // and hides again after the menu ends.
+  const catalogRef = useRef<HTMLDivElement>(null);
+  const [stickyCats, setStickyCats] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const catalog = catalogRef.current?.getBoundingClientRect();
+      setStickyCats(!!catalog && catalog.top < 150 && catalog.bottom > 220);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  // Keep the chosen category chip in view inside the sticky bar.
+  const stickyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bar = stickyRef.current;
+    const active = bar?.querySelector<HTMLElement>('.is-active');
+    if (bar && active) bar.scrollLeft = active.offsetLeft - (bar.clientWidth - active.offsetWidth) / 2;
+  }, [selectedCategory, stickyCats]);
+  function jumpToCategory(category: Category | 'الكل') {
+    selectCategory(category);
+    const top = (catalogRef.current?.getBoundingClientRect().top ?? 0) + window.scrollY - 125;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
 
   return (
     <div className="faei-app" dir="rtl">
@@ -689,8 +723,11 @@ function App() {
                 <button type="button" className={`category-button${!query && selectedCategory === 'الكل' ? ' is-active' : ''}`} onClick={() => selectCategory('الكل')} aria-pressed={!query && selectedCategory === 'الكل'} data-testid="button-category-all">كل المنيو</button>
               </div>
             </div>
-            <div className="catalog-grid" aria-live="polite">
-              {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} showCategory={!!query || selectedCategory === 'الكل'} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
+            <div ref={stickyRef} className={`sticky-cats${stickyCats ? ' is-shown' : ''}`} aria-hidden={!stickyCats}>
+              {[...categories, 'الكل' as const].map((category) => <button key={category} type="button" tabIndex={stickyCats ? 0 : -1} className={!query && selectedCategory === category ? 'is-active' : ''} onClick={() => jumpToCategory(category)}>{category === 'الكل' ? 'كل المنيو' : category}</button>)}
+            </div>
+            <div className="catalog-grid" ref={catalogRef} aria-live="polite">
+              {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} onChange={changeQuantity} quantities={quantities} showCategory={!!query || selectedCategory === 'الكل'} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
             </div>
           </div>
         </section>
@@ -840,7 +877,14 @@ function App() {
           </> : <div className="cart-empty"><ShoppingBag size={34} /><h3>السلة فاضية حالياً</h3><p>تصفّح المنيو وأضف الأصناف اللي بدك إياها.</p><button type="button" className="button button-gold" onClick={() => setCartOpen(false)}>تصفّح المنيو</button><button type="button" className="clear-button extras-only" onClick={() => setExtrasOpen(true)} data-testid="button-extras-only">بدي بس عصير أو سناك من الكافتيريا</button></div>}
         </aside>
       </>}
-      {toast && <div className="toast-message" role="status" aria-live="polite"><Check size={16} /> {toast}{toastAction && <button type="button" className="toast-action" onClick={() => toastAction.run()} data-testid="button-toast-upgrade">{toastAction.label}</button>}</div>}
+      {itemCount > 0 && !cartOpen && (
+        <button type="button" className="cart-bar" onClick={openCart} data-testid="cart-bar">
+          <span className="cart-bar-count" key={itemCount}>{itemCount}</span>
+          <span className="cart-bar-label">شوف السلة</span>
+          <span className="cart-bar-total">{money(totalFils)}</span>
+        </button>
+      )}
+      {toast && <div className={`toast-message${itemCount > 0 && !cartOpen ? ' is-raised' : ''}`} role="status" aria-live="polite"><Check size={16} /> {toast}{toastAction && <button type="button" className="toast-action" onClick={() => toastAction.run()} data-testid="button-toast-upgrade">{toastAction.label}</button>}</div>}
     </div>
   );
 }
