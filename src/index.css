@@ -421,3 +421,12 @@
 .footer .button-outline { color: #fff !important; border-color: rgba(255,255,255,.3); }
 .footer .button-gold { color: var(--ink) !important; }
 @media (max-width: 700px) { .footer-inner { flex-direction: column; text-align: center; } }
+
+/* 16. Reorder the last order */
+.reorder-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; padding: 10px 12px 10px 10px; border: 1px solid rgba(24,43,58,.12); border-radius: var(--radius); background: #fff; box-shadow: 0 6px 18px rgba(9,20,28,.06); }
+.reorder-row p { margin: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 13px; line-height: 1.5; }
+.reorder-row p strong { color: #182b3a; font-size: 14px; }
+.reorder-row p span { color: #5b6b78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reorder-row button { flex: none; border: 0; border-radius: 999px; background: #f4c542; color: #182b3a; font-weight: 800; font-size: 13px; padding: 9px 18px; }
+.install-app { border: 1px solid rgba(244,197,66,.6); border-radius: 999px; background: transparent; color: #f4c542; font-weight: 800; font-size: 13px; padding: 8px 16px; }
+.install-hint { margin: 0; font-size: 12px; opacity: .75; text-align: center; }

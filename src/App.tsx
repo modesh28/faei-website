@@ -6,6 +6,9 @@ import Wayfinder from './Wayfinder';
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
 const CART_KEY = 'faei-cart-v2';
+// The last order sent on this phone, offered again as "طلبك المعتاد".
+const LAST_ORDER_KEY = 'faei-last-order-v1';
+type LastOrder = { cart: CartEntry[]; extras: string };
 const WHATSAPP_DESTINATION = '962797607843';
 const INSTAGRAM_URL = 'https://www.instagram.com/faei_cafe/';
 // FAEI's own pin on Google Maps.
@@ -48,6 +51,23 @@ const GALLERY: { src: string; alt: string; caption: string; size?: 'big' | 'tall
   { src: '/images/smash-cheese.webp', alt: 'تحضير السماش برغر على الصاج', caption: 'بينعمل قدامك' },
   { src: '/images/pizza-zinger.webp', alt: 'بيتزا زنجر من FAEI', caption: 'بيتزا زنجر' },
 ];
+
+// "Add to home screen": Android gets a real install button; iPhone gets the Share-menu hint.
+type InstallEvent = Event & { prompt: () => Promise<void> };
+function InstallApp() {
+  const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null);
+  const standalone = typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true);
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  useEffect(() => {
+    const onPrompt = (event: Event) => { event.preventDefault(); setInstallEvent(event as InstallEvent); };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+  }, []);
+  if (standalone) return null;
+  if (installEvent) return <button type="button" className="install-app" onClick={() => { void installEvent.prompt(); setInstallEvent(null); }} data-testid="button-install">📲 نزّل FAEI على تلفونك</button>;
+  if (isIos) return <p className="install-hint">📲 لتنزّل FAEI على تلفونك: اكبس زر المشاركة ثم "إضافة إلى الشاشة الرئيسية"</p>;
+  return null;
+}
 
 // Swipe or drag the photos; each one snaps into place, and the strip loops forever.
 // Three copies of the list are rendered and the scroll position is quietly moved
@@ -261,6 +281,19 @@ function readCart(): CartEntry[] {
   }
 }
 
+function readLastOrder(): LastOrder | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LAST_ORDER_KEY) ?? 'null') as Partial<LastOrder> | null;
+    if (!parsed || !Array.isArray(parsed.cart)) return null;
+    const cart = parsed.cart.filter((entry) => entry && typeof entry.id === 'string' && resolveLine(entry.id)
+      && Number.isSafeInteger(entry.quantity) && entry.quantity > 0 && entry.quantity <= 99);
+    const extras = typeof parsed.extras === 'string' ? parsed.extras : '';
+    return cart.length || extras ? { cart, extras } : null;
+  } catch {
+    return null;
+  }
+}
+
 // Short order number shared by the WhatsApp message and the sheet, e.g. "1432-7".
 function makeOrderId(): string {
   const now = new Date();
@@ -337,6 +370,7 @@ function App() {
   // Free-text extras from the cafeteria shelf (juices, chips, sweets), priced on WhatsApp.
   const [extras, setExtras] = useState('');
   const [extrasOpen, setExtrasOpen] = useState(false);
+  const [lastOrder, setLastOrder] = useState<LastOrder | null>(readLastOrder);
   const drawerRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -473,6 +507,9 @@ function App() {
       extras: extras.trim(),
       source: VISIT_SOURCE,
     });
+    const saved: LastOrder = { cart, extras: extras.trim() };
+    try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(saved)); } catch { /* Reorder is optional. */ }
+    setLastOrder(saved);
     const url = `https://wa.me/${WHATSAPP_DESTINATION}?text=${encodeURIComponent(message)}`;
     const popup = window.open(url, '_blank');
     if (popup) popup.opener = null;
@@ -547,6 +584,12 @@ function App() {
               <h2 id="menu-title">المنيو</h2>
               <button type="button" className="menu-extras" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner"><span aria-hidden="true">🥤</span> عنا كمان عصاير وشيبس وسكاكر</button>
             </div>
+            {lastOrder && !cart.length && (
+              <div className="reorder-row" data-testid="reorder-row">
+                <p><strong>طلبك المعتاد</strong><span>{[...lastOrder.cart.map((entry) => `${resolveLine(entry.id)?.name} × ${entry.quantity}`), lastOrder.extras].filter(Boolean).join('، ')}</span></p>
+                <button type="button" onClick={() => { setCart(lastOrder.cart); setExtras(lastOrder.extras); if (lastOrder.extras) setExtrasOpen(true); openCart(); }} data-testid="button-reorder">اطلبه</button>
+              </div>
+            )}
             <div className="menu-tools">
               <label className="search-wrap">
                 <Search size={18} aria-hidden="true" />
@@ -587,6 +630,7 @@ function App() {
         <div className="faei-shell footer-inner">
           <a href="#home" aria-label="FAEI — إلى الرئيسية"><img src="/images/faei-logo.webp" alt="FAEI" loading="lazy" /></a>
           <p>{HOURS_TEXT}</p>
+          <InstallApp />
           <div className="footer-actions">
             <a className="button button-gold" href={`https://wa.me/${WHATSAPP_DESTINATION}`} target="_blank" rel="noreferrer" aria-label="تواصل مع FAEI عبر واتساب">واتساب</a>
             <a className="button button-outline" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="تابع FAEI على انستغرام"><InstagramIcon size={17} /> انستغرام</a>

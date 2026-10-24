@@ -4,6 +4,39 @@ import { Analytics } from '@vercel/analytics/react';
 
 import App from './App';
 import './index.css';
+import { products, categories } from './menu';
+
+// Lets the site install to the home screen and open without a connection.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}
+
+// The full menu with prices, as structured data, so Google can show it.
+const menuData = {
+  '@context': 'https://schema.org',
+  '@type': 'Menu',
+  name: 'منيو FAEI',
+  url: 'https://faei-website.vercel.app/#menu',
+  inLanguage: 'ar',
+  hasMenuSection: categories.map((category) => ({
+    '@type': 'MenuSection',
+    name: category,
+    hasMenuItem: products.filter((product) => product.category === category).map((product) => ({
+      '@type': 'MenuItem',
+      name: product.name,
+      offers: product.options.map((option) => ({
+        '@type': 'Offer',
+        ...(option.label ? { name: option.label } : {}),
+        price: (option.priceFils / 1000).toFixed(2),
+        priceCurrency: 'JOD',
+      })),
+    })),
+  })).filter((section) => section.hasMenuItem.length),
+};
+const menuScript = document.createElement('script');
+menuScript.type = 'application/ld+json';
+menuScript.textContent = JSON.stringify(menuData);
+document.head.appendChild(menuScript);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
