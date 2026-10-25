@@ -801,7 +801,7 @@ function App() {
                 <p>جوا كلية تكنولوجيا المعلومات، جامعة البلقاء.</p>
               </div>
               <div className="where-actions">
-                <button type="button" className={`where-toggle${wayOpen ? ' is-open' : ''}`} onClick={() => setWayOpen((open) => !open)} aria-expanded={wayOpen} data-testid="button-wayfinder">كيف توصل؟ <ChevronDown size={16} /></button>
+                <button type="button" className={`where-toggle${wayOpen ? ' is-open' : ''}`} onClick={() => setWayOpen((open) => !open)} aria-expanded={wayOpen} data-testid="button-wayfinder">كيف توصل؟  <ChevronDown size={16} /></button>
                 <a className="where-map" href={MAPS_URL} target="_blank" rel="noreferrer"><MapPin size={16} /> الخريطة</a>
               </div>
             </div>

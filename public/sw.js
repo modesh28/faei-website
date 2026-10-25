@@ -1,7 +1,7 @@
 // FAEI offline support: pages load from the network first and fall back to the
 // last copy; built files and images come from the cache and refresh in the background.
 // Settings, offer and analytics always go to the network.
-const CACHE = 'faei-v1';
+const CACHE = 'faei-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
