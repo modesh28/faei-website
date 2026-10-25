@@ -560,6 +560,8 @@
 .order-tracker { position: fixed; z-index: 54; inset-inline: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); max-width: 520px; margin-inline: auto; padding: 12px 14px; border-radius: 16px; background: #fff; color: #182b3a; box-shadow: 0 12px 30px rgba(9,20,28,.25); border: 1px solid rgba(24,43,58,.1); }
 .order-tracker.is-raised { bottom: calc(80px + env(safe-area-inset-bottom)); }
 .order-tracker.is-ready { background: #e8f6ec; border-color: #2e9e5b; }
+.order-tracker.is-cancelled { background: #fbe9e6; border-color: #e0452f; }
+.order-tracker.is-cancelled .order-tracker-icon { background: #e0452f; color: #fff; }
 .order-tracker-row { display: flex; align-items: center; gap: 10px; }
 .order-tracker-icon { width: 34px; height: 34px; border-radius: 50%; background: #f4c542; display: grid; place-items: center; flex: none; }
 .order-tracker.is-ready .order-tracker-icon { background: #2e9e5b; color: #fff; }

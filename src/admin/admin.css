@@ -114,3 +114,54 @@ a { color: inherit; }
 .admin-orders div span { flex: 1; color: var(--muted); font-size: 12.5px; }
 .admin-orders em { font-style: normal; font-size: 12px; font-weight: 800; background: var(--paper); padding: 2px 8px; border-radius: 999px; }
 .admin-orders p { margin: 0; line-height: 1.6; }
+
+/* Accounts, live orders and sales */
+.admin-stack { display: grid; gap: 10px; }
+.admin-login .admin-stack input { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.admin-login .admin-stack button { padding: 12px 20px; border: 0; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 800; }
+.admin-login .admin-field .admin-hint a { color: #1676b8; font-weight: 700; }
+.admin-top strong small { font-weight: 400; opacity: .6; font-size: 12px; margin-inline-start: 6px; }
+.admin-tabs { overflow-x: auto; scrollbar-width: none; }
+.admin-tabs button { flex: 1 0 auto; position: relative; }
+.admin-badge { font-style: normal; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #e0452f; color: #fff; font-size: 12px; display: inline-grid; place-items: center; }
+.admin-sound { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; margin-bottom: 12px; border: 2px dashed var(--gold); border-radius: 14px; background: #fff8dc; font-weight: 800; }
+.admin-empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+.admin-orders-grid { display: grid; gap: 12px; }
+@media (min-width: 760px) { .admin-shell:has(.admin-orders-grid) { max-width: 1200px; } .admin-orders-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); align-items: start; } }
+.admin-orders-grid.is-done { margin-top: 10px; }
+.admin-order { background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 12px 14px; display: grid; gap: 8px; }
+.admin-order.is-0 { border-color: #e0452f; }
+.admin-order.is-1 { border-color: var(--gold); }
+.admin-order.is-2 { border-color: var(--green); background: #f1faf4; }
+.admin-order.is-3, .admin-order.is-4 { opacity: .65; }
+.admin-order.is-4 { text-decoration: line-through; }
+.admin-order.is-fresh { animation: admin-flash 1s ease-in-out 4; }
+.admin-order.is-late .admin-order-time { color: #e0452f; font-weight: 800; }
+@keyframes admin-flash { 50% { box-shadow: 0 0 0 6px rgba(224,69,47,.25); } }
+.admin-order header { display: flex; align-items: center; gap: 8px; }
+.admin-order header b { font-size: 18px; }
+.admin-order-status { font-size: 12.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--paper); }
+.admin-order.is-0 .admin-order-status { background: #e0452f; color: #fff; }
+.admin-order.is-1 .admin-order-status { background: var(--gold); }
+.admin-order.is-2 .admin-order-status { background: var(--green); color: #fff; }
+.admin-order-time { margin-inline-start: auto; font-size: 12.5px; color: var(--muted); }
+.admin-order-flag { margin: 0; font-size: 13px; font-weight: 700; color: #9a6b00; background: #fff6d6; border-radius: 8px; padding: 4px 8px; }
+.admin-order ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 15px; }
+.admin-order ul b { display: inline-block; min-width: 28px; }
+.admin-order-extras { font-size: 13.5px; color: var(--muted); }
+.admin-order dl { margin: 0; display: grid; gap: 3px; font-size: 13px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.admin-order dl div { display: flex; gap: 8px; }
+.admin-order dt { color: var(--muted); min-width: 54px; }
+.admin-order dd { margin: 0; }
+.admin-order dd.is-cliq { color: #1676b8; font-weight: 700; }
+.admin-order footer { display: flex; gap: 8px; }
+.admin-order footer .admin-primary, .admin-order footer .admin-green { flex: 1; padding: 13px; font-size: 15px; }
+.admin-green { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 16px; border: 0; border-radius: 12px; background: var(--green); color: #fff; font-weight: 800; }
+.admin-users { list-style: none; padding: 0; margin: 8px 0 14px; display: grid; gap: 6px; }
+.admin-users li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.admin-users span { flex: 1; color: var(--muted); font-size: 13px; }
+.admin-card h3 { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; font-size: 15px; }
+.admin-days { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.admin-days li { display: grid; grid-template-columns: 44px 1fr 56px; align-items: center; gap: 8px; font-size: 13px; }
+.admin-days i { height: 10px; border-radius: 999px; background: var(--gold); min-width: 4px; }
+.admin-days b { text-align: end; }

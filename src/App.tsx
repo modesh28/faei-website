@@ -311,7 +311,7 @@ function OpenInBrowser() {
 // After an order is sent, a small card counts down to when it should be ready, then rings.
 // It's an estimate made on the phone, so it works with no staff action and no server.
 const ACTIVE_ORDER_KEY = 'faei-active-order-v1';
-type ActiveOrder = { id: string; placedAt: number; readyAt: number | null };
+type ActiveOrder = { id: string; ref?: string; placedAt: number; readyAt: number | null };
 function readActiveOrder(): ActiveOrder | null {
   try {
     const order = JSON.parse(localStorage.getItem(ACTIVE_ORDER_KEY) ?? 'null') as ActiveOrder | null;
@@ -351,10 +351,10 @@ function playChime() {
     });
   } catch { /* Sound is a bonus. */ }
 }
-function OrderTracker({ order, raised, sheetUrl, onClose }: { order: ActiveOrder; raised: boolean; sheetUrl: string; onClose: () => void }) {
+function OrderTracker({ order, raised, onClose }: { order: ActiveOrder; raised: boolean; onClose: () => void }) {
   const [now, setNow] = useState(Date.now());
-  // When staff mark the order "جاهز" in the sheet, it's ready for real, whatever the timer says.
-  const [confirmed, setConfirmed] = useState(false);
+  // The order's real status from the shop's orders screen ('' until known, or if it isn't connected).
+  const [live, setLive] = useState('');
   const [canNotify, setCanNotify] = useState(() => typeof Notification !== 'undefined' && Notification.permission === 'default');
   const rang = useRef(false);
   useEffect(() => {
@@ -363,22 +363,25 @@ function OrderTracker({ order, raised, sheetUrl, onClose }: { order: ActiveOrder
     document.addEventListener('visibilitychange', wake);
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', wake); };
   }, []);
+  const confirmed = live === 'جاهز' || live === 'تم';
+  const cancelled = live === 'ملغي';
   const timerDone = order.readyAt !== null && now >= order.readyAt;
-  const ready = confirmed || timerDone;
+  // When the shop marks orders, wait for their "جاهز"; otherwise the timer decides.
+  const ready = !cancelled && (confirmed || (!live && timerDone));
   useEffect(() => {
-    if (!sheetUrl || confirmed) return;
+    if (!order.ref || confirmed || cancelled) return;
     const check = () => {
       if (document.visibilityState !== 'visible') return;
-      fetch(`${sheetUrl}?id=${encodeURIComponent(order.id)}`)
-        .then((response) => response.json())
-        .then((data: { status?: string }) => { if (data.status === 'جاهز' || data.status === 'تم') setConfirmed(true); })
+      fetch(`/api/orders?ref=${order.ref}`, { cache: 'no-store' })
+        .then((response) => (response.ok ? response.json() : { status: '' }))
+        .then((data: { status?: string }) => setLive(data.status ?? ''))
         .catch(() => {});
     };
     check();
-    const timer = window.setInterval(check, 20_000);
+    const timer = window.setInterval(check, 15_000);
     document.addEventListener('visibilitychange', check);
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', check); };
-  }, [sheetUrl, confirmed, order.id]);
+  }, [order.ref, confirmed, cancelled]);
   useEffect(() => {
     if (!ready || rang.current) return;
     rang.current = true;
@@ -398,18 +401,23 @@ function OrderTracker({ order, raised, sheetUrl, onClose }: { order: ActiveOrder
   }
   const total = order.readyAt ? order.readyAt - order.placedAt : 1;
   const left = order.readyAt ? Math.max(0, order.readyAt - now) : 0;
-  const progress = ready ? 1 : order.readyAt ? Math.min(1, 1 - left / total) : 0;
+  const progress = ready ? 1 : order.readyAt ? Math.min(live ? 0.95 : 1, 1 - left / total) : 0;
+  const title = cancelled ? 'انلغى الطلب' : confirmed ? 'طلبك جاهز ✅' : order.readyAt === null ? 'طلبك مسجّل' : ready ? 'طلبك صار جاهز تقريباً ✅'
+    : live && timerDone ? 'قرّب يجهز 👨‍🍳' : live === 'جديد' ? 'وصلنا طلبك 👍' : 'طلبك عم يتحضّر 👨‍🍳';
+  const id = `رقم \u2066${order.id}\u2069`;
+  const detail = cancelled ? `${id} · تواصل معنا عالواتساب` : ready ? `${id} · تفضّل استلمه` : order.readyAt === null ? `${id} · بنجهزه أول ما نفتح`
+    : live && timerDone ? `${id} · بيرنّ تلفونك أول ما يجهز` : `${id} · جاهز بعد حوالي`;
   const minutes = Math.floor(left / 60_000);
   const seconds = Math.floor((left % 60_000) / 1000);
   return (
-    <div className={`order-tracker${raised ? ' is-raised' : ''}${ready ? ' is-ready' : ''}`} role="status" aria-live="polite" data-testid="order-tracker">
+    <div className={`order-tracker${raised ? ' is-raised' : ''}${ready ? ' is-ready' : ''}${cancelled ? ' is-cancelled' : ''}`} role="status" aria-live="polite" data-testid="order-tracker">
       <div className="order-tracker-row">
         <span className="order-tracker-icon">{ready ? <Check size={18} /> : <Clock size={18} />}</span>
         <div className="order-tracker-text">
-          <strong>{confirmed ? 'طلبك جاهز ✅' : order.readyAt === null ? 'طلبك مسجّل' : ready ? 'طلبك صار جاهز تقريباً ✅' : 'طلبك عم يتحضّر 👨‍🍳'}</strong>
-          <span>{confirmed ? `رقم \u2066${order.id}\u2069 · تفضّل استلمه` : order.readyAt === null ? `رقم \u2066${order.id}\u2069 · بنجهزه أول ما نفتح` : ready ? `رقم \u2066${order.id}\u2069 · تفضّل استلمه` : `رقم \u2066${order.id}\u2069 · جاهز بعد حوالي`}</span>
+          <strong>{title}</strong>
+          <span>{detail}</span>
         </div>
-        {order.readyAt !== null && !ready && <span className="order-tracker-time" data-testid="order-countdown">{minutes}:{String(seconds).padStart(2, '0')}</span>}
+        {order.readyAt !== null && !ready && !cancelled && !timerDone && <span className="order-tracker-time" data-testid="order-countdown">{minutes}:{String(seconds).padStart(2, '0')}</span>}
         <button type="button" className="order-tracker-close" onClick={onClose} aria-label="سكّر"><X size={16} /></button>
       </div>
       {(order.readyAt !== null || confirmed) && <div className="order-tracker-bar"><span style={{ width: `${progress * 100}%` }} /></div>}
@@ -825,11 +833,34 @@ function App() {
       extras: extras.trim(),
       source: VISIT_SOURCE,
     });
+    // Also send it to the shop's live orders screen (/admin). Fire-and-forget, like the sheet.
+    const ref = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => 'abcdefghijklmnopqrstuvwxyz0123456789'[byte % 36]).join('');
+    try {
+      fetch('/api/orders', {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ref,
+          id: orderId,
+          items: cartLines.map(({ name, option, quantity }) => ({ name, quantity, price: option.priceFils / 1000 })),
+          extras: extras.trim(),
+          fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}` : 'استلام',
+          address: isDelivery ? address.trim() : '',
+          time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
+          payment: isCliq ? 'كليك' : 'كاش',
+          preorder: !isOpenNow(),
+          discount: discountFils / 1000,
+          delivery: isDelivery ? (zone === 'inside' ? deliveryFils / 1000 : 'بنتفق عليه') : 0,
+          total: grandTotalFils / 1000,
+        }),
+      }).catch(() => {});
+    } catch { /* The order still goes to WhatsApp. */ }
     const saved: LastOrder = { cart, extras: extras.trim() };
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(saved)); } catch { /* Reorder is optional. */ }
     setLastOrder(saved);
     const pieces = cartLines.reduce((sum, line) => sum + line.quantity, 0) + (hasExtras ? 1 : 0);
-    const tracked: ActiveOrder = { id: orderId, placedAt: Date.now(), readyAt: isOpenNow() ? estimateReadyAt(pieces, isDelivery, timeMode === 'later' ? orderTime : null) : null };
+    const tracked: ActiveOrder = { id: orderId, ref, placedAt: Date.now(), readyAt: isOpenNow() ? estimateReadyAt(pieces, isDelivery, timeMode === 'later' ? orderTime : null) : null };
     try { localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(tracked)); } catch { /* The timer is optional. */ }
     setActiveOrder(tracked);
     setCartOpen(false);
@@ -1117,7 +1148,7 @@ function App() {
           <span className="cart-bar-total">{money(totalFils)}</span>
         </button>
       )}
-      {activeOrder && !cartOpen && <OrderTracker key={activeOrder.id} order={activeOrder} raised={itemCount > 0} sheetUrl={settings.sheetUrl} onClose={() => { setActiveOrder(null); try { localStorage.removeItem(ACTIVE_ORDER_KEY); } catch { /* fine */ } }} />}
+      {activeOrder && !cartOpen && <OrderTracker key={activeOrder.id} order={activeOrder} raised={itemCount > 0} onClose={() => { setActiveOrder(null); try { localStorage.removeItem(ACTIVE_ORDER_KEY); } catch { /* fine */ } }} />}
       {toast && <div className={`toast-message${itemCount > 0 && !cartOpen ? ' is-raised' : ''}`} role="status" aria-live="polite"><Check size={16} /> {toast}{toastAction && <button type="button" className="toast-action" onClick={() => toastAction.run()} data-testid="button-toast-upgrade">{toastAction.label}</button>}</div>}
     </div>
   );
