@@ -518,6 +518,8 @@ function App() {
   const [extras, setExtras] = useState('');
   const [extrasOpen, setExtrasOpen] = useState(false);
   const [lastOrder, setLastOrder] = useState<LastOrder | null>(readLastOrder);
+  // The reorder card always shows once an order was sent from this phone; tapping it loads that order into the cart.
+  const sameAsLast = (entries: CartEntry[]) => !!lastOrder && encodeCart([...entries].sort((a, b) => a.id.localeCompare(b.id))) === encodeCart([...lastOrder.cart].sort((a, b) => a.id.localeCompare(b.id)));
   const drawerRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -757,10 +759,10 @@ function App() {
               <h2 id="menu-title">المنيو</h2>
               <button type="button" className="menu-extras" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner"><span aria-hidden="true">🥤</span> عنا كمان عصاير وشيبس وسكاكر</button>
             </div>
-            {lastOrder && !cart.length && (
+            {lastOrder && (
               <div className="reorder-row" data-testid="reorder-row">
                 <p><strong>طلبك المعتاد</strong><span>{[...lastOrder.cart.map((entry) => `${resolveLine(entry.id)?.name} × ${entry.quantity}`), lastOrder.extras].filter(Boolean).join('، ')}</span></p>
-                <button type="button" onClick={() => { setCart(lastOrder.cart); setExtras(lastOrder.extras); if (lastOrder.extras) setExtrasOpen(true); openCart(); }} data-testid="button-reorder">اطلبه</button>
+                <button type="button" onClick={() => { if (!sameAsLast(cart)) setCart(lastOrder.cart); setExtras(lastOrder.extras); if (lastOrder.extras) setExtrasOpen(true); openCart(); }} data-testid="button-reorder">اطلبه</button>
               </div>
             )}
             <div className="menu-tools">
