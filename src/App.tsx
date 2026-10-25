@@ -285,6 +285,29 @@ function GalleryCarousel() {
   );
 }
 
+// Inside Instagram (and similar apps) the site runs in a cramped browser that can freeze
+// or reload. Offer a one-tap way out to the phone's real browser.
+function OpenInBrowser() {
+  const ua = navigator.userAgent;
+  const inApp = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|Line\//i.test(ua);
+  const [hidden, setHidden] = useState(() => { try { return sessionStorage.getItem('faei-iab-hidden') === '1'; } catch { return false; } });
+  if (!inApp || hidden) return null;
+  const ios = /iphone|ipad|ipod/i.test(ua);
+  const here = window.location.href.replace(/^https?:\/\//, '');
+  const href = ios ? `x-safari-https://${here}` : `intent://${here}#Intent;scheme=https;package=com.android.chrome;end`;
+  function close() {
+    setHidden(true);
+    try { sessionStorage.setItem('faei-iab-hidden', '1'); } catch { /* fine */ }
+  }
+  return (
+    <div className="iab-bar" data-testid="open-in-browser">
+      <p>عشان يشتغل أسرع، افتح الموقع ب{ios ? 'سفاري' : 'كروم'}</p>
+      <a href={href} className="iab-open">افتح</a>
+      <button type="button" onClick={close} aria-label="سكّر"><X size={16} /></button>
+    </div>
+  );
+}
+
 // Open Sunday–Thursday, 7:30–17:00 Jordan time.
 function isOpenNow(date = new Date()): boolean {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
@@ -736,6 +759,7 @@ function App() {
 
   return (
     <div className="faei-app" dir="rtl">
+      <OpenInBrowser />
       <header className="topbar">
         <div className="faei-shell topbar-inner">
           <a className="brand" href="#home" aria-label="FAEI — الرئيسية">

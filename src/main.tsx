@@ -11,7 +11,10 @@ import { products, categories } from './menu';
 {
   const nav = navigator as Navigator & { deviceMemory?: number };
   const weak = (nav.hardwareConcurrency && nav.hardwareConcurrency <= 4) || (nav.deviceMemory && nav.deviceMemory <= 3);
-  if (weak || window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('lite');
+  // In-app browsers (Instagram, Facebook, TikTok…) get far less memory than a real browser
+  // and reload the page when it runs out, so they always get the light version too.
+  const inApp = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|Line\//i.test(navigator.userAgent);
+  if (weak || inApp || window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('lite');
 }
 
 // Lets the site install to the home screen and open without a connection.

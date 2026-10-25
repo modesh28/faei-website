@@ -548,3 +548,10 @@
 .lite .carousel-item { box-shadow: none; }
 .lite .product-card, .lite .button, .lite .add-button, .lite .category-button, .lite .cart-bar, .lite .sticky-cats { transition: none !important; animation: none !important; }
 .lite .cart-bar, .lite .card-stepper, .lite .card-stepper span, .lite .cart-bar-count { animation: none !important; }
+
+/* 22. Instagram & in-app browsers: "open in your browser" strip, and no endless animations in lite mode */
+.iab-bar { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: #f4c542; color: #182b3a; font-size: 14px; font-weight: 700; }
+.iab-bar p { flex: 1; margin: 0; }
+.iab-bar .iab-open { background: #182b3a; color: #fff !important; border-radius: 999px; padding: 6px 16px; font-size: 13px; text-decoration: none; }
+.iab-bar button { border: 0; background: transparent; color: inherit; padding: 4px; display: flex; }
+.lite .about-badge, .lite .wayfinder-route, .lite .wayfinder-pin { animation: none !important; }
