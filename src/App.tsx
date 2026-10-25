@@ -153,7 +153,7 @@ function playTick() {
   try {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctx) return;
-    clickAudio ??= new Ctx();
+    if (!clickAudio) clickAudio = new Ctx();
     if (clickAudio.state === 'suspended') void clickAudio.resume();
     const ctx = clickAudio;
     const length = Math.floor(ctx.sampleRate * 0.025);
@@ -680,6 +680,10 @@ function App() {
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(saved)); } catch { /* Reorder is optional. */ }
     setLastOrder(saved);
     const url = `https://wa.me/${WHATSAPP_DESTINATION}?text=${encodeURIComponent(message)}`;
+    // Phones (and in-app browsers like Instagram's, where a new tab can silently do nothing)
+    // go to WhatsApp in the same tab; desktops open it in a new tab.
+    const isPhone = /Android|iPhone|iPad|iPod|Instagram|FBAN|FBAV|Snapchat|TikTok/i.test(navigator.userAgent);
+    if (isPhone) { window.location.href = url; return; }
     const popup = window.open(url, '_blank');
     if (popup) popup.opener = null;
     else window.location.assign(url);
@@ -872,7 +876,7 @@ function App() {
                     <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder={zone === 'inside' ? 'مثلاً: كلية الهندسة، الطابق الثاني، قاعة 204' : 'المنطقة والشارع وأقرب معلم'} data-testid="input-address" />
                   </label>
                 </>}
-                <h3 className="foot-time-title">الوقت</h3>
+                <h3 className="foot-time-title">الوقت </h3>
                 <div className="segmented" role="radiogroup" aria-label="وقت الطلب">
                   <button type="button" role="radio" aria-checked={timeMode === 'asap'} className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="option-asap">بأسرع وقت</button>
                   <button type="button" role="radio" aria-checked={timeMode === 'later'} className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="option-later">بساعة معينة</button>

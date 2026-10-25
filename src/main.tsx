@@ -24,7 +24,14 @@ if (import.meta.env.PROD) {
       .then((response) => (response.ok ? response.text() : ''))
       .then((html) => {
         const latest = html.match(/src="(\/assets\/[^"]+\.js)"/)?.[1];
-        if (latest && latest !== currentScript) window.location.reload();
+        if (!latest || latest === currentScript) return;
+        // Never reload more than once every 5 minutes, so a stale cache can't cause a reload loop.
+        try {
+          const last = Number(sessionStorage.getItem('faei-auto-reload') ?? 0);
+          if (Date.now() - last < 300_000) return;
+          sessionStorage.setItem('faei-auto-reload', String(Date.now()));
+        } catch { return; }
+        window.location.reload();
       })
       .catch(() => {});
   };
