@@ -321,9 +321,9 @@ function readActiveOrder(): ActiveOrder | null {
     return Date.now() < expires ? order : null;
   } catch { return null; }
 }
-// Roughly 10 minutes, a minute more for each piece after the second, at most 25; delivery adds 10.
+// 15 minutes, a minute more for each piece after the second, at most 25; delivery adds 10.
 function estimateReadyAt(pieces: number, delivery: boolean, time: string | null): number {
-  const prep = Math.min(25, 10 + Math.max(0, pieces - 2)) + (delivery ? 10 : 0);
+  const prep = Math.min(25, 15 + Math.max(0, pieces - 2)) + (delivery ? 10 : 0);
   const asap = Date.now() + prep * 60_000;
   if (!time) return asap;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date());
