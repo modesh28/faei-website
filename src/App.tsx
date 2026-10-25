@@ -35,12 +35,14 @@ type DeliveryZone = 'inside' | 'outside';
 // Offer of the day. The live text comes from public/offer.json (edit it on GitHub, no code needed);
 // this is only the fallback while it loads or if the file is broken.
 // discountPercent takes that much off every menu item in website orders (not delivery or cafeteria extras).
-type Offer = { show: boolean; title: string; text: string; productId?: string; optionIndex?: number; discountPercent?: number };
+// endsAt (ISO time) switches the whole offer off by itself once it passes.
+type Offer = { show: boolean; title: string; text: string; productId?: string; optionIndex?: number; discountPercent?: number; endsAt?: string };
 const DEFAULT_OFFER: Offer = {
   show: true,
   title: 'عرض الإطلاق',
-  text: 'خصم 15% على كل المنيو لما تطلب من الموقع.',
+  text: 'خصم 15% على كل المنيو لما تطلب من الموقع، لحد الخميس 29/10.',
   discountPercent: 15,
+  endsAt: '2026-10-30T00:00:00+03:00',
 };
 
 // Photos for the "قعدة الفَيّ" gallery (files in public/images). size: big = 2x2, tall = 1x2, normal = 1x1.
@@ -618,7 +620,8 @@ function App() {
   }, []);
   const offerProduct = offer.productId ? productMap.get(offer.productId) : undefined;
   // Launch discount on menu items, rounded to the nearest 5 qirsh (50 fils).
-  const discountPercent = offer.show && offer.discountPercent ? Math.min(Math.max(offer.discountPercent, 0), 90) : 0;
+  const offerActive = offer.show && (!offer.endsAt || Date.now() < Date.parse(offer.endsAt));
+  const discountPercent = offerActive && offer.discountPercent ? Math.min(Math.max(offer.discountPercent, 0), 90) : 0;
   const discountFils = discountPercent ? Math.round((totalFils * discountPercent) / 100 / 50) * 50 : 0;
   const itemsAfterDiscountFils = totalFils - discountFils;
 
@@ -752,7 +755,7 @@ function App() {
           </div>
         </section>
 
-        {offer.show && offer.text.trim() && (
+        {offerActive && offer.text.trim() && (
           <aside className="bg-[#f4c542] text-[#182b3a]" aria-label={offer.title}>
             <div className="faei-shell offer-row">
               <p><Tag size={16} aria-hidden="true" /><strong>{offer.title}</strong><span>{offer.text}</span></p>
