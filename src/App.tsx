@@ -308,6 +308,116 @@ function OpenInBrowser() {
   );
 }
 
+// After an order is sent, a small card counts down to when it should be ready, then rings.
+// It's an estimate made on the phone, so it works with no staff action and no server.
+const ACTIVE_ORDER_KEY = 'faei-active-order-v1';
+type ActiveOrder = { id: string; placedAt: number; readyAt: number | null };
+function readActiveOrder(): ActiveOrder | null {
+  try {
+    const order = JSON.parse(localStorage.getItem(ACTIVE_ORDER_KEY) ?? 'null') as ActiveOrder | null;
+    if (!order?.id) return null;
+    // Hide it half an hour after it's ready (or the next day for a pre-order).
+    const expires = order.readyAt ? order.readyAt + 30 * 60_000 : order.placedAt + 18 * 3600_000;
+    return Date.now() < expires ? order : null;
+  } catch { return null; }
+}
+// Roughly 10 minutes, a minute more for each piece after the second, at most 25; delivery adds 10.
+function estimateReadyAt(pieces: number, delivery: boolean, time: string | null): number {
+  const prep = Math.min(25, 10 + Math.max(0, pieces - 2)) + (delivery ? 10 : 0);
+  const asap = Date.now() + prep * 60_000;
+  if (!time) return asap;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date());
+  const chosen = Date.parse(`${today}T${time}:00+03:00`);
+  return Number.isFinite(chosen) && chosen > asap ? chosen : asap;
+}
+function playChime() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    if (!clickAudio) clickAudio = new Ctx();
+    const ctx = clickAudio;
+    if (ctx.state === 'suspended') void ctx.resume();
+    [880, 1320].forEach((frequency, index) => {
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = ctx.currentTime + index * 0.18;
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+      oscillator.connect(gain).connect(ctx.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.5);
+    });
+  } catch { /* Sound is a bonus. */ }
+}
+function OrderTracker({ order, raised, sheetUrl, onClose }: { order: ActiveOrder; raised: boolean; sheetUrl: string; onClose: () => void }) {
+  const [now, setNow] = useState(Date.now());
+  // When staff mark the order "جاهز" in the sheet, it's ready for real, whatever the timer says.
+  const [confirmed, setConfirmed] = useState(false);
+  const [canNotify, setCanNotify] = useState(() => typeof Notification !== 'undefined' && Notification.permission === 'default');
+  const rang = useRef(false);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const wake = () => setNow(Date.now());
+    document.addEventListener('visibilitychange', wake);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', wake); };
+  }, []);
+  const timerDone = order.readyAt !== null && now >= order.readyAt;
+  const ready = confirmed || timerDone;
+  useEffect(() => {
+    if (!sheetUrl || confirmed) return;
+    const check = () => {
+      if (document.visibilityState !== 'visible') return;
+      fetch(`${sheetUrl}?id=${encodeURIComponent(order.id)}`)
+        .then((response) => response.json())
+        .then((data: { status?: string }) => { if (data.status === 'جاهز' || data.status === 'تم') setConfirmed(true); })
+        .catch(() => {});
+    };
+    check();
+    const timer = window.setInterval(check, 20_000);
+    document.addEventListener('visibilitychange', check);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', check); };
+  }, [sheetUrl, confirmed, order.id]);
+  useEffect(() => {
+    if (!ready || rang.current) return;
+    rang.current = true;
+    // Only ring for orders that became ready while the site was open, not on every later visit.
+    if (!confirmed && order.readyAt && now - order.readyAt > 5 * 60_000) return;
+    playChime();
+    navigator.vibrate?.([200, 100, 200]);
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      const text = { body: `طلبك رقم ${order.id} ${confirmed ? 'جاهز' : 'صار جاهز تقريباً'}، تفضّل استلمه 🙌`, icon: '/icon-192.png', tag: order.id };
+      navigator.serviceWorker?.getRegistration()
+        .then((registration) => { if (registration) return registration.showNotification('FAEI', text); new Notification('FAEI', text); })
+        .catch(() => {});
+    }
+  }, [ready, now, order, confirmed]);
+  function askNotify() {
+    Notification.requestPermission().then(() => setCanNotify(false)).catch(() => setCanNotify(false));
+  }
+  const total = order.readyAt ? order.readyAt - order.placedAt : 1;
+  const left = order.readyAt ? Math.max(0, order.readyAt - now) : 0;
+  const progress = ready ? 1 : order.readyAt ? Math.min(1, 1 - left / total) : 0;
+  const minutes = Math.floor(left / 60_000);
+  const seconds = Math.floor((left % 60_000) / 1000);
+  return (
+    <div className={`order-tracker${raised ? ' is-raised' : ''}${ready ? ' is-ready' : ''}`} role="status" aria-live="polite" data-testid="order-tracker">
+      <div className="order-tracker-row">
+        <span className="order-tracker-icon">{ready ? <Check size={18} /> : <Clock size={18} />}</span>
+        <div className="order-tracker-text">
+          <strong>{confirmed ? 'طلبك جاهز ✅' : order.readyAt === null ? 'طلبك مسجّل' : ready ? 'طلبك صار جاهز تقريباً ✅' : 'طلبك عم يتحضّر 👨‍🍳'}</strong>
+          <span>{confirmed ? `رقم \u2066${order.id}\u2069 · تفضّل استلمه` : order.readyAt === null ? `رقم \u2066${order.id}\u2069 · بنجهزه أول ما نفتح` : ready ? `رقم \u2066${order.id}\u2069 · تفضّل استلمه` : `رقم \u2066${order.id}\u2069 · جاهز بعد حوالي`}</span>
+        </div>
+        {order.readyAt !== null && !ready && <span className="order-tracker-time" data-testid="order-countdown">{minutes}:{String(seconds).padStart(2, '0')}</span>}
+        <button type="button" className="order-tracker-close" onClick={onClose} aria-label="سكّر"><X size={16} /></button>
+      </div>
+      {(order.readyAt !== null || confirmed) && <div className="order-tracker-bar"><span style={{ width: `${progress * 100}%` }} /></div>}
+      {canNotify && !ready && order.readyAt !== null && <button type="button" className="order-tracker-notify" onClick={askNotify}>نبّهني لما يجهز</button>}
+    </div>
+  );
+}
+
 // Open Sunday–Thursday, 7:30–17:00 Jordan time.
 function isOpenNow(date = new Date()): boolean {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
@@ -542,6 +652,7 @@ function App() {
   const [address, setAddress] = useState('');
   const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
   const [orderTime, setOrderTime] = useState('');
+  const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(readActiveOrder);
   const [payment, setPayment] = useState<Payment>('cash');
   const [cliqCopied, setCliqCopied] = useState(false);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
@@ -713,6 +824,11 @@ function App() {
     const saved: LastOrder = { cart, extras: extras.trim() };
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(saved)); } catch { /* Reorder is optional. */ }
     setLastOrder(saved);
+    const pieces = cartLines.reduce((sum, line) => sum + line.quantity, 0) + (hasExtras ? 1 : 0);
+    const tracked: ActiveOrder = { id: orderId, placedAt: Date.now(), readyAt: isOpenNow() ? estimateReadyAt(pieces, isDelivery, timeMode === 'later' ? orderTime : null) : null };
+    try { localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(tracked)); } catch { /* The timer is optional. */ }
+    setActiveOrder(tracked);
+    setCartOpen(false);
     const url = `https://wa.me/${WHATSAPP_DESTINATION}?text=${encodeURIComponent(message)}`;
     // Phones (and in-app browsers like Instagram's, where a new tab can silently do nothing)
     // go to WhatsApp in the same tab; desktops open it in a new tab.
@@ -997,6 +1113,7 @@ function App() {
           <span className="cart-bar-total">{money(totalFils)}</span>
         </button>
       )}
+      {activeOrder && !cartOpen && <OrderTracker key={activeOrder.id} order={activeOrder} raised={itemCount > 0} sheetUrl={settings.sheetUrl} onClose={() => { setActiveOrder(null); try { localStorage.removeItem(ACTIVE_ORDER_KEY); } catch { /* fine */ } }} />}
       {toast && <div className={`toast-message${itemCount > 0 && !cartOpen ? ' is-raised' : ''}`} role="status" aria-live="polite"><Check size={16} /> {toast}{toastAction && <button type="button" className="toast-action" onClick={() => toastAction.run()} data-testid="button-toast-upgrade">{toastAction.label}</button>}</div>}
     </div>
   );
