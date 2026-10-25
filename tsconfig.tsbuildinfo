@@ -1,1 +1,1 @@
-{"root":["./src/App.tsx","./src/Wayfinder.tsx","./src/main.tsx","./src/menu.ts"],"version":"5.9.3"}
+{"root":["./src/App.tsx","./src/Wayfinder.tsx","./src/main.tsx","./src/menu.ts","./src/admin/Admin.tsx","./src/admin/github.ts","./src/admin/main.tsx"],"version":"5.9.3"}

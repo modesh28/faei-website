@@ -573,3 +573,8 @@
 .order-tracker.is-ready .order-tracker-bar span { background: #2e9e5b; }
 .order-tracker-notify { margin-top: 10px; width: 100%; border: 0; border-radius: 10px; padding: 8px; background: #182b3a; color: #fff; font-weight: 700; font-size: 13px; }
 @media (prefers-color-scheme: dark) { .order-tracker { background: #16263a; color: #f2f2f2; border-color: rgba(255,255,255,.12); } .order-tracker.is-ready { background: #123222; } .order-tracker-bar { background: rgba(255,255,255,.12); } .order-tracker-notify { background: #f4c542; color: #182b3a; } }
+
+/* 24. Items switched off from the admin page */
+.product-card.is-unavailable .product-image, .product-card.is-unavailable h3, .product-card.is-unavailable .price { opacity: .45; filter: grayscale(1); }
+.unavailable-tag { margin-inline-start: auto; font-size: 12.5px; font-weight: 800; color: #9a3b2e; background: #fbe9e6; border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
+@media (prefers-color-scheme: dark) { .unavailable-tag { background: #3a2220; color: #f2b8ad; } }

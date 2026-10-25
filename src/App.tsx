@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
-import { categories, products, type Category, type Product } from './menu';
+import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
@@ -472,7 +472,8 @@ function resolveLine(id: string) {
   const [productId, index] = id.split('::');
   const product = productMap.get(productId);
   const option = product?.options[Number(index)];
-  return product && option ? { product, option, name: option.label ? `${product.name} — ${option.label}` : product.name } : undefined;
+  // Items switched off in the admin page drop out of carts, suggestions and reorders.
+  return product && option && isAvailable(product) ? { product, option, name: option.label ? `${product.name} — ${option.label}` : product.name } : undefined;
 }
 
 // Sandwich → meal upgrades. Burgers and chicken have both options on one card; shawarma meals are separate items.
@@ -567,8 +568,9 @@ function money(fils: number): string {
 function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { product: Product; onAdd: (product: Product, optionIndex: number) => void; onChange: (id: string, delta: number) => void; quantities: Map<string, number>; showCategory: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const available = isAvailable(product);
   return (
-    <article className="product-card" data-testid={`card-product-${product.id}`}>
+    <article className={`product-card${available ? '' : ' is-unavailable'}`} data-testid={`card-product-${product.id}`}>
       {product.image && !imageFailed && (
         <div className={`product-image${imageLoaded ? ' is-loaded' : ''}`}>
           <img src={product.image} alt={product.alt ?? product.name} loading="lazy" onLoad={() => setImageLoaded(true)} onError={() => setImageFailed(true)} />
@@ -585,7 +587,9 @@ function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { p
             <li key={index} className="option-row">
               {option.label && <span className="option-label">{option.label}</span>}
               <span className="price" data-testid={`text-price-${product.id}-${index}`}>{money(option.priceFils)}</span>
-              {quantities.get(lineId(product, index)) ? (
+              {!available ? (
+                index === 0 && <span className="unavailable-tag" data-testid={`unavailable-${product.id}`}>مش متوفر</span>
+              ) : quantities.get(lineId(product, index)) ? (
                 <div className="card-stepper" data-testid={`stepper-${product.id}-${index}`}>
                   <button type="button" onClick={() => onChange(lineId(product, index), 1)} aria-label="زيد واحد"><Plus size={15} /></button>
                   <span key={quantities.get(lineId(product, index))}>{quantities.get(lineId(product, index))}</span>

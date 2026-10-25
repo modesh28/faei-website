@@ -1,21 +1,9 @@
-// FAEI menu — real items and prices from the official menu (April 10).
+// FAEI menu. The items live in public/menu.json, which the admin page (/admin) edits,
+// so prices, photos and "not available now" change without touching code.
 // Prices are in fils: 1 JOD = 1000 fils, so 2.25 د.أ = 2250.
+import menu from '../public/menu.json';
 
-export const categories = [
-  'شاورما',
-  'برغر سماش',
-  'تشكن برغر',
-  'السناك',
-  'بوكس فَيّ',
-  'كساديا',
-  'بيتزا',
-  'كالزوني',
-  'مناقيش',
-  'ساندويش بارد',
-  'السلطات',
-] as const;
-
-export type Category = (typeof categories)[number];
+export type Category = string;
 
 export type ProductOption = { label: string; priceFils: number };
 
@@ -29,179 +17,12 @@ export type Product = {
   alt?: string;
   // Shows the "الأكثر طلباً" badge.
   popular?: boolean;
+  // false hides the add button and shows "مش متوفر".
+  available?: boolean;
 };
 
-// Best sellers get the "الأكثر طلباً" badge.
-// Few badges, so they still stand out.
-const POPULAR_IDS = new Set(['shawarma-meal', 'shawarma-shilla', 'snack-zinger', 'box-zinger']);
-function isPopular(id: string, _category: Category): boolean {
-  return POPULAR_IDS.has(id);
-}
+export type Menu = { categories: Category[]; products: Product[] };
 
-// To add a photo, put the file in public/images and add its path here, e.g. 'smash-classic': '/images/classic-burger.jpeg'.
-const images: Partial<Record<string, string>> = {
-  'shawarma-sandwich': '/images/menu/shawarma-sandwich.webp',
-  'shawarma-sandwich-super': '/images/menu/shawarma-sandwich.webp',
-  'shawarma-meal': '/images/menu/shawarma-meal.webp',
-  'shawarma-meal-super': '/images/menu/shawarma-meal.webp',
-  'shawarma-meal-double': '/images/menu/shawarma-meal.webp',
-  'shawarma-shilla': '/images/menu/shawarma-meal.webp',
-  'shawarma-toast': '/images/menu/toast2.webp',
-  'shawarma-italian': '/images/menu/shawarma-italian.webp',
-  'shawarma-halabi': '/images/menu/shawarma-halabi.webp',
-  'hotdog-classic': '/images/menu/hotdog.webp',
-  'hotdog-faei': '/images/menu/hotdog.webp',
-  'manakish-cheese-mix': '/images/menu/cheese-mix.webp',
-  'manakish-white-cheese': '/images/menu/cheese-mix.webp',
-  'manakish-zaatar-cheese': '/images/menu/zaatar-cheese.webp',
-  'cold-turkey': '/images/menu/turkey.webp',
-  'cold-turkey-cheese': '/images/menu/turkey.webp',
-  'manakish-salami': '/images/menu/salami.webp',
-  'manakish-turkey': '/images/menu/manakish-turkey.webp',
-  'cold-zaatar': '/images/menu/zaatar-sandwich.webp',
-  'snack-escalope': '/images/menu/chicken2.webp',
-  'salad-nachos': '/images/menu/nachos.webp',
-  'salad-greek': '/images/menu/salad-greek.webp',
-  'salad-caesar': '/images/menu/salad-caesar.webp',
-  'salad-fruit': '/images/menu/salad-fruit.webp',
-  'salad-coleslaw': '/images/menu/salad-coleslaw.webp',
-  'cold-luncheon-labneh': '/images/menu/luncheon-labneh.webp',
-};
-
-// One photo for a whole category, used when an item has no photo of its own.
-const categoryImages: Partial<Record<Category, string>> = {
-  'شاورما': '/images/menu/shawarma.webp',
-  'برغر سماش': '/images/menu/smash2.webp',
-  'تشكن برغر': '/images/menu/chicken2.webp',
-  'السناك': '/images/menu/bbq2.webp',
-  'ساندويش بارد': '/images/menu/halloumi.webp',
-  'بوكس فَيّ': '/images/menu/boxes2.webp',
-  'كساديا': '/images/menu/quesadilla2.webp',
-  'بيتزا': '/images/menu/pizza2.webp',
-  'كالزوني': '/images/menu/calzone.webp',
-  'مناقيش': '/images/menu/manakeesh.webp',
-  'السلطات': '/images/menu/salads2.webp',
-};
-
-// Items that don't look like their category's photo, so they stay without one.
-const noCategoryImage = new Set(['hotdog-classic', 'hotdog-faei', 'salad-nachos']);
-
-type Row = [id: string, name: string, ...prices: (number | null)[]];
-
-function build(category: Category, labels: string[], rows: Row[]): Product[] {
-  return rows.map(([id, name, ...prices]) => ({
-    id,
-    name,
-    category,
-    options: prices.flatMap((price, index) => price == null ? [] : [{ label: labels[index] ?? '', priceFils: Math.round(price * 1000) }]),
-    image: images[id] ?? (noCategoryImage.has(id) ? undefined : categoryImages[category]),
-    popular: isPopular(id, category),
-  }));
-}
-
-export const products: Product[] = [
-  ...build('شاورما', [''], [
-    ['shawarma-sandwich', 'ساندويش شاورما عادي', 0.75],
-    ['shawarma-sandwich-super', 'ساندويش شاورما سوبر', 1.30],
-    ['shawarma-meal', 'وجبة شاورما عادي', 2.00],
-    ['shawarma-meal-super', 'وجبة شاورما سوبر', 2.75],
-    ['shawarma-meal-double', 'وجبة شاورما دبل', 3.45],
-    ['shawarma-shilla', 'وجبة شلة', 8.00],
-    ['shawarma-toast', 'وجبة شاورما توست', 3.00],
-    ['shawarma-italian', 'وجبة شاورما إيطالي', 3.50],
-    ['shawarma-halabi', 'وجبة شاورما حلبي', 3.50],
-  ]),
-  ...build('برغر سماش', ['ساندويش', 'وجبة'], [
-    ['smash-classic', 'كلاسيك برغر', 2.50, 3.00],
-    ['smash-cheese', 'تشيز برغر', 2.50, 3.00],
-    ['smash-hot-beef', 'هوت بيف', 2.50, 3.00],
-    ['smash-mushroom', 'ماشروم برغر', 2.75, 3.25],
-    ['smash-egg', 'برغر بيض', 2.50, 3.25],
-  ]),
-  ...build('تشكن برغر', ['ساندويش', 'وجبة'], [
-    ['chicken-grill', 'جريل تشكن', 2.25, 3.00],
-    ['chicken-honey-mayo', 'هاني مايو', 2.00, 2.75],
-    ['chicken-hot', 'هوت تشيكن', 2.00, 2.75],
-    ['hotdog-classic', 'هوت دوغ كلاسيك', 2.00, 2.75],
-    ['hotdog-faei', 'هوت دوغ فَيّ', 2.25, 3.00],
-  ]),
-  ...build('السناك', ['صغير', 'سوبر', 'تورتيلا'], [
-    ['snack-fajita', 'فاهيتا', 1.25, 1.50, 1.75],
-    ['snack-alfredo', 'ألفريدو', 1.25, 1.50, 1.75],
-    ['snack-zinger', 'زنجر', 1.25, 1.50, 1.75],
-    ['snack-zinger-plus', 'زنجر بلس +', null, 1.50, 1.75],
-    ['snack-zinger-bbq', 'زنجر باربيكيو', 1.25, 1.50, 1.75],
-    ['snack-escalope', 'سكالوب', null, 1.25, null],
-    ['snack-bbq', 'باربيكيو', 1.25, 1.50, 1.75],
-    ['snack-curry', 'دجاج بالكاري', 1.25, 1.50, 1.75],
-    ['snack-twister', 'تويستر', null, 1.75, null],
-    ['snack-shish', 'شيش', null, 1.50, 1.75],
-    ['snack-cordon-bleu', 'كوردن بلو', null, 1.50, null],
-  ]),
-  ...build('بوكس فَيّ', ['صغير', 'كبير'], [
-    ['box-zinger', 'بوكس زنجر', 2.00, 2.75],
-    ['box-alfredo', 'بوكس ألفريدو', 2.25, 3.25],
-    ['box-curry', 'بوكس كاري', 2.25, 3.25],
-    ['box-shawarma', 'بوكس شاورما', 2.25, 3.25],
-    ['box-mexican', 'بوكس مكسيكي', 2.25, 3.25],
-    ['box-edman', 'بوكس إدمان', 2.00, 2.75],
-    ['box-buffalo', 'بوكس بافلو', 2.25, 3.25],
-    ['box-honey-mustard', 'بوكس هاني ماسترد', 2.25, 2.75],
-    ['box-bbq', 'بوكس باربكيو', 2.25, 3.25],
-  ]),
-  ...build('كساديا', [''], [
-    ['quesadilla-veggie', 'كساديا خضار', 1.50],
-    ['quesadilla-alfredo', 'كساديا ألفريدو', 2.00],
-    ['quesadilla-honey-mustard', 'كساديا هاني ماسترد', 2.00],
-  ]),
-  ...build('بيتزا', [''], [
-    ['pizza-veggie', 'بيتزا خضار', 3.00],
-    ['pizza-pepperoni', 'بيتزا بيروني', 3.00],
-    ['pizza-salami', 'بيتزا سلامي', 3.00],
-    ['pizza-turkey', 'بيتزا تيركي', 3.00],
-    ['pizza-margherita', 'بيتزا مارغاريتا', 3.00],
-    ['pizza-cheese-mix', 'بيتزا مكس أجبان', 3.00],
-    ['pizza-shawarma', 'بيتزا شاورما', 3.00],
-    ['pizza-four-seasons', 'بيتزا الفصول الأربعة', 3.00],
-    ['pizza-alfredo', 'بيتزا ألفريدو', 3.00],
-    ['pizza-fajita', 'بيتزا فاهيتا', 3.00],
-    ['pizza-zinger', 'بيتزا زنجر', 3.00],
-    ['pizza-faei', 'بيتزا فَيّ', 3.00],
-  ]),
-  ...build('كالزوني', [''], [
-    ['calzone-alfredo', 'كالزوني ألفريدو', 3.00],
-    ['calzone-fajita', 'كالزوني فاهيتا', 3.00],
-    ['calzone-mexican', 'كالزوني مكسيكي', 3.00],
-    ['calzone-zinger', 'كالزوني زنجر', 3.00],
-  ]),
-  ...build('مناقيش', [''], [
-    ['manakish-cheese-mix', 'مكس أجبان', 1.50],
-    ['manakish-white-cheese', 'جبنة بيضاء', 1.50],
-    ['manakish-muhammara', 'محمرة وموزريلا', 1.50],
-    ['manakish-salami', 'سلامي', 1.50],
-    ['manakish-zaatar', 'زعتر', 0.75],
-    ['manakish-zaatar-cheese', 'زعتر وجبنة', 1.00],
-    ['manakish-turkey', 'تيركي', 1.50],
-  ]),
-  // The menu image doesn't name these two columns; "صغير / كبير" is our best reading — confirm with FAEI.
-  ...build('ساندويش بارد', ['صغير', 'كبير'], [
-    ['cold-luncheon-labneh', 'سنيورة ولبنة', 0.50, 0.60],
-    ['cold-kashkaval', 'قشقوان', 1.00, 1.25],
-    ['cold-cheese-mix', 'مكس أجبان', 1.00, 1.25],
-    ['cold-turkey', 'تيركي', 0.75, 1.00],
-    ['cold-turkey-cheese', 'تيركي وجبنة', 1.00, 1.25],
-    ['cold-halloumi', 'حلوم', 1.00, 1.25],
-  ]),
-  ...build('ساندويش بارد', [''], [
-    ['cold-zaatar', 'ساندويش زعتر', 1.50],
-    ['cold-white-cheese', 'ساندويش جبنة بيضاء', 1.50],
-  ]),
-  ...build('السلطات', [''], [
-    ['salad-caesar', 'سيزر', 2.00],
-    ['salad-rocket', 'جرجير', 2.00],
-    ['salad-greek', 'يونانية', 2.00],
-    ['salad-coleslaw', 'كولسلو', 2.00],
-    ['salad-fruit', 'فواكة', 2.00],
-    ['salad-nachos', 'ناتشوز', 2.75],
-  ]),
-];
+export const categories: Category[] = (menu as Menu).categories;
+export const products: Product[] = (menu as Menu).products;
+export const isAvailable = (product: Product) => product.available !== false;
