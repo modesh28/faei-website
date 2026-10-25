@@ -524,3 +524,19 @@
 .reorder-empty { display: block; margin: 0 auto 10px; border: 1px solid rgba(24,43,58,.18); border-radius: 999px; background: #fff; color: #182b3a; font-weight: 800; font-size: 14px; padding: 10px 20px; }
 .sticky-cats:not(.is-shown) { visibility: hidden; }
 @media (prefers-color-scheme: dark) { .reorder-empty { background: #1e3142; color: #f1f5f8; border-color: #2f4659; } }
+
+/* 20. Cart: order choices sit right under the items, one compact row each */
+.cart-content .compact-options { display: grid; grid-template-columns: 62px 1fr; align-items: center; column-gap: 10px; row-gap: 8px; margin: 12px 0 4px; padding: 12px; border: 1px solid #e3e0d7; border-radius: 14px; background: #fff; }
+.compact-options h3 { margin: 0 !important; font-size: 13px; font-weight: 800; color: #53636b; }
+.compact-options .segmented { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0; }
+.compact-options .segmented button { min-height: 38px; font-size: 13px; padding: 0 6px; }
+.compact-options .order-field, .compact-options .order-hint, .compact-options .cliq-box { grid-column: 1 / -1; margin: 0; }
+.cart-line { padding-block: 10px !important; }
+.drawer-foot { padding-top: 12px !important; }
+.drawer-foot .drawer-actions { margin-bottom: 6px; }
+.closed-note { font-size: 12px; padding: 6px 10px; }
+@media (prefers-color-scheme: dark) { .cart-content .compact-options { background: #172633; border-color: #2a3f52; } .compact-options h3 { color: #9fb0bf; } }
+.cart-line h3 { margin-bottom: 2px; }
+.line-controls { margin-top: 6px !important; }
+.line-controls .qty-control button { width: 30px; height: 30px; }
+@media (max-height: 720px) { .checkout-note { display: none; } }

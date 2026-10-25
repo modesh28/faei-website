@@ -844,6 +844,53 @@ function App() {
                 </div>
                 <strong className="line-total">{money(option.priceFils * quantity)}</strong>
               </article>)}
+              <section className="order-options foot-options compact-options" aria-label="طريقة الاستلام">
+                <h3>الاستلام</h3>
+                <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
+                  <button type="button" role="radio" aria-checked={!isDelivery} className={!isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('pickup')} data-testid="option-pickup">استلام</button>
+                  <button type="button" role="radio" aria-checked={isDelivery} className={isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('delivery')} data-testid="option-delivery">توصيل</button>
+                </div>
+                {isDelivery && <>
+                  <div className="segmented" role="radiogroup" aria-label="مكان التوصيل">
+                    <button type="button" role="radio" aria-checked={zone === 'inside'} className={zone === 'inside' ? 'is-active' : ''} onClick={() => setZone('inside')} data-testid="option-inside">جوا الجامعة · 1 د.أ</button>
+                    <button type="button" role="radio" aria-checked={zone === 'outside'} className={zone === 'outside' ? 'is-active' : ''} onClick={() => setZone('outside')} data-testid="option-outside">برا الجامعة</button>
+                  </div>
+                  {zone === 'outside' && <p className="order-hint">سعر التوصيل برا الجامعة حسب المكان وحجم الطلب، وبنتفق عليه على واتساب.</p>}
+                  <label className="order-field">
+                    <span>وين نوصلك؟</span>
+                    <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder={zone === 'inside' ? 'مثلاً: كلية الهندسة، الطابق الثاني، قاعة 204' : 'المنطقة والشارع وأقرب معلم'} data-testid="input-address" />
+                  </label>
+                </>}
+                <h3 className="foot-time-title">الوقت</h3>
+                <div className="segmented" role="radiogroup" aria-label="وقت الطلب">
+                  <button type="button" role="radio" aria-checked={timeMode === 'asap'} className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="option-asap">بأسرع وقت</button>
+                  <button type="button" role="radio" aria-checked={timeMode === 'later'} className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="option-later">بساعة معينة</button>
+                </div>
+                {timeMode === 'later' && (
+                  <label className="order-field">
+                    <span>الساعة</span>
+                    <input type="time" min="07:30" max="17:00" step={900} value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time" />
+                  </label>
+                )}
+                {settings.cliqAlias && <>
+                  <h3 className="foot-time-title">الدفع</h3>
+                  <div className="segmented" role="radiogroup" aria-label="طريقة الدفع">
+                    <button type="button" role="radio" aria-checked={payment === 'cash'} className={payment === 'cash' ? 'is-active' : ''} onClick={() => setPayment('cash')} data-testid="option-cash">كاش</button>
+                    <button type="button" role="radio" aria-checked={payment === 'cliq'} className={payment === 'cliq' ? 'is-active' : ''} onClick={() => setPayment('cliq')} data-testid="option-cliq">كليك CliQ</button>
+                  </div>
+                  {isCliq && (
+                    <div className="cliq-box" data-testid="cliq-box">
+                      <p>حوّل {cliqAmountKnown ? <strong>{money(grandTotalFils)}</strong> : 'المبلغ'} على كليك:</p>
+                      <button type="button" className="cliq-alias" onClick={copyCliq} data-testid="button-copy-cliq">
+                        <span dir="ltr">{settings.cliqAlias}</span>
+                        <small>{cliqCopied ? 'انتسخ ✓' : 'اضغط للنسخ'}</small>
+                      </button>
+                      {settings.cliqName && <p className="cliq-name">باسم: {settings.cliqName}</p>}
+                      <p className="cliq-note">{cliqAmountKnown ? 'وبعدها ابعت صورة التحويل على واتساب مع الطلب.' : 'بنأكدلك المبلغ النهائي على واتساب، وبعدها حوّل وابعت صورة التحويل.'}</p>
+                    </div>
+                  )}
+                </>}
+              </section>
               {cartLines.length > 0 && (
                 <section className="suggest-box" aria-label="اقتراحات">
                   <h3>بتكمّل طلبك؟</h3>
@@ -874,58 +921,11 @@ function App() {
                 <p className="order-hint extras-hint">عصاير، مشروبات، شيبس، سكاكر… اكتب شو بدك وبنحكيلك السعر على واتساب.</p>
                 <textarea className="extras-input" rows={2} value={extras} onChange={(event) => setExtras(event.target.value)} placeholder="مثلاً: عصير برتقال، 2 شيبس، علكة" maxLength={300} data-testid="input-extras" />
               </section>
-              <section className="order-options foot-options" aria-label="طريقة الاستلام">
-                <h3>استلام ولا توصيل؟</h3>
-                <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
-                  <button type="button" role="radio" aria-checked={!isDelivery} className={!isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('pickup')} data-testid="option-pickup">استلام من الكافيه</button>
-                  <button type="button" role="radio" aria-checked={isDelivery} className={isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('delivery')} data-testid="option-delivery">توصيل</button>
-                </div>
-                {isDelivery && <>
-                  <div className="segmented" role="radiogroup" aria-label="مكان التوصيل">
-                    <button type="button" role="radio" aria-checked={zone === 'inside'} className={zone === 'inside' ? 'is-active' : ''} onClick={() => setZone('inside')} data-testid="option-inside">جوا الجامعة · 1 د.أ</button>
-                    <button type="button" role="radio" aria-checked={zone === 'outside'} className={zone === 'outside' ? 'is-active' : ''} onClick={() => setZone('outside')} data-testid="option-outside">برا الجامعة</button>
-                  </div>
-                  {zone === 'outside' && <p className="order-hint">سعر التوصيل برا الجامعة حسب المكان وحجم الطلب، وبنتفق عليه على واتساب.</p>}
-                  <label className="order-field">
-                    <span>وين نوصلك؟</span>
-                    <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder={zone === 'inside' ? 'مثلاً: كلية الهندسة، الطابق الثاني، قاعة 204' : 'المنطقة والشارع وأقرب معلم'} data-testid="input-address" />
-                  </label>
-                </>}
-                <h3 className="foot-time-title">إيمتى بدك إياه؟</h3>
-                <div className="segmented" role="radiogroup" aria-label="وقت الطلب">
-                  <button type="button" role="radio" aria-checked={timeMode === 'asap'} className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="option-asap">بأسرع وقت</button>
-                  <button type="button" role="radio" aria-checked={timeMode === 'later'} className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="option-later">بساعة معينة</button>
-                </div>
-                {timeMode === 'later' && (
-                  <label className="order-field">
-                    <span>الساعة</span>
-                    <input type="time" min="07:30" max="17:00" step={900} value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time" />
-                  </label>
-                )}
-                {settings.cliqAlias && <>
-                  <h3 className="foot-time-title">كيف بدك تدفع؟</h3>
-                  <div className="segmented" role="radiogroup" aria-label="طريقة الدفع">
-                    <button type="button" role="radio" aria-checked={payment === 'cash'} className={payment === 'cash' ? 'is-active' : ''} onClick={() => setPayment('cash')} data-testid="option-cash">كاش</button>
-                    <button type="button" role="radio" aria-checked={payment === 'cliq'} className={payment === 'cliq' ? 'is-active' : ''} onClick={() => setPayment('cliq')} data-testid="option-cliq">كليك CliQ</button>
-                  </div>
-                  {isCliq && (
-                    <div className="cliq-box" data-testid="cliq-box">
-                      <p>حوّل {cliqAmountKnown ? <strong>{money(grandTotalFils)}</strong> : 'المبلغ'} على كليك:</p>
-                      <button type="button" className="cliq-alias" onClick={copyCliq} data-testid="button-copy-cliq">
-                        <span dir="ltr">{settings.cliqAlias}</span>
-                        <small>{cliqCopied ? 'انتسخ ✓' : 'اضغط للنسخ'}</small>
-                      </button>
-                      {settings.cliqName && <p className="cliq-name">باسم: {settings.cliqName}</p>}
-                      <p className="cliq-note">{cliqAmountKnown ? 'وبعدها ابعت صورة التحويل على واتساب مع الطلب.' : 'بنأكدلك المبلغ النهائي على واتساب، وبعدها حوّل وابعت صورة التحويل.'}</p>
-                    </div>
-                  )}
-                </>}
-              </section>
             </div>
             <div className="drawer-foot">
               <div className="drawer-actions">{cartLines.length ? <button type="button" className="share-cart" onClick={shareCart} data-testid="button-share-cart"><Users size={15} /> {shareCopied ? 'انتسخ الرابط ✓' : 'شارك السلة مع الشلة'}</button> : <span />}<button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
-              <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>
-              <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>
+              {isDelivery && <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>}
+              {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
               {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هلأ وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هلأ، وبنرد عليك أول ما نفتح.</p>}
