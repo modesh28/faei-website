@@ -521,3 +521,6 @@
   .wayfinder-steps p { color: #9fb0bf !important; }
   .carousel-arrow { background: #1e3142 !important; color: #f1f5f8 !important; }
 }
+.reorder-empty { display: block; margin: 0 auto 10px; border: 1px solid rgba(24,43,58,.18); border-radius: 999px; background: #fff; color: #182b3a; font-weight: 800; font-size: 14px; padding: 10px 20px; }
+.sticky-cats:not(.is-shown) { visibility: hidden; }
+@media (prefers-color-scheme: dark) { .reorder-empty { background: #1e3142; color: #f1f5f8; border-color: #2f4659; } }
