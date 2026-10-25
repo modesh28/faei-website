@@ -23,7 +23,7 @@ type Settings = { sheetUrl: string; cliqAlias: string; cliqName: string };
 const DEFAULT_SETTINGS: Settings = {
   sheetUrl: 'https://script.google.com/macros/s/AKfycbz2zj4JEFhsCRhKHdzBCkgbHvB7geVle4i3grIsjgwWy9AT03spE9v3WJkQ-55z0U5q/exec',
   cliqAlias: '0797607843',
-  cliqName: '',
+  cliqName: 'QUSAI MARWAN MORSI ABUABDALLAH',
 };
 // Where the visitor came from, e.g. ?from=qr on the table cards.
 const VISIT_SOURCE = new URLSearchParams(window.location.search).get('from') ?? '';
