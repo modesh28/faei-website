@@ -400,10 +400,10 @@
 .menu-extras { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; border: 1px solid #efd98f; background: #fff7dc; color: #6b5a1d; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .menu-extras:hover { background: #fff1c2; }
 .gallery-carousel { position: relative; }
-.carousel-track { display: flex; gap: 14px; overflow-x: auto; direction: ltr; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 10px 14vw 14px; cursor: grab; overscroll-behavior-x: contain; perspective: 1200px; -webkit-overflow-scrolling: touch; }
+.carousel-track { display: flex; gap: 14px; overflow-x: auto; direction: ltr; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 10px 14vw 14px; cursor: grab; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
 .carousel-track::-webkit-scrollbar { display: none; }
 .carousel-track.is-dragging { cursor: grabbing; scroll-snap-type: none; }
-.carousel-item { position: relative; margin: 0; flex: none; width: 260px; height: 320px; border-radius: 18px; overflow: hidden; scroll-snap-align: center; user-select: none; will-change: transform, opacity; box-shadow: 0 14px 34px rgba(9,20,28,.18); }
+.carousel-item { position: relative; margin: 0; flex: none; width: 260px; height: 320px; border-radius: 18px; overflow: hidden; scroll-snap-align: center; user-select: none; box-shadow: 0 8px 20px rgba(9,20,28,.14); }
 .carousel-item img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 .carousel-item figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 26px 14px 12px; direction: rtl; color: #fff; font-weight: 800; font-size: 14px; background: linear-gradient(transparent, rgba(9,20,28,.75)); }
 .carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(255,255,255,.92); color: var(--ink); box-shadow: 0 6px 18px rgba(0,0,0,.18); cursor: pointer; }
@@ -457,7 +457,7 @@
 .card-stepper button:active { background: rgba(255,255,255,.15); }
 .card-stepper span { min-width: 20px; text-align: center; font-weight: 800; font-size: 14px; animation: pop .25s ease; }
 
-.sticky-cats { position: fixed; z-index: 29; top: 84px; inset-inline: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: rgba(251,250,246,.96); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 6px 16px rgba(9,20,28,.08); transform: translateY(-110%); opacity: 0; pointer-events: none; transition: transform .25s ease, opacity .2s ease; }
+.sticky-cats { position: fixed; z-index: 29; top: 84px; inset-inline: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 10px 16px; background: #fbfaf6; box-shadow: 0 6px 16px rgba(9,20,28,.08); transform: translateY(-110%); opacity: 0; pointer-events: none; transition: transform .25s ease, opacity .2s ease; }
 .sticky-cats::-webkit-scrollbar { display: none; }
 .sticky-cats.is-shown { transform: none; opacity: 1; pointer-events: auto; }
 .sticky-cats button { flex: none; border: 1px solid rgba(24,43,58,.14); border-radius: 999px; background: #fff; color: #182b3a; font-weight: 700; font-size: 13px; padding: 6px 14px; white-space: nowrap; }
@@ -502,7 +502,7 @@
   .search-input, .category-button, .segmented button, .order-field input, .extras-input, .sticky-cats button, .faei-app .where-map, .install-step-icon, .qty-control { background: #1e3142 !important; border-color: #2f4659 !important; color: #e8eef3 !important; }
   .search-input::placeholder, .extras-input::placeholder, .order-field input::placeholder { color: #7f93a4; }
   .category-button.is-active, .sticky-cats button.is-active, .segmented button.is-active, .segmented button[aria-pressed="true"] { background: #f4c542 !important; color: #182b3a !important; border-color: #f4c542 !important; }
-  .sticky-cats { background: rgba(15,27,37,.94); }
+  .sticky-cats { background: #0f1b25; }
   .menu-extras, .order-hint, .upgrade-button, .extras-banner { background: #2b2614 !important; border-color: #5a4a17 !important; color: #f4d77a !important; }
   .closed-note, .install-sheet li, .cliq-box, .group-notice, .share-cart { background: #1e3142 !important; border-color: #2f4659 !important; color: #c9d6e1 !important; }
   .share-cart, .install-copy { color: #6fb8ea !important; }
@@ -542,3 +542,9 @@
 @media (max-height: 720px) { .checkout-note { display: none; } }
 .discount-row { color: #1f8a4c !important; font-weight: 800; }
 @media (prefers-color-scheme: dark) { .discount-row { color: #5fd18f !important; } }
+
+/* 21. Lite mode for weak phones: no fades, scaling or press animations */
+.lite .product-image img { opacity: 1 !important; transform: none !important; transition: none !important; }
+.lite .carousel-item { box-shadow: none; }
+.lite .product-card, .lite .button, .lite .add-button, .lite .category-button, .lite .cart-bar, .lite .sticky-cats { transition: none !important; animation: none !important; }
+.lite .cart-bar, .lite .card-stepper, .lite .card-stepper span, .lite .cart-bar-count { animation: none !important; }

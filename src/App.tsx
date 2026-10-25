@@ -188,17 +188,28 @@ function GalleryCarousel() {
     let frame = 0;
     let timer = 0;
     // Scale and fade each photo by its distance from the middle, and click when a new one reaches it.
+    // Positions are measured once (and on resize) so scrolling never forces a re-layout.
+    // Phones that are weak or ask for less motion skip the scaling and only keep the click.
+    const lite = document.documentElement.classList.contains('lite');
+    let centers: number[] = [];
+    let itemWidth = 1;
+    const measure = () => {
+      centers = items.map((item) => item.offsetLeft + item.offsetWidth / 2);
+      itemWidth = items[0]?.offsetWidth || 1;
+    };
+    measure();
     const paint = () => {
       frame = 0;
       const middle = track.scrollLeft + track.clientWidth / 2;
       let nearest = 0;
       let best = Infinity;
-      items.forEach((item, index) => {
-        const distance = (item.offsetLeft + item.offsetWidth / 2 - middle) / item.offsetWidth;
-        const amount = Math.min(Math.abs(distance), 1.4);
-        item.style.transform = `scale(${1 - amount * 0.1}) rotateY(${Math.max(-1, Math.min(1, distance)) * -10}deg)`;
-        item.style.opacity = String(1 - amount * 0.32);
-        if (Math.abs(distance) < best) { best = Math.abs(distance); nearest = index; }
+      centers.forEach((itemCenter, index) => {
+        const distance = Math.abs(itemCenter - middle) / itemWidth;
+        if (distance < best) { best = distance; nearest = index; }
+        if (lite) return;
+        const amount = Math.min(distance, 1.4);
+        items[index].style.transform = `scale(${1 - amount * 0.1})`;
+        items[index].style.opacity = String(1 - amount * 0.32);
       });
       const photo = nearest % count;
       if (photo !== lastIndex) {
@@ -206,7 +217,7 @@ function GalleryCarousel() {
         lastIndex = photo;
       }
     };
-    const center = () => { track.scrollLeft = setWidth() + (track.scrollLeft % setWidth()); paint(); };
+    const center = () => { measure(); track.scrollLeft = setWidth() + (track.scrollLeft % setWidth()); paint(); };
     track.scrollLeft = setWidth();
     paint();
     const onScroll = () => {
@@ -699,13 +710,16 @@ function App() {
   const catalogRef = useRef<HTMLDivElement>(null);
   const [stickyCats, setStickyCats] = useState(false);
   useEffect(() => {
-    const onScroll = () => {
+    let frame = 0;
+    const check = () => {
+      frame = 0;
       const catalog = catalogRef.current?.getBoundingClientRect();
       setStickyCats(!!catalog && catalog.top < 150 && catalog.bottom > 220);
     };
-    onScroll();
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(check); };
+    check();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); if (frame) cancelAnimationFrame(frame); };
   }, []);
   // Keep the chosen category chip in view inside the sticky bar.
   const stickyRef = useRef<HTMLDivElement>(null);

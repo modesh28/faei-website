@@ -6,6 +6,14 @@ import App from './App';
 import './index.css';
 import { products, categories } from './menu';
 
+// Weak phones (few cores or little memory) and anyone asking for less motion get a lighter site:
+// no photo scaling, fades or blur, so scrolling stays smooth.
+{
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const weak = (nav.hardwareConcurrency && nav.hardwareConcurrency <= 4) || (nav.deviceMemory && nav.deviceMemory <= 3);
+  if (weak || window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('lite');
+}
+
 // Lets the site install to the home screen and open without a connection.
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
