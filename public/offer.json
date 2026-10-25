@@ -1,6 +1,6 @@
 {
   "show": true,
-  "title": "عرض اليوم",
-  "text": "وجبة شلة: شاورما بتكفّي الشلة كلها بـ 8 د.أ بس.",
-  "productId": "shawarma-shilla"
+  "title": "عرض الإطلاق",
+  "text": "خصم 15% على كل المنيو لما تطلب من الموقع.",
+  "discountPercent": 15
 }

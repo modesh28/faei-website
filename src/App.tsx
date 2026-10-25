@@ -34,12 +34,13 @@ type DeliveryZone = 'inside' | 'outside';
 
 // Offer of the day. The live text comes from public/offer.json (edit it on GitHub, no code needed);
 // this is only the fallback while it loads or if the file is broken.
-type Offer = { show: boolean; title: string; text: string; productId?: string; optionIndex?: number };
+// discountPercent takes that much off every menu item in website orders (not delivery or cafeteria extras).
+type Offer = { show: boolean; title: string; text: string; productId?: string; optionIndex?: number; discountPercent?: number };
 const DEFAULT_OFFER: Offer = {
   show: true,
-  title: 'عرض اليوم',
-  text: 'وجبة شلة: شاورما بتكفّي الشلة كلها بـ 8 د.أ بس.',
-  productId: 'shawarma-shilla',
+  title: 'عرض الإطلاق',
+  text: 'خصم 15% على كل المنيو لما تطلب من الموقع.',
+  discountPercent: 15,
 };
 
 // Photos for the "قعدة الفَيّ" gallery (files in public/images). size: big = 2x2, tall = 1x2, normal = 1x1.
@@ -608,9 +609,22 @@ function App() {
   function removeProduct(id: string) { setCart((current) => current.filter((entry) => entry.id !== id)); }
   function openCart() { setMobileNavOpen(false); setToast(''); setToastAction(null); setCartOpen(true); }
 
+  const [offer, setOffer] = useState<Offer>(DEFAULT_OFFER);
+  useEffect(() => {
+    fetch('/offer.json', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: Partial<Offer> | null) => { if (data && typeof data.text === 'string') setOffer({ ...DEFAULT_OFFER, ...data }); })
+      .catch(() => {});
+  }, []);
+  const offerProduct = offer.productId ? productMap.get(offer.productId) : undefined;
+  // Launch discount on menu items, rounded to the nearest 5 qirsh (50 fils).
+  const discountPercent = offer.show && offer.discountPercent ? Math.min(Math.max(offer.discountPercent, 0), 90) : 0;
+  const discountFils = discountPercent ? Math.round((totalFils * discountPercent) / 100 / 50) * 50 : 0;
+  const itemsAfterDiscountFils = totalFils - discountFils;
+
   const isDelivery = fulfillment === 'delivery';
   const deliveryFils = isDelivery && zone === 'inside' ? DELIVERY_INSIDE_FILS : 0;
-  const grandTotalFils = totalFils + deliveryFils;
+  const grandTotalFils = itemsAfterDiscountFils + deliveryFils;
   const missingAddress = isDelivery && !address.trim();
   const missingTime = timeMode === 'later' && !orderTime;
   const hasExtras = extras.trim().length > 0;
@@ -629,11 +643,12 @@ function App() {
       ? `طريقة الاستلام: توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}\nالعنوان: ${address.trim()}`
       : 'طريقة الاستلام: استلام من الكافيه';
     const when = `الوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${orderTime}`}`;
+    const discountText = discountFils ? `مجموع الأصناف: ${money(totalFils)}\n${offer.title} −${discountPercent}%: −${money(discountFils)}\n` : '';
     const totals = isDelivery
       ? zone === 'inside'
-        ? `مجموع الأصناف: ${money(totalFils)}\nالتوصيل: ${money(deliveryFils)}\nالإجمالي النهائي: ${money(grandTotalFils)}`
-        : `مجموع الأصناف: ${money(totalFils)}\nالتوصيل: بنتفق عليه\nالإجمالي قبل التوصيل: ${money(totalFils)}`
-      : `الإجمالي النهائي: ${money(totalFils)}`;
+        ? `${discountText || `مجموع الأصناف: ${money(totalFils)}\n`}التوصيل: ${money(deliveryFils)}\nالإجمالي النهائي: ${money(grandTotalFils)}`
+        : `${discountText || `مجموع الأصناف: ${money(totalFils)}\n`}التوصيل: بنتفق عليه\nالإجمالي قبل التوصيل: ${money(itemsAfterDiscountFils)}`
+      : `${discountText}الإجمالي النهائي: ${money(itemsAfterDiscountFils)}`;
     const extrasText = hasExtras ? `من الكافتيريا (السعر بيتأكد على واتساب):\n${extras.trim()}\n\n` : '';
     const itemsText = lines ? `${lines}\n\n` : '';
     const totalsText = !cartLines.length
@@ -648,6 +663,7 @@ function App() {
       items: cartLines.map(({ name, option, quantity }) => `${name}${option.label ? ` (${option.label})` : ''} × ${quantity}`).join('، '),
       pieces: cartLines.reduce((sum, line) => sum + line.quantity, 0),
       itemsTotal: totalFils / 1000,
+      discount: discountFils / 1000,
       delivery: isDelivery ? (zone === 'inside' ? deliveryFils / 1000 : 'بنتفق عليه') : 0,
       total: grandTotalFils / 1000,
       fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}` : 'استلام',
@@ -666,14 +682,6 @@ function App() {
     else window.location.assign(url);
   }
 
-  const [offer, setOffer] = useState<Offer>(DEFAULT_OFFER);
-  useEffect(() => {
-    fetch('/offer.json', { cache: 'no-store' })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: Partial<Offer> | null) => { if (data && typeof data.text === 'string') setOffer({ ...DEFAULT_OFFER, ...data }); })
-      .catch(() => {});
-  }, []);
-  const offerProduct = offer.productId ? productMap.get(offer.productId) : undefined;
 
   function selectCategory(category: Category | 'الكل') {
     setSelectedCategory(category);
@@ -924,7 +932,8 @@ function App() {
             </div>
             <div className="drawer-foot">
               <div className="drawer-actions">{cartLines.length ? <button type="button" className="share-cart" onClick={shareCart} data-testid="button-share-cart"><Users size={15} /> {shareCopied ? 'انتسخ الرابط ✓' : 'شارك السلة مع الشلة'}</button> : <span />}<button className="clear-button" type="button" onClick={() => { if (window.confirm('تمسح كل الأصناف من السلة؟')) setCart([]); }} data-testid="button-clear-cart">إفراغ السلة</button></div>
-              {isDelivery && <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>}
+              {(isDelivery || discountFils > 0) && <div className="subtotal-row"><span>الأصناف</span><span>{money(totalFils)}</span></div>}
+              {discountFils > 0 && <div className="subtotal-row discount-row" data-testid="text-discount"><span>{offer.title} −{discountPercent}%</span><span>−{money(discountFils)}</span></div>}
               {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>

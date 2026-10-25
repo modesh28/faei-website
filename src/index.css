@@ -540,3 +540,5 @@
 .line-controls { margin-top: 6px !important; }
 .line-controls .qty-control button { width: 30px; height: 30px; }
 @media (max-height: 720px) { .checkout-note { display: none; } }
+.discount-row { color: #1f8a4c !important; font-weight: 800; }
+@media (prefers-color-scheme: dark) { .discount-row { color: #5fd18f !important; } }
