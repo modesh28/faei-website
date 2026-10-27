@@ -440,6 +440,10 @@
     {
      "label": "سوبر",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2750
     }
    ],
    "image": "/images/menu/bbq2.webp"
