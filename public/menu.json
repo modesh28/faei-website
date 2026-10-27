@@ -643,7 +643,7 @@
   },
   {
    "id": "quesadilla-honey-mustard",
-   "name": "كساديا هاني ماسترد",
+   "name": "كساديا باربيكيو",
    "category": "كساديا",
    "options": [
     {
@@ -855,8 +855,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/cheese-mix.webp",
-   "available": false
+   "image": "/images/menu/cheese-mix.webp"
   },
   {
    "id": "manakish-white-cheese",
@@ -868,8 +867,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/cheese-mix.webp",
-   "available": false
+   "image": "/images/menu/cheese-mix.webp"
   },
   {
    "id": "manakish-muhammara",
@@ -881,8 +879,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/manakeesh.webp",
-   "available": false
+   "image": "/images/menu/manakeesh.webp"
   },
   {
    "id": "manakish-salami",
@@ -894,8 +891,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/salami.webp",
-   "available": false
+   "image": "/images/menu/salami.webp"
   },
   {
    "id": "manakish-zaatar",
@@ -919,8 +915,7 @@
      "priceFils": 1000
     }
    ],
-   "image": "/images/menu/zaatar-cheese.webp",
-   "available": false
+   "image": "/images/menu/zaatar-cheese.webp"
   },
   {
    "id": "manakish-turkey",
@@ -932,40 +927,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/manakish-turkey.webp",
-   "available": false
-  },
-  {
-   "id": "cold-luncheon-labneh",
-   "name": "سنيورة ولبنة",
-   "category": "ساندويش بارد",
-   "options": [
-    {
-     "label": "صغير",
-     "priceFils": 500
-    },
-    {
-     "label": "كبير",
-     "priceFils": 600
-    }
-   ],
-   "image": "/images/menu/luncheon-labneh.webp"
-  },
-  {
-   "id": "cold-kashkaval",
-   "name": "قشقوان",
-   "category": "ساندويش بارد",
-   "options": [
-    {
-     "label": "صغير",
-     "priceFils": 1000
-    },
-    {
-     "label": "كبير",
-     "priceFils": 1250
-    }
-   ],
-   "image": "/images/menu/halloumi.webp"
+   "image": "/images/menu/manakish-turkey.webp"
   },
   {
    "id": "cold-cheese-mix",
@@ -1102,18 +1064,6 @@
     }
    ],
    "image": "/images/menu/salad-coleslaw.webp"
-  },
-  {
-   "id": "salad-fruit",
-   "name": "فواكة",
-   "category": "السلطات",
-   "options": [
-    {
-     "label": "",
-     "priceFils": 2000
-    }
-   ],
-   "image": "/images/menu/salad-fruit.webp"
   },
   {
    "id": "salad-nachos",
