@@ -334,7 +334,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
       <main className="admin-shell">
-        {tab === 'orders' && <Orders live={live} />}
+        {tab === 'orders' && <Orders live={live} showSales={isAdmin} />}
         {tab === 'items' && (menu ? (isDev
           ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} />
           : <Items menu={menu} photos={photos} onToggle={(id) => void quickToggle(id)} switching={switching} />) : menuState)}
@@ -792,7 +792,8 @@ const ago = (time: number) => {
 };
 const ACTIVE = ['جديد', 'عم يتحضّر', 'جاهز'];
 
-function Orders({ live }: { live: Live }) {
+// Staff see the day's orders but not how much money came in.
+function Orders({ live, showSales }: { live: Live; showSales: boolean }) {
   const [, tick] = useState(0);
   const [showDone, setShowDone] = useState(false);
   useEffect(() => { const timer = window.setInterval(() => tick((n) => n + 1), 30_000); return () => window.clearInterval(timer); }, []);
@@ -808,7 +809,7 @@ function Orders({ live }: { live: Live }) {
       {live.error && <p className="admin-error">{live.error}</p>}
       <div className="admin-stats">
         <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هلّق</em></div>
-        <div><small>مبيعات اليوم</small><b>{todays.reduce((sum, order) => sum + order.total, 0).toFixed(2)} د.أ</b><em>بدون الملغي</em></div>
+        {showSales && <div><small>مبيعات اليوم</small><b>{todays.reduce((sum, order) => sum + order.total, 0).toFixed(2)} د.أ</b><em>بدون الملغي</em></div>}
       </div>
       {!active.length && <p className="admin-empty">ما في طلبات مفتوحة هلّق. أول ما يوصل طلب بيطلع هون. 👌</p>}
       <div className="admin-orders-grid">
