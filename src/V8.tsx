@@ -238,7 +238,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
                             );
                           });
                           return <>
-                            <div className="v8-item-line"><b>{product.name}{product.nameEn && product.nameEn !== product.name && <span className="v8-name-en" lang="en">{product.nameEn}</span>}</b><i aria-hidden="true" />{samePrice && <em>{money(product.options[0].priceFils)}</em>}{!labelled && !off && buttons}</div>
+                            <div className="v8-item-line"><b>{product.nameEn ? <><span lang="en" className="v8-name-main">{product.nameEn}</span>{product.nameEn !== product.name && <span className="v8-name-ar">{product.name}</span>}</> : product.name}</b><i aria-hidden="true" />{samePrice && <em>{money(product.options[0].priceFils)}</em>}{!labelled && !off && buttons}</div>
                             {off ? <small>مش متوفر هسه</small> : labelled && <div className="v8-options">{buttons}</div>}
                           </>;
                         })()}
