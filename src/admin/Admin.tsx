@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Bell, Camera, ClipboardList, Eye, ExternalLink, LogOut, MessageCircle, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, LogOut, MessageCircle, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
@@ -152,7 +152,7 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
   );
 }
 
-type Tab = 'orders' | 'items' | 'offer' | 'sales' | 'accounts';
+type Tab = 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'accounts';
 
 function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void; onRole: (role: Role) => void }) {
   const token = me.session;
@@ -330,6 +330,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
           <button type="button" className={tab === 'items' ? 'is-active' : ''} onClick={() => setTab('items')} data-testid="tab-items"><UtensilsCrossed size={16} /> الأصناف</button>
           {isDev && <button type="button" className={tab === 'offer' ? 'is-active' : ''} onClick={() => setTab('offer')} data-testid="tab-offer"><Tag size={16} /> العرض</button>}
           <button type="button" className={tab === 'sales' ? 'is-active' : ''} onClick={() => setTab('sales')} data-testid="tab-sales"><BarChart3 size={16} /> المبيعات</button>
+          {isDev && <button type="button" className={tab === 'customers' ? 'is-active' : ''} onClick={() => setTab('customers')} data-testid="tab-customers"><Contact size={16} /> الزباين</button>}
         </>}
         <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
@@ -340,6 +341,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
           : <Items menu={menu} photos={photos} onToggle={(id) => void quickToggle(id)} switching={switching} />) : menuState)}
         {tab === 'offer' && (offer ? <OfferForm offer={offer} onChange={setOffer} /> : menuState)}
         {tab === 'sales' && <Sales session={token} />}
+        {tab === 'customers' && <Customers session={token} />}
         {tab === 'accounts' && <Accounts me={me} />}
       </main>
       {(dirty || saving !== 'idle') && (
@@ -906,6 +908,142 @@ function Sales({ session }: { session: string }) {
         </section>
       )}
       <p className="admin-hint">المبيعات من طلبات الموقع (بدون الملغي). كل طلب كمان بينسجل بشيت الطلبات زي قبل.</p>
+    </>
+  );
+}
+
+// ---- Customers (by phone) and giveaways ----
+
+type Customer = { phone: string; orders: number; total: number; first: number; last: number; lastOrder: string; items?: Record<string, number> };
+type CustomerSort = 'orders' | 'total' | 'new' | 'away';
+const whatsappTo = (phone: string, text: string) => `https://wa.me/962${phone.replace(/^0/, '')}?text=${encodeURIComponent(text)}`;
+const dateText = (time: number) => new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', day: 'numeric', month: 'numeric' }).format(new Date(time));
+
+function Customers({ session }: { session: string }) {
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [minOrders, setMinOrders] = useState(1);
+  const [days, setDays] = useState(0);
+  const [winner, setWinner] = useState<Customer | null>(null);
+  const [rolling, setRolling] = useState('');
+  const [sort, setSort] = useState<CustomerSort>('orders');
+  const [open, setOpen] = useState('');
+  useEffect(() => {
+    fetch('/api/customers', { cache: 'no-store', headers: { Authorization: `Bearer ${session}` } })
+      .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+      .then((data: { customers: Customer[] }) => setCustomers(data.customers.sort((a, b) => b.orders - a.orders || b.last - a.last)))
+      .catch(() => setError('ما قدرنا نجيب الزباين. جرّب كمان مرة.'));
+  }, [session]);
+  const eligible = useMemo(() => (customers ?? []).filter((customer) => customer.orders >= minOrders && (!days || Date.now() - customer.last < days * 86_400_000)), [customers, minOrders, days]);
+  if (error) return <p className="admin-error">{error}</p>;
+  if (!customers) return <p className="admin-loading">لحظة…</p>;
+  // A short shuffle on screen, then a fair random pick.
+  function draw() {
+    if (!eligible.length) return;
+    setWinner(null);
+    let spins = 0;
+    const timer = window.setInterval(() => {
+      setRolling(eligible[Math.floor(Math.random() * eligible.length)].phone);
+      if (++spins < 18) return;
+      window.clearInterval(timer);
+      const pick = new Uint32Array(1);
+      crypto.getRandomValues(pick);
+      setWinner(eligible[pick[0] % eligible.length]);
+      setRolling('');
+    }, 90);
+  }
+  function exportCsv() {
+    const favourite = (customer: Customer) => Object.entries(customer.items ?? {}).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+    const rows = [['phone', 'orders', 'total_jod', 'first_order', 'last_order', 'favourite'], ...customers!.map((customer) => [customer.phone, String(customer.orders), customer.total.toFixed(2), new Date(customer.first).toISOString().slice(0, 10), new Date(customer.last).toISOString().slice(0, 10), `"${favourite(customer).replace(/"/g, '')}"`])];
+    const blob = new Blob([`\ufeff${rows.map((row) => row.join(',')).join('\n')}`], { type: 'text/csv;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `faei-customers-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+  const q = query.replace(/\D/g, '');
+  const DAY = 86_400_000;
+  // "Away": ordered at least twice but not in the last two weeks, worth a message.
+  const sorted = sort === 'away'
+    ? customers.filter((customer) => customer.orders >= 2 && Date.now() - customer.last > 14 * DAY).sort((a, b) => b.orders - a.orders)
+    : [...customers].sort((a, b) => (sort === 'total' ? b.total - a.total : sort === 'new' ? b.first - a.first : b.orders - a.orders || b.last - a.last));
+  const shown = q ? sorted.filter((customer) => customer.phone.includes(q)) : sorted;
+  const regulars = customers.filter((customer) => customer.orders > 1).length;
+  const spent = customers.reduce((sum, customer) => sum + customer.total, 0);
+  return (
+    <>
+      <div className="admin-stats">
+        <div><small>عدد الزباين</small><b>{customers.length}</b><em>من طلبات الموقع</em></div>
+        <div><small>رجعوا طلبوا</small><b>{regulars}</b><em>{customers.length ? Math.round((regulars / customers.length) * 100) : 0}% من الزباين</em></div>
+        <div><small>معدّل الطلب</small><b>{(spent / Math.max(1, customers.reduce((sum, customer) => sum + customer.orders, 0))).toFixed(2)} د.أ</b><em>للطلب الواحد</em></div>
+        <div><small>جداد آخر أسبوع</small><b>{customers.filter((customer) => Date.now() - customer.first < 7 * DAY).length}</b><em>أول طلب إلهم</em></div>
+      </div>
+      <section className="admin-card admin-giveaway">
+        <h2><Gift size={18} /> سحب على جائزة</h2>
+        <div className="admin-row">
+          <label className="admin-field">مين بيدخل السحب؟
+            <select className="admin-input" value={minOrders} onChange={(event) => setMinOrders(Number(event.target.value))} data-testid="giveaway-min">
+              <option value={1}>كل اللي طلبوا</option>
+              <option value={2}>طلبوا مرتين وأكثر</option>
+              <option value={3}>طلبوا 3 مرات وأكثر</option>
+              <option value={5}>طلبوا 5 مرات وأكثر</option>
+            </select>
+          </label>
+          <label className="admin-field">آخر طلب
+            <select className="admin-input" value={days} onChange={(event) => setDays(Number(event.target.value))} data-testid="giveaway-days">
+              <option value={0}>أي وقت</option>
+              <option value={7}>آخر أسبوع</option>
+              <option value={30}>آخر شهر</option>
+            </select>
+          </label>
+        </div>
+        <button type="button" className="admin-primary" onClick={draw} disabled={!eligible.length || !!rolling} data-testid="button-draw"><Gift size={16} /> اختار فائز ({eligible.length} بالسحب)</button>
+        {rolling && <p className="admin-winner is-rolling" dir="ltr">{rolling}</p>}
+        {winner && (
+          <div className="admin-winner" data-testid="winner">
+            <small>الفائز 🎉</small>
+            <b dir="ltr">{winner.phone}</b>
+            <span>{winner.orders} {winner.orders === 1 ? "طلب" : "طلبات"} · آخر طلب {dateText(winner.last)}</span>
+            <a className="admin-primary" href={whatsappTo(winner.phone, 'مبروك! 🎉 ربحت بسحب فَيّ. تعال استلم جائزتك من الكافتيريا 🙌')} target="_blank" rel="noreferrer"><MessageCircle size={16} /> بشّره عالواتساب</a>
+          </div>
+        )}
+      </section>
+      <section className="admin-card">
+        <div className="admin-chips">
+          {([['orders', 'الأكثر طلباً'], ['total', 'الأكثر دفعاً'], ['new', 'الأجدد'], ['away', 'غابوا عنا']] as [CustomerSort, string][]).map(([key, label]) => (
+            <button key={key} type="button" className={sort === key ? 'is-active' : ''} onClick={() => setSort(key)} data-testid={`sort-${key}`}>{label}</button>
+          ))}
+        </div>
+        {sort === 'away' && <p className="admin-hint">زباين طلبوا مرتين أو أكثر وما طلبوا من أسبوعين. ابعثلهم رسالة أو عرض يرجعهم.</p>}
+        <div className="admin-row">
+          <label className="admin-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="دوّر على رقم" inputMode="tel" dir="ltr" /></label>
+          <button type="button" className="admin-ghost-dark" onClick={exportCsv}><Download size={15} /> نزّلهم Excel</button>
+        </div>
+        {!shown.length && <p className="admin-empty">لسا ما في زباين. أول ما حدا يطلب من الموقع برقمه بيطلع هون.</p>}
+        <ul className="admin-customers">
+          {shown.slice(0, 300).map((customer) => (
+            <li key={customer.phone} className={open === customer.phone ? 'is-open' : ''}>
+              <button type="button" className="admin-customer-row" onClick={() => setOpen(open === customer.phone ? '' : customer.phone)} data-testid={`customer-${customer.phone}`}>
+                <b dir="ltr">{customer.phone}</b>
+                <span><b>{customer.orders}</b> طلب</span>
+                <span>{customer.total.toFixed(2)} د.أ</span>
+                <span>{dateText(customer.last)}</span>
+              </button>
+              {open === customer.phone && (
+                <div className="admin-customer-more">
+                  <p>أول طلب: {dateText(customer.first)} · آخر طلب: {dateText(customer.last)}{customer.lastOrder ? <> (رقم <span dir="ltr">{customer.lastOrder}</span>)</> : null} · معدّل طلبه: {(customer.total / Math.max(1, customer.orders)).toFixed(2)} د.أ</p>
+                  {customer.items && Object.keys(customer.items).length > 0 && (
+                    <p><b>بيحب:</b> {Object.entries(customer.items).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, count]) => `${name} (${count})`).join('، ')}</p>
+                  )}
+                  <a className="admin-primary" href={whatsappTo(customer.phone, 'مرحبا من FAEI 👋')} target="_blank" rel="noreferrer"><MessageCircle size={15} /> احكي معه عالواتساب</a>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
     </>
   );
 }

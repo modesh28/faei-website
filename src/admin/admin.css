@@ -179,3 +179,26 @@ a { color: inherit; }
 .admin-phone { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #1676b8; text-decoration: none; }
 .admin-order-sent { margin: 0 0 6px; font-size: 12.5px; color: #8a6d1a; }
 .admin-order-sent.is-yes { color: #2e7d4f; font-weight: 700; }
+
+/* Customers and giveaways */
+.admin-giveaway h2 { display: flex; align-items: center; gap: 8px; }
+.admin-giveaway .admin-row { align-items: flex-end; flex-wrap: wrap; }
+.admin-giveaway .admin-field { flex: 1; min-width: 140px; }
+.admin-winner { margin-top: 12px; padding: 16px; border-radius: 16px; background: #fff7dc; border: 2px solid #f4c542; display: grid; justify-items: center; gap: 6px; text-align: center; }
+.admin-winner small { font-weight: 800; color: #6b5a1d; }
+.admin-winner b { font-size: 28px; letter-spacing: 1px; color: #182b3a; }
+.admin-winner span { font-size: 13px; color: #53636b; }
+.admin-winner a { margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.admin-winner.is-rolling { font-size: 26px; font-weight: 800; color: #9aa6ad; }
+.admin-customers { list-style: none; margin: 10px 0 0; padding: 0; }
+.admin-customers li { border-top: 1px solid #ece8de; }
+.admin-customer-row { width: 100%; display: grid; grid-template-columns: 1.5fr .8fr 1fr .8fr; gap: 8px; align-items: center; padding: 11px 2px; border: 0; background: none; color: inherit; font: inherit; font-size: 13.5px; text-align: start; }
+.admin-customer-row > b { color: #1676b8; text-align: right; }
+.admin-customers li.is-open { background: #faf8f2; }
+.admin-customer-more { padding: 0 6px 12px; font-size: 13px; color: #53636b; }
+.admin-customer-more p { margin: 0 0 6px; }
+.admin-customer-more a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; margin-top: 4px; }
+.admin-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.admin-chips button { border: 1px solid #d8d5cc; background: #fff; border-radius: 999px; padding: 7px 12px; font-weight: 700; font-size: 13px; color: #53636b; }
+.admin-chips button.is-active { background: #182b3a; border-color: #182b3a; color: #fff; }
+.admin-ghost-dark { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d8d5cc; background: #fff; border-radius: 10px; padding: 8px 12px; font-weight: 700; color: #182b3a; white-space: nowrap; }

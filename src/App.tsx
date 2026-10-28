@@ -1149,6 +1149,7 @@ function App() {
               <section className="order-options foot-options compact-options" aria-label="طريقة الاستلام">
                 <h3><label htmlFor="input-phone">تلفونك</label></h3>
                 <input id="input-phone" className={`phone-input${phone && missingPhone ? ' is-wrong' : ''}`} type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XXXXXXXX" maxLength={20} data-testid="input-phone" />
+                <p className="phone-note">رقمك بنستخدمه للتواصل بخصوص طلبك وعروض فَيّ.</p>
                 <h3>الاستلام</h3>
                 <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
                   <button type="button" role="radio" aria-checked={!isDelivery} className={!isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('pickup')} data-testid="option-pickup">استلام</button>

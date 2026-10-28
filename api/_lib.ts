@@ -107,3 +107,31 @@ export async function githubCanPush(token: string): Promise<boolean> {
   if (!response.ok) return false;
   return !!((await response.json()) as { permissions?: { push?: boolean } }).permissions?.push;
 }
+
+// Customers, kept for good (orders expire after 35 days): one entry per phone number in the
+// Redis hash "customers". Cancelled orders don't count.
+export type Customer = { phone: string; orders: number; total: number; first: number; last: number; lastOrder: string; items?: Record<string, number> };
+export const validPhone = (phone: unknown): phone is string => typeof phone === 'string' && /^07[789]\d{7}$/.test(phone);
+export async function countCustomerOrder(order: { phone?: unknown; total?: unknown; createdAt?: unknown; id?: unknown; items?: unknown }, sign: 1 | -1) {
+  if (!validPhone(order.phone)) return;
+  const [stored, ready] = await redis([['HGET', 'customers', order.phone], ['GET', 'config:customers']]);
+  // Until the first look at the customers tab counts the existing orders, it will count this one too.
+  if (ready !== '1') return;
+  const time = Number(order.createdAt) || Date.now();
+  const current: Customer = typeof stored === 'string' ? JSON.parse(stored) as Customer : { phone: order.phone, orders: 0, total: 0, first: time, last: time, lastOrder: '' };
+  current.orders = Math.max(0, current.orders + sign);
+  current.total = Math.max(0, Math.round((current.total + sign * (Number(order.total) || 0)) * 1000) / 1000);
+  // What they order, so the shop knows its regulars' favourites.
+  const items = current.items ?? {};
+  if (Array.isArray(order.items)) for (const line of order.items as { name?: string; quantity?: number }[]) {
+    if (!line?.name) continue;
+    const next = (items[line.name] ?? 0) + sign * (Number(line.quantity) || 1);
+    if (next > 0) items[line.name] = next; else delete items[line.name];
+  }
+  current.items = items;
+  if (sign > 0) {
+    current.first = Math.min(current.first, time);
+    if (time >= current.last) { current.last = time; current.lastOrder = String(order.id ?? ''); }
+  }
+  await redis([['HSET', 'customers', order.phone, JSON.stringify(current)]]);
+}

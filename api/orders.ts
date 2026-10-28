@@ -12,7 +12,7 @@
 //   GET   /api/orders          the admin page lists recent orders (needs a signed-in account)
 //   PATCH /api/orders          the admin page changes an order's status (needs a signed-in admin)
 
-import { connected, json, notConnected, redis, sessionAccount, sessionUser } from './_lib.js';
+import { connected, countCustomerOrder, json, notConnected, redis, sessionAccount, sessionUser } from './_lib.js';
 
 // The admin screens ask for the version every few seconds. An instance that answered in the
 // last second and a half reuses its answer, which keeps the free Redis plan well within limits.
@@ -64,9 +64,11 @@ export async function POST(request: Request): Promise<Response> {
     if (previous && previous.status === 'جديد') {
       Object.assign(previous, { status: 'ملغي', 'at_ملغي': Date.now(), cancelledBy: 'edit', replacedBy: order.id });
       await redis([['SET', `order:${body.replaces}`, JSON.stringify(previous), 'KEEPTTL']]);
+      await countCustomerOrder(previous, -1);
     }
   }
   const [, , version] = await redis([['LPUSH', 'orders', order.ref], ['LTRIM', 'orders', 0, 1999], ['INCR', 'orders:version']]);
+  await countCustomerOrder(order, 1);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true });
 }
@@ -79,6 +81,7 @@ async function customerAnswer(ref: string, action: 'sent' | 'cancel', edit: bool
     // Once the kitchen started, the customer has to talk to the shop instead.
     if (order.status !== 'جديد') return json({ error: 'started', status: order.status }, 409);
     Object.assign(order, { status: 'ملغي', 'at_ملغي': Date.now(), cancelledBy: edit ? 'edit' : 'customer' });
+    await countCustomerOrder(order, -1);
   } else {
     order.customerSent = Date.now();
   }
@@ -120,7 +123,10 @@ export async function PATCH(request: Request): Promise<Response> {
   if (!validRef(body.ref) || typeof body.status !== 'string' || !STATUSES.includes(body.status)) return json({ error: 'bad-request' }, 400);
   const [stored] = await redis([['GET', `order:${body.ref}`]]);
   if (!stored) return json({ error: 'not-found' }, 404);
-  const order = { ...(JSON.parse(stored as string) as Record<string, unknown>), status: body.status, [`at_${body.status}`]: Date.now() };
+  const before = JSON.parse(stored as string) as Record<string, unknown>;
+  const order = { ...before, status: body.status, [`at_${body.status}`]: Date.now() };
+  if (before.status !== 'ملغي' && body.status === 'ملغي') await countCustomerOrder(order, -1);
+  if (before.status === 'ملغي' && body.status !== 'ملغي') await countCustomerOrder(order, 1);
   const [, version] = await redis([['SET', `order:${body.ref}`, JSON.stringify(order), 'KEEPTTL'], ['INCR', 'orders:version']]);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true, order });

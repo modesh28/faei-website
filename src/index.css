@@ -625,3 +625,4 @@
 .replace-box .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0; }
 .replace-box .segmented button { min-height: 38px; font-size: 13px; }
 @media (prefers-color-scheme: dark) { .replace-box { background: #2a2617; border-color: #5c4d1d; } .replace-box p { color: #f0d98a; } }
+.compact-options .phone-note { grid-column: 2; margin: -4px 0 2px; font-size: 11px; color: #7b878e; }
