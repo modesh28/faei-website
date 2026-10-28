@@ -789,7 +789,7 @@ function useOrders(session: string, onLogout: () => void): Live {
 
 const ago = (time: number) => {
   const minutes = Math.floor((Date.now() - time) / 60_000);
-  return minutes < 1 ? 'هلّق' : minutes < 60 ? `قبل ${minutes} د` : new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', hour: 'numeric', minute: '2-digit' }).format(new Date(time));
+  return minutes < 1 ? 'هسه' : minutes < 60 ? `قبل ${minutes} د` : new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', hour: 'numeric', minute: '2-digit' }).format(new Date(time));
 };
 const ACTIVE = ['جديد', 'عم يتحضّر', 'جاهز'];
 
@@ -809,10 +809,10 @@ function Orders({ live, showSales }: { live: Live; showSales: boolean }) {
       {!live.soundOn && <button type="button" className="admin-sound" onClick={live.enableSound} data-testid="button-sound"><Bell size={18} /> اكبس هون عشان يرنّ ويطلعلك إشعار لما يوصل طلب جديد</button>}
       {live.error && <p className="admin-error">{live.error}</p>}
       <div className="admin-stats">
-        <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هلّق</em></div>
+        <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هسه</em></div>
         {showSales && <div><small>مبيعات اليوم</small><b>{todays.reduce((sum, order) => sum + order.total, 0).toFixed(2)} د.أ</b><em>بدون الملغي</em></div>}
       </div>
-      {!active.length && <p className="admin-empty">ما في طلبات مفتوحة هلّق. أول ما يوصل طلب بيطلع هون. 👌</p>}
+      {!active.length && <p className="admin-empty">ما في طلبات مفتوحة هسه. أول ما يوصل طلب بيطلع هون. 👌</p>}
       <div className="admin-orders-grid">
         {active.map((order) => <OrderCard key={order.ref} order={order} fresh={live.fresh.has(order.ref)} onStatus={(status) => void live.setStatus(order.ref, status)} />)}
       </div>
@@ -837,7 +837,6 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
       </header>
       {order.preorder && <p className="admin-order-flag">طلب مسبق (انبعت والمحل مسكّر)</p>}
       {order.status === 'ملغي' && order.cancelledBy && <p className="admin-order-flag">{order.cancelledBy === 'edit' ? 'الزبون رجع عدّله (بيوصل الطلب الجديد لحاله)' : 'الزبون لغاه'}</p>}
-      {ACTIVE.includes(order.status) && <p className={`admin-order-sent${order.customerSent ? ' is-yes' : ''}`}>{order.customerSent ? '✓ الزبون أكّد إنه بعت الواتساب' : 'لسا الزبون ما أكّد إنه بعت الواتساب'}</p>}
       <ul>
         {order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}
         {order.extras && <li className="admin-order-extras">من الكافتيريا: {order.extras}</li>}

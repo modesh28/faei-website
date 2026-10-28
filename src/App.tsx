@@ -311,7 +311,7 @@ function OpenInBrowser() {
 // After an order is sent, a small card counts down to when it should be ready, then rings.
 // It's an estimate made on the phone, so it works with no staff action and no server.
 const ACTIVE_ORDER_KEY = 'faei-active-order-v1';
-type ActiveOrder = { id: string; ref?: string; placedAt: number; readyAt: number | null; sent?: boolean };
+type ActiveOrder = { id: string; ref?: string; placedAt: number; readyAt: number | null };
 function readActiveOrder(): ActiveOrder | null {
   try {
     const order = JSON.parse(localStorage.getItem(ACTIVE_ORDER_KEY) ?? 'null') as ActiveOrder | null;
@@ -351,7 +351,7 @@ function playChime() {
     });
   } catch { /* Sound is a bonus. */ }
 }
-type Answer = 'sent' | 'edit' | 'cancel';
+type Answer = 'edit' | 'cancel';
 function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder; raised: boolean; onClose: () => void; onAnswer: (answer: Answer) => Promise<string> }) {
   const [asking, setAsking] = useState<Answer | ''>('');
   const [answerError, setAnswerError] = useState('');
@@ -412,15 +412,23 @@ function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder
     : live && timerDone ? `${id} · بيرنّ تلفونك أول ما يجهز` : `${id} · جاهز بعد حوالي`;
   const minutes = Math.floor(left / 60_000);
   const seconds = Math.floor((left % 60_000) / 1000);
-  // Back from WhatsApp: the shop only sees the order on its screen, so ask whether it was really sent.
-  const ask = !!order.ref && !order.sent && !cancelled && (!live || live === 'جديد') && now - order.placedAt < 30 * 60_000;
+  // The order counts as sent. While the kitchen hasn't started, the customer can still take it back.
+  const changeable = !!order.ref && !cancelled && (!live || live === 'جديد') && now - order.placedAt < 30 * 60_000;
   async function answer(choice: Answer) {
+    if (!window.confirm(choice === 'edit' ? 'رح نلغي هالطلب ونرجعلك الأصناف عالسلة عشان تعدّلها وتبعته من جديد. تمام؟' : `أكيد بدك تلغي الطلب رقم ${order.id}؟`)) return;
     setAsking(choice);
     setAnswerError(await onAnswer(choice));
     setAsking('');
   }
   return (
     <div className={`order-tracker${raised ? ' is-raised' : ''}${ready ? ' is-ready' : ''}${cancelled ? ' is-cancelled' : ''}`} role="status" aria-live="polite" data-testid="order-tracker">
+      {changeable && (
+        <div className="order-tracker-change" data-testid="order-change">
+          <button type="button" onClick={() => void answer('edit')} disabled={!!asking} data-testid="button-order-edit">{asking === 'edit' ? 'لحظة…' : 'عدّل الطلب'}</button>
+          <button type="button" className="is-no" onClick={() => void answer('cancel')} disabled={!!asking} data-testid="button-order-cancel">{asking === 'cancel' ? 'لحظة…' : 'ألغِ الطلب'}</button>
+        </div>
+      )}
+      {answerError && <p className="order-tracker-error">{answerError}</p>}
       <div className="order-tracker-row">
         <span className="order-tracker-icon">{ready ? <Check size={18} /> : <Clock size={18} />}</span>
         <div className="order-tracker-text">
@@ -431,18 +439,7 @@ function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder
         <button type="button" className="order-tracker-close" onClick={onClose} aria-label="سكّر"><X size={16} /></button>
       </div>
       {(order.readyAt !== null || confirmed) && <div className="order-tracker-bar"><span style={{ width: `${progress * 100}%` }} /></div>}
-      {ask && (
-        <div className="order-tracker-ask" data-testid="order-ask">
-          <p>بعتت رسالة الطلب عالواتساب؟</p>
-          <div>
-            <button type="button" className="is-yes" onClick={() => void answer('sent')} disabled={!!asking} data-testid="button-order-sent">{asking === 'sent' ? 'لحظة…' : 'آه بعتها ✓'}</button>
-            <button type="button" onClick={() => void answer('edit')} disabled={!!asking} data-testid="button-order-edit">{asking === 'edit' ? 'لحظة…' : 'بدي أعدّل'}</button>
-            <button type="button" className="is-no" onClick={() => void answer('cancel')} disabled={!!asking} data-testid="button-order-cancel">{asking === 'cancel' ? 'لحظة…' : 'ألغيه'}</button>
-          </div>
-          {answerError && <small>{answerError}</small>}
-        </div>
-      )}
-      {!ask && canNotify && !ready && order.readyAt !== null && <button type="button" className="order-tracker-notify" onClick={askNotify}>نبّهني لما يجهز</button>}
+      {canNotify && !ready && order.readyAt !== null && <button type="button" className="order-tracker-notify" onClick={askNotify}>نبّهني لما يجهز</button>}
     </div>
   );
 }
@@ -482,7 +479,7 @@ function OpenStatus({ dark = false }: { dark?: boolean }) {
     color: open ? '#065f46' : dark ? 'rgba(255,255,255,.85)' : '#334155',
   };
   const dot = { display: 'inline-block', width: 8, height: 8, borderRadius: 999, flex: 'none', background: open ? '#10b981' : '#94a3b8' };
-  return <span style={badge}><span style={dot} />{open ? 'مفتوح هلأ' : 'مسكّر هلأ'}</span>;
+  return <span style={badge}><span style={dot} />{open ? 'مفتوح هسه' : 'مسكّر هسه'}</span>;
 }
 
 // Instagram logo as inline SVG, so it doesn't depend on the lucide-react version.
@@ -944,21 +941,15 @@ function App() {
     try { localStorage.removeItem(ACTIVE_ORDER_KEY); } catch { /* fine */ }
   }
   // The customer's answer after WhatsApp. Returns an error to show, or ''.
-  async function answerOrder(choice: 'sent' | 'edit' | 'cancel'): Promise<string> {
+  async function answerOrder(choice: 'edit' | 'cancel'): Promise<string> {
     if (!activeOrder?.ref) return '';
     let status = 0;
     let data: { status?: string } = {};
     try {
-      const response = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: activeOrder.ref, action: choice === 'sent' ? 'sent' : 'cancel', reason: choice }) });
+      const response = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: activeOrder.ref, action: 'cancel', reason: choice }) });
       status = response.status;
       data = await response.json().catch(() => ({})) as { status?: string };
     } catch { /* offline */ }
-    if (choice === 'sent') {
-      const next = { ...activeOrder, sent: true };
-      setActiveOrder(next);
-      try { localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(next)); } catch { /* fine */ }
-      return '';
-    }
     if (status === 409) return `ما بنقدر نلغيه من هون، الطلب ${data.status === 'جاهز' ? 'جاهز' : 'صار عم يتحضّر'}. احكي معنا عالواتساب.`;
     if (status !== 200 && status !== 404 && status !== 503) return 'ما في نت. جرّب كمان مرة.';
     closeTracker();
@@ -1236,7 +1227,7 @@ function App() {
               {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
-              {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هلأ وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هلأ، وبنرد عليك أول ما نفتح.</p>}
+              {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هسه وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هسه، وبنرد عليك أول ما نفتح.</p>}
               {(missingPhone || missingAddress || missingTime) && <p className="order-warning" data-testid="order-warning">{missingPhone ? (phone.trim() ? 'رقم التلفون مش صحيح. اكتبه هيك: 07XXXXXXXX' : 'اكتب رقم تلفونك فوق عشان تقدر تبعت الطلب.') : missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
               <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب</button>
               <p className="checkout-note">رح يفتح واتساب برسالة طلب جاهزة. الطلب بيتأكد لما FAEI يرد عليك.</p>
