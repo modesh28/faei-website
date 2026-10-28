@@ -628,8 +628,12 @@
    "category": "كساديا",
    "options": [
     {
-     "label": "",
+     "label": "ساندويش",
      "priceFils": 1500
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2500
     }
    ],
    "image": "/images/menu/quesadilla2.webp"
@@ -640,8 +644,12 @@
    "category": "كساديا",
    "options": [
     {
-     "label": "",
+     "label": "ساندويش",
      "priceFils": 2000
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2500
     }
    ],
    "image": "/images/menu/quesadilla2.webp"
@@ -652,8 +660,12 @@
    "category": "كساديا",
    "options": [
     {
-     "label": "",
+     "label": "ساندويش",
      "priceFils": 2000
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2500
     }
    ],
    "image": "/images/menu/quesadilla2.webp"
@@ -917,7 +929,7 @@
    "options": [
     {
      "label": "",
-     "priceFils": 1000
+     "priceFils": 1500
     }
    ],
    "image": "/images/menu/zaatar-cheese.webp"
