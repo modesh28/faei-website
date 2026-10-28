@@ -10,6 +10,7 @@
     "بيتزا",
     "كالزوني",
     "مناقيش",
+    "معجنات",
     "ساندويش بارد",
     "وجبات صحية"
   ],
@@ -1244,6 +1245,210 @@
         {
           "label": "توست أسمر",
           "priceFils": 1750
+        }
+      ]
+    },
+    {
+      "id": "pastry-faei",
+      "name": "بيتزا فَيّ",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 500
+        }
+      ]
+    },
+    {
+      "id": "pastry-shawarma",
+      "name": "بيتزا شاورما",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 500
+        }
+      ]
+    },
+    {
+      "id": "pastry-veg",
+      "name": "بيتزا خضار",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 500
+        }
+      ]
+    },
+    {
+      "id": "pastry-turkey",
+      "name": "بيتزا تركي",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 500
+        }
+      ]
+    },
+    {
+      "id": "pastry-salami",
+      "name": "بيتزا سلامي",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 500
+        }
+      ]
+    },
+    {
+      "id": "pastry-mix-cheese",
+      "name": "بيتزا ميكس أجبان",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 500
+        }
+      ]
+    },
+    {
+      "id": "pastry-margherita",
+      "name": "بيتزا مارغريتا",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 500
+        }
+      ]
+    },
+    {
+      "id": "pastry-mutabbaq-zaatar",
+      "name": "مطبق زعتر بلدي",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 500
+        }
+      ]
+    },
+    {
+      "id": "pastry-mutabbaq-escalope",
+      "name": "مطبق إسكالوب",
+      "category": "معجنات",
+      "section": "معجنات كبير",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 900
+        }
+      ]
+    },
+    {
+      "id": "sham-white-cheese",
+      "name": "جبنة بيضاء",
+      "category": "معجنات",
+      "section": "معجنات شامية",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 350
+        }
+      ]
+    },
+    {
+      "id": "sham-oregano-cheese",
+      "name": "جبنة أوريجانو",
+      "category": "معجنات",
+      "section": "معجنات شامية",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 350
+        }
+      ]
+    },
+    {
+      "id": "sham-halloumi",
+      "name": "جبنة حلوم",
+      "category": "معجنات",
+      "section": "معجنات شامية",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 350
+        }
+      ]
+    },
+    {
+      "id": "sham-yellow-cheese",
+      "name": "جبنة صفراء",
+      "category": "معجنات",
+      "section": "معجنات شامية",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 350
+        }
+      ]
+    },
+    {
+      "id": "sham-cheese-senyora",
+      "name": "جبنة صفراء وسنيورة",
+      "category": "معجنات",
+      "section": "معجنات شامية",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 350
+        }
+      ]
+    },
+    {
+      "id": "sham-spinach",
+      "name": "سبانخ",
+      "category": "معجنات",
+      "section": "معجنات شامية",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 350
+        }
+      ]
+    },
+    {
+      "id": "sham-potato",
+      "name": "بطاطا",
+      "category": "معجنات",
+      "section": "معجنات شامية",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 350
+        }
+      ]
+    },
+    {
+      "id": "sham-sausage",
+      "name": "نقانق",
+      "category": "معجنات",
+      "section": "معجنات شامية",
+      "options": [
+        {
+          "label": "",
+          "priceFils": 350
         }
       ]
     }

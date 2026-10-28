@@ -626,3 +626,16 @@
 .replace-box .segmented button { min-height: 38px; font-size: 13px; }
 @media (prefers-color-scheme: dark) { .replace-box { background: #2a2617; border-color: #5c4d1d; } .replace-box p { color: #f0d98a; } }
 .compact-options .phone-note { grid-column: 2; margin: -4px 0 2px; font-size: 11px; color: #7b878e; }
+
+/* 31. Sub-section headings and small photo-less items (معجنات كبير / شامية) */
+.menu-section-title { grid-column: 1 / -1; margin: 8px 0 -4px; padding-inline-start: 10px; border-inline-start: 4px solid var(--gold, #f4b400); font-size: 17px; font-weight: 800; color: var(--ink); }
+.menu-section-title:first-child { margin-top: 0; }
+.product-card.is-mini { flex-direction: row; }
+.product-card.is-mini:hover { transform: none; box-shadow: none; }
+.product-card.is-mini .product-body { padding: 8px 12px; flex-direction: row; align-items: center; gap: 10px; }
+.product-card.is-mini .product-body h3 { font-size: 15px; margin: 0; flex: 1; min-width: 0; }
+.product-card.is-mini .option-list { margin: 0; flex: none; }
+.product-card.is-mini .option-row { border-top: 0; padding-top: 0; }
+.product-card.is-mini .option-row .add-button { min-height: 34px; min-width: 34px; }
+.product-card.is-mini .option-row .add-button span { display: none; }
+@media (max-width: 640px) { .product-card.is-mini { grid-column: 1 / -1; } .catalog-grid:has(.is-mini) { gap: 7px; } }

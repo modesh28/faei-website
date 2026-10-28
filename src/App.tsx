@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
@@ -603,15 +603,17 @@ function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { p
   const [imageFailed, setImageFailed] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const available = isAvailable(product);
+  // Items in a sub-section (the cheap معجنات) are small photo-less rows so many fit on screen.
+  const mini = !!product.section;
   return (
-    <article className={`product-card${available ? '' : ' is-unavailable'}`} data-testid={`card-product-${product.id}`}>
-      {product.image && !imageFailed && (
+    <article className={`product-card${mini ? ' is-mini' : ''}${available ? '' : ' is-unavailable'}`} data-testid={`card-product-${product.id}`}>
+      {!mini && product.image && !imageFailed && (
         <div className={`product-image${imageLoaded ? ' is-loaded' : ''}`}>
           <img src={product.image} alt={product.alt ?? product.name} loading="lazy" onLoad={() => setImageLoaded(true)} onError={() => setImageFailed(true)} />
         </div>
       )}
       <div className="product-body">
-        {(showCategory || product.popular) && <div className="product-meta">
+        {!mini && (showCategory || product.popular) && <div className="product-meta">
           {showCategory && <span>{product.category}</span>}
           {product.popular && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-800"><Flame size={12} aria-hidden="true" /> الأكثر طلباً</span>}
         </div>}
@@ -1081,7 +1083,7 @@ function App() {
               {[...categories, 'الكل' as const].map((category) => <button key={category} type="button" tabIndex={stickyCats ? 0 : -1} className={!query && selectedCategory === category ? 'is-active' : ''} onClick={() => jumpToCategory(category)}>{category === 'الكل' ? 'كل المنيو' : category}</button>)}
             </div>
             <div className="catalog-grid" ref={catalogRef} aria-live="polite">
-              {visibleProducts.length ? visibleProducts.map((product) => <ProductCard key={product.id} product={product} onAdd={addProduct} onChange={changeQuantity} quantities={quantities} showCategory={!!query || selectedCategory === 'الكل'} />) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
+              {visibleProducts.length ? visibleProducts.map((product, index) => <Fragment key={product.id}>{product.section && !query && product.section !== visibleProducts[index - 1]?.section && <h3 className="menu-section-title">{product.section}</h3>}<ProductCard product={product} onAdd={addProduct} onChange={changeQuantity} quantities={quantities} showCategory={!!query || selectedCategory === 'الكل'} /></Fragment>) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
             </div>
           </div>
         </section>

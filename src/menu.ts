@@ -15,6 +15,8 @@ export type Product = {
   options: ProductOption[];
   image?: string;
   alt?: string;
+  // Groups items under a sub-heading inside their category, e.g. معجنات كبير / معجنات شامية.
+  section?: string;
   // Shows the "الأكثر طلباً" badge.
   popular?: boolean;
   // false hides the add button and shows "مش متوفر".

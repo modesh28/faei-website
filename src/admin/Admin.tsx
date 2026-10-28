@@ -465,6 +465,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { p
   const [name, setName] = useState(product.name);
   const [category, setCategory] = useState(product.category);
   const [newCategory, setNewCategory] = useState('');
+  const [section, setSection] = useState(product.section ?? '');
   const [options, setOptions] = useState(product.options.map((option) => ({ label: option.label, price: option.priceFils ? String(option.priceFils / 1000) : '' })));
   const [popular, setPopular] = useState(!!product.popular);
   const [available, setAvailable] = useState(product.available !== false);
@@ -481,11 +482,12 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { p
       category: category === '__new' ? newCategory.trim() : category,
       options: options.map((option) => ({ label: option.label.trim(), priceFils: Math.round(Number(option.price.replace(',', '.')) * 1000) || 0 })),
     };
+    if (section.trim()) next.section = section.trim();
     if (preview) next.image = preview;
     if (popular) next.popular = true;
     if (!available) next.available = false;
     return [next];
-  }, [product.id, name, category, newCategory, options, preview, popular, available]);
+  }, [product.id, name, category, newCategory, section, options, preview, popular, available]);
 
   async function pickPhoto(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -506,6 +508,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { p
     const id = product.id || slug();
     const image = newPhoto ? `/images/menu/${id}-${Date.now().toString(36)}.${newPhoto.startsWith('data:image/webp') ? 'webp' : 'jpg'}` : product.image;
     const next: Product = { id, name: name.trim(), category: finalCategory, options: cleanOptions };
+    if (section.trim()) next.section = section.trim();
     if (image) next.image = image;
     if (product.alt) next.alt = product.alt;
     if (popular) next.popular = true;
@@ -533,6 +536,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { p
           </select>
         </label>
         {category === '__new' && <label className="admin-field">اسم القسم الجديد<input value={newCategory} onChange={(event) => setNewCategory(event.target.value)} placeholder="مثلاً: مشروبات" /></label>}
+        <label className="admin-field">قسم فرعي (اختياري)<input value={section} onChange={(event) => setSection(event.target.value)} placeholder="مثلاً: معجنات شامية" /></label>
         <fieldset className="admin-options">
           <legend>الأسعار (بالدينار)</legend>
           {options.map((option, index) => (
