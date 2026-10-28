@@ -854,6 +854,10 @@ function App() {
   function copyCliq() {
     navigator.clipboard?.writeText(settings.cliqAlias).then(() => { setCliqCopied(true); window.setTimeout(() => setCliqCopied(false), 1800); }).catch(() => {});
   }
+  // Someone back from WhatsApp sending again within a quarter hour usually changed their order.
+  const recentOrder = activeOrder?.ref && Date.now() - activeOrder.placedAt < 15 * 60_000 ? activeOrder : null;
+  const [addOn, setAddOn] = useState(false);
+  const replacing = !!recentOrder && !addOn;
   const phoneNumber = normalizePhone(phone);
   const missingPhone = !phoneNumber;
   const canCheckout = (cartLines.length > 0 || hasExtras) && !missingAddress && !missingTime && !missingPhone;
@@ -911,6 +915,7 @@ function App() {
           fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}` : 'استلام',
           address: isDelivery ? address.trim() : '',
           phone: phoneNumber,
+          replaces: replacing ? activeOrder?.ref : undefined,
           time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
           payment: isCliq ? 'كليك' : 'كاش',
           preorder: !isOpenNow(),
@@ -927,6 +932,7 @@ function App() {
     const tracked: ActiveOrder = { id: orderId, ref, placedAt: Date.now(), readyAt: isOpenNow() ? estimateReadyAt(pieces, isDelivery, timeMode === 'later' ? orderTime : null) : null };
     try { localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(tracked)); } catch { /* The timer is optional. */ }
     setActiveOrder(tracked);
+    setAddOn(false);
     setCartOpen(false);
     const url = `https://wa.me/${WHATSAPP_DESTINATION}?text=${encodeURIComponent(message)}`;
     // Phones (and in-app browsers like Instagram's, where a new tab can silently do nothing)
@@ -1237,6 +1243,15 @@ function App() {
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
               {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هلأ وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هلأ، وبنرد عليك أول ما نفتح.</p>}
+              {recentOrder && (
+                <div className="replace-box" data-testid="replace-box">
+                  <p>بعتت طلب قبل شوي (رقم <span dir="ltr">{recentOrder.id}</span>). هاد الطلب:</p>
+                  <div className="segmented" role="radiogroup" aria-label="الطلب السابق">
+                    <button type="button" role="radio" aria-checked={!addOn} className={!addOn ? 'is-active' : ''} onClick={() => setAddOn(false)} data-testid="option-replace">بدل القديم</button>
+                    <button type="button" role="radio" aria-checked={addOn} className={addOn ? 'is-active' : ''} onClick={() => setAddOn(true)} data-testid="option-addon">طلب زيادة</button>
+                  </div>
+                </div>
+              )}
               {(missingPhone || missingAddress || missingTime) && <p className="order-warning" data-testid="order-warning">{missingPhone ? (phone.trim() ? 'رقم التلفون مش صحيح. اكتبه هيك: 07XXXXXXXX' : 'اكتب رقم تلفونك فوق عشان تقدر تبعت الطلب.') : missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
               <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب</button>
               <p className="checkout-note">رح يفتح واتساب برسالة طلب جاهزة. الطلب بيتأكد لما FAEI يرد عليك.</p>
