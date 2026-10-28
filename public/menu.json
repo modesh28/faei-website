@@ -1230,9 +1230,7 @@
           "label": "توست أسمر",
           "priceFils": 1750
         }
-      ],
-      "image": "/images/menu/turkey.webp",
-      "alt": "ساندويش توست تيركي"
+      ]
     },
     {
       "id": "toast-halloumi",
@@ -1247,9 +1245,7 @@
           "label": "توست أسمر",
           "priceFils": 1750
         }
-      ],
-      "image": "/images/menu/halloumi.webp",
-      "alt": "ساندويش توست حلوم"
+      ]
     }
   ]
 }
