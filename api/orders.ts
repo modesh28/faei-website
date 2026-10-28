@@ -57,6 +57,15 @@ export async function POST(request: Request): Promise<Response> {
   };
   const [created] = await redis([['SET', `order:${order.ref}`, JSON.stringify(order), 'EX', KEEP_SECONDS, 'NX']]);
   if (created !== 'OK') return json({ ok: true, duplicate: true });
+  // A customer who came back to change their order: the old one leaves the shop's screen while it's still new.
+  if (validRef(body.replaces) && body.replaces !== order.ref) {
+    const [old] = await redis([['GET', `order:${body.replaces}`]]);
+    const previous = old ? JSON.parse(old as string) as Record<string, unknown> : null;
+    if (previous && previous.status === 'جديد') {
+      Object.assign(previous, { status: 'ملغي', 'at_ملغي': Date.now(), cancelledBy: 'edit', replacedBy: order.id });
+      await redis([['SET', `order:${body.replaces}`, JSON.stringify(previous), 'KEEPTTL']]);
+    }
+  }
   const [, , version] = await redis([['LPUSH', 'orders', order.ref], ['LTRIM', 'orders', 0, 1999], ['INCR', 'orders:version']]);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true });
