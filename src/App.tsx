@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
-import V8Section from './V8';
+import V8Section, { v8Products, v8Visible } from './V8';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
@@ -494,13 +494,16 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
 
 function lineId(product: Product, optionIndex: number): string { return `${product.id}::${optionIndex}`; }
 
-const productMap = new Map(products.map((product) => [product.id, product]));
+// V8's drinks can join a FAEI order, so their ids resolve here too (all start with "v8-").
+const productMap = new Map([...products, ...v8Products].map((product) => [product.id, product]));
+const isV8Id = (id: string) => id.startsWith('v8-');
 function resolveLine(id: string) {
   const [productId, index] = id.split('::');
   const product = productMap.get(productId);
   const option = product?.options[Number(index)];
   // Items switched off in the admin page drop out of carts, suggestions and reorders.
-  return product && option && isAvailable(product) ? { product, option, name: option.label ? `${product.name} — ${option.label}` : product.name } : undefined;
+  const base = product && option ? `${product.name}${option.label ? ` — ${option.label}` : ''}` : '';
+  return product && option && isAvailable(product) ? { product, option, name: isV8Id(product.id) ? `V8 · ${base}` : base } : undefined;
 }
 
 // Sandwich → meal upgrades. Burgers and chicken have both options on one card; shawarma meals are separate items.
@@ -826,6 +829,7 @@ function App() {
     setCart((current) => current.flatMap((entry) => entry.id !== id ? [entry] : entry.quantity + delta <= 0 ? [] : [{ ...entry, quantity: Math.min(99, entry.quantity + delta) }]));
   }
   function removeProduct(id: string) { setCart((current) => current.filter((entry) => entry.id !== id)); }
+  const [v8Open, setV8Open] = useState(false);
   function openCart() { setMobileNavOpen(false); setToast(''); setToastAction(null); setCartOpen(true); }
 
   const [offer, setOffer] = useState<Offer>(DEFAULT_OFFER);
@@ -839,7 +843,9 @@ function App() {
   // Launch discount on menu items, rounded to the nearest 5 qirsh (50 fils).
   const offerActive = offer.show && (!offer.endsAt || Date.now() < Date.parse(offer.endsAt));
   const discountPercent = offerActive && offer.discountPercent ? Math.min(Math.max(offer.discountPercent, 0), 90) : 0;
-  const discountFils = discountPercent ? Math.round((totalFils * discountPercent) / 100 / 50) * 50 : 0;
+  // V8's drinks aren't part of FAEI's offers.
+  const faeiFils = cartLines.reduce((sum, line) => sum + (isV8Id(line.product.id) ? 0 : line.option.priceFils * line.quantity), 0);
+  const discountFils = discountPercent ? Math.round((faeiFils * discountPercent) / 100 / 50) * 50 : 0;
   const itemsAfterDiscountFils = totalFils - discountFils;
 
   const isDelivery = fulfillment === 'delivery';
@@ -925,6 +931,34 @@ function App() {
         }),
       }).catch(() => {});
     } catch { /* The order still goes to WhatsApp. */ }
+    // V8's drinks in a FAEI order also show on V8's own screen, so they make them; FAEI delivers and collects.
+    const v8Lines = cartLines.filter((line) => isV8Id(line.product.id));
+    if (v8Lines.length) {
+      const v8Ref = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => 'abcdefghijklmnopqrstuvwxyz0123456789'[byte % 36]).join('');
+      try {
+        fetch('/api/orders', {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ref: v8Ref,
+            id: `${orderId}-V8`,
+            shop: 'v8',
+            items: v8Lines.map(({ name, option, quantity }) => ({ name: name.replace(/^V8 · /, ''), quantity, price: option.priceFils / 1000 })),
+            extras: `مع طلب فَيّ رقم ${orderId}: سلّموه لفَيّ`,
+            fulfillment: isDelivery ? 'مع طلب فَيّ (فَيّ بتوصّل)' : 'مع طلب فَيّ (الزبون بيستلم من فَيّ)',
+            address: '',
+            phone: phoneNumber,
+            time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
+            payment: 'مع فَيّ',
+            preorder: !isOpenNow(),
+            discount: 0,
+            delivery: 0,
+            total: v8Lines.reduce((sum, line) => sum + line.option.priceFils * line.quantity, 0) / 1000,
+          }),
+        }).catch(() => {});
+      } catch { /* FAEI's order still lists the drinks. */ }
+    }
     const saved: LastOrder = { cart, extras: extras.trim() };
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(saved)); } catch { /* Reorder is optional. */ }
     setLastOrder(saved);
@@ -1067,7 +1101,19 @@ function App() {
                 <button type="button" onClick={() => { if (!sameAsLast(cart)) setCart(lastOrder.cart); setExtras(lastOrder.extras); if (lastOrder.extras) setExtrasOpen(true); openCart(); }} data-testid="button-reorder">اطلبه</button>
               </div>
             )}
-            <V8Section phone={phone} phoneNumber={phoneNumber} onPhone={setPhone} />
+            <V8Section phone={phone} phoneNumber={phoneNumber} onPhone={setPhone} open={v8Open} setOpen={setV8Open} joined={{
+              quantity: (id) => quantities.get(id) ?? 0,
+              change: (id, delta) => setCart((current) => current.some((entry) => entry.id === id)
+                ? current.flatMap((entry) => entry.id !== id ? [entry] : entry.quantity + delta <= 0 ? [] : [{ ...entry, quantity: Math.min(99, entry.quantity + delta) }])
+                : delta > 0 ? [...current, { id, quantity: 1 }] : current),
+              merge: (entries) => setCart((current) => entries.reduce((next, entry) => {
+                const found = next.find((item) => item.id === entry.id);
+                return found ? next.map((item) => (item.id === entry.id ? { ...item, quantity: Math.min(99, item.quantity + entry.quantity) } : item)) : [...next, entry];
+              }, current)),
+              count: itemCount,
+              totalFils,
+              openCart,
+            }} />
             <div className="menu-tools">
               <label className="search-wrap">
                 <Search size={18} aria-hidden="true" />
@@ -1211,6 +1257,13 @@ function App() {
                         <Plus size={16} aria-hidden="true" />
                       </button>
                     ))}
+                    {v8Visible() && (
+                      <button type="button" className="suggest-chip suggest-v8" onClick={() => { setCartOpen(false); setV8Open(true); }} data-testid="button-suggest-v8">
+                        <img src="/images/v8/v8-logo.webp" alt="" loading="lazy" />
+                        <span><strong>قهوة أو مشروب من V8</strong><small>بنفس السلة ونفس التوصيل</small></span>
+                        <Plus size={16} aria-hidden="true" />
+                      </button>
+                    )}
                     {SHOP_DRINKS.map((drink) => {
                       const parts = extras.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
                       const added = parts.includes(drink.name);

@@ -722,8 +722,15 @@ html.lite .v8-window { animation: none; }
 .v8-time button { height: 42px; border: 1px solid #3a3a3a; border-radius: 10px; background: transparent; color: var(--v8-cream); font-size: 14px; font-weight: 700; }
 .v8-time button.is-active { background: var(--v8-gold); border-color: var(--v8-gold); color: #111; }
 .v8-time input { height: 46px; padding: 0 12px; border: 1px solid #333; border-radius: 10px; background: #0b0b0b; color: var(--v8-cream); font-size: 15px; color-scheme: dark; }
+.v8-to-faei { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px dashed var(--v8-gold); border-radius: 12px; background: rgba(242,194,48,.08); color: var(--v8-cream); text-align: start; }
+.v8-to-faei b { color: var(--v8-gold); font-size: 14px; }
+.v8-to-faei span { font-size: 12px; color: var(--v8-muted); }
+.v8-time > input:not([type]) { height: 46px; padding: 0 12px; border: 1px solid #333; border-radius: 10px; background: #0b0b0b; color: var(--v8-cream); font-size: 15px; }
 .v8-pickup { margin: 0; font-size: 13px; color: var(--v8-muted); }
 .v8-warn { margin: 0; font-size: 13px; color: #e0604f; }
 .v8-send { height: 52px; border: 0; border-radius: 12px; background: var(--v8-gold); color: #111; font-size: 16px; font-weight: 800; }
 .v8-send:disabled { opacity: .35; }
 @media (min-width: 900px) { .v8-hero { height: 340px; } .v8-card { min-height: 190px; } .v8-card-text { max-width: 52%; } }
+.suggest-chip.suggest-v8 { background: #0b0b0b; color: #f4efe6; border-color: #0b0b0b; }
+.suggest-chip.suggest-v8 img { border-radius: 50%; }
+.suggest-chip.suggest-v8 small { color: #f2c230; }

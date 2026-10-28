@@ -13,6 +13,11 @@ const v8 = data as V8Menu;
 const CART_KEY = 'v8-cart-v1';
 const PREVIEW_KEY = 'faei-v8-preview';
 const FALLBACK_WHATSAPP = '962797607843';
+// Same as FAEI: delivery inside the university is one dinar.
+const DELIVERY_FILS = 1000;
+
+// V8's items can also ride along in FAEI's cart (one order, one delivery fee).
+export const v8Products: Product[] = v8.products;
 
 type Entry = { id: string; quantity: number };
 
@@ -36,6 +41,11 @@ function previewing(): boolean {
   } catch { return false; }
 }
 const launched = () => !v8.launchAt || Date.now() >= Date.parse(v8.launchAt);
+// FAEI's cart offers V8's drinks only once V8 shows on this phone.
+export const v8Visible = () => launched() || previewing();
+
+// When the customer already has FAEI food in the cart, V8's drinks go straight into that cart.
+export type Joined = { quantity: (id: string) => number; change: (id: string, delta: number) => void; merge: (entries: Entry[]) => void; count: number; totalFils: number; openCart: () => void };
 
 function money(fils: number): string {
   const dinars = Math.floor(fils / 1000);
@@ -60,9 +70,8 @@ function whatsappNumber(): string {
   return /^7[789]\d{7}$/.test(digits) ? `962${digits}` : FALLBACK_WHATSAPP;
 }
 
-export default function V8Section({ phone, phoneNumber, onPhone }: { phone: string; phoneNumber: string; onPhone: (value: string) => void }) {
-  const [shown] = useState(() => launched() || previewing());
-  const [open, setOpen] = useState(false);
+export default function V8Section({ phone, phoneNumber, onPhone, open, setOpen, joined }: { phone: string; phoneNumber: string; onPhone: (value: string) => void; open: boolean; setOpen: (open: boolean) => void; joined: Joined }) {
+  const [shown] = useState(v8Visible);
   // A visit that crosses the launch moment shows the card without a reload.
   const [, tick] = useState(0);
   useEffect(() => {
@@ -78,7 +87,7 @@ export default function V8Section({ phone, phoneNumber, onPhone }: { phone: stri
     window.addEventListener('popstate', onBack);
     document.documentElement.classList.add('v8-locked');
     return () => { window.removeEventListener('popstate', onBack); document.documentElement.classList.remove('v8-locked'); };
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   function close() {
     if ((window.history.state as { v8?: boolean } | null)?.v8) window.history.back(); else setOpen(false);
   }
@@ -94,22 +103,27 @@ export default function V8Section({ phone, phoneNumber, onPhone }: { phone: stri
           <em>افتح منيو V8 <ArrowLeft size={15} aria-hidden="true" /></em>
         </span>
       </button>
-      {open && <V8Window phone={phone} phoneNumber={phoneNumber} onPhone={onPhone} onClose={close} />}
+      {open && <V8Window phone={phone} phoneNumber={phoneNumber} onPhone={onPhone} onClose={close} joined={joined.count > 0 ? joined : null} onMoveToFaei={(entries) => { joined.merge(entries); close(); window.setTimeout(joined.openCart, 60); }} onOpenFaeiCart={() => { close(); window.setTimeout(joined.openCart, 60); }} />}
     </>
   );
 }
 
-function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; phoneNumber: string; onPhone: (value: string) => void; onClose: () => void }) {
+function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFaeiCart, joined }: { phone: string; phoneNumber: string; onPhone: (value: string) => void; onClose: () => void; onMoveToFaei: (entries: Entry[]) => void; onOpenFaeiCart: () => void; joined: Joined | null }) {
   const [category, setCategory] = useState(v8.categories[0] ?? '');
   const [cart, setCart] = useState<Entry[]>(readCart);
   const [checkout, setCheckout] = useState(false);
   const [notes, setNotes] = useState('');
   const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
+  const [delivery, setDelivery] = useState(false);
+  const [address, setAddress] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const when = timeMode === 'asap' ? 'بأسرع وقت' : pickupTime;
   const missingTime = timeMode === 'later' && !pickupTime;
+  const missingAddress = delivery && !address.trim();
   const [sent, setSent] = useState('');
   useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { /* fine */ } }, [cart]);
+  // With FAEI food already in the cart, anything left in V8's own cart joins it.
+  useEffect(() => { if (joined && cart.length) { joined.merge(cart); setCart([]); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -118,9 +132,11 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
 
   const lines = cart.flatMap((entry) => { const line = resolve(entry.id); return line ? [{ ...line, id: entry.id, quantity: entry.quantity }] : []; });
   const count = lines.reduce((sum, line) => sum + line.quantity, 0);
-  const total = lines.reduce((sum, line) => sum + line.option.priceFils * line.quantity, 0);
-  const quantity = (id: string) => cart.find((entry) => entry.id === id)?.quantity ?? 0;
+  const itemsFils = lines.reduce((sum, line) => sum + line.option.priceFils * line.quantity, 0);
+  const total = itemsFils + (delivery ? DELIVERY_FILS : 0);
+  const quantity = (id: string) => (joined ? joined.quantity(id) : cart.find((entry) => entry.id === id)?.quantity ?? 0);
   function change(id: string, delta: number) {
+    if (joined) { joined.change(id, delta); return; }
     setCart((current) => {
       const found = current.find((entry) => entry.id === id);
       if (!found) return delta > 0 ? [...current, { id, quantity: 1 }] : current;
@@ -130,12 +146,12 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
   useEffect(() => { if (!count) setCheckout(false); }, [count]);
 
   function send() {
-    if (!lines.length || !phoneNumber || missingTime) return;
+    if (!lines.length || !phoneNumber || missingTime || missingAddress) return;
     const now = new Date();
     const orderId = `V${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}-${Math.floor(Math.random() * 90 + 10)}`;
     const ref = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => 'abcdefghijklmnopqrstuvwxyz0123456789'[byte % 36]).join('');
     const itemsText = lines.map((line) => `• ${line.name} × ${line.quantity}: ${money(line.option.priceFils * line.quantity)}`).join('\n');
-    const message = `مرحباً V8، بدي أطلب (رقم ${orderId}):\n\n${itemsText}\n${notes.trim() ? `\nملاحظات: ${notes.trim()}\n` : ''}\nالاستلام من V8 جوا الفَيّ\nالوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${pickupTime}`}\nرقم تلفوني: ${phoneNumber}\n\nالإجمالي: ${money(total)}\n\nشكراً!`;
+    const message = `مرحباً V8، بدي أطلب (رقم ${orderId}):\n\n${itemsText}\n${notes.trim() ? `\nملاحظات: ${notes.trim()}\n` : ''}\n${delivery ? `توصيل جوا الجامعة\nالعنوان: ${address.trim()}` : 'الاستلام من V8 جوا الفَيّ'}\nالوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${pickupTime}`}\nرقم تلفوني: ${phoneNumber}\n\n${delivery ? `الأصناف: ${money(itemsFils)}\nالتوصيل: ${money(DELIVERY_FILS)}\n` : ''}الإجمالي: ${money(total)}\n\nشكراً!`;
     try {
       fetch('/api/orders', {
         method: 'POST',
@@ -144,8 +160,8 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
         body: JSON.stringify({
           ref, id: orderId, shop: 'v8',
           items: lines.map((line) => ({ name: line.name, quantity: line.quantity, price: line.option.priceFils / 1000 })),
-          extras: notes.trim(), fulfillment: 'استلام من V8', address: '', phone: phoneNumber,
-          time: when, payment: 'كاش', preorder: false, discount: 0, delivery: 0, total: total / 1000,
+          extras: notes.trim(), fulfillment: delivery ? 'توصيل جوا الجامعة' : 'استلام من V8', address: delivery ? address.trim() : '', phone: phoneNumber,
+          time: when, payment: 'كاش', preorder: false, discount: 0, delivery: delivery ? DELIVERY_FILS / 1000 : 0, total: total / 1000,
         }),
       }).catch(() => {});
     } catch { /* The order still goes to WhatsApp. */ }
@@ -246,12 +262,19 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
       {sent && !count && (
         <div className="v8-sent" data-testid="v8-sent"><b>انبعت طلبك ✅</b><span>رقم {sent}. استلمه من V8 جوا الفَيّ.</span><button type="button" onClick={() => setSent('')} aria-label="سكّر"><X size={16} /></button></div>
       )}
-      {count > 0 && !checkout && (
+      {joined && (
+        <button type="button" className="v8-bar" onClick={onOpenFaeiCart} data-testid="v8-open-faei-cart"><ShoppingBag size={18} /> سلتك مع فَيّ · {joined.count} <b>{money(joined.totalFils)}</b></button>
+      )}
+      {!joined && count > 0 && !checkout && (
         <button type="button" className="v8-bar" onClick={() => setCheckout(true)} data-testid="v8-open-cart"><ShoppingBag size={18} /> السلة · {count} <b>{money(total)}</b></button>
       )}
-      {checkout && count > 0 && (
+      {!joined && checkout && count > 0 && (
         <section className="v8-cart" aria-label="سلة V8">
           <header><b>سلة V8</b><button type="button" onClick={() => setCheckout(false)} aria-label="رجوع للمنيو"><X size={18} /></button></header>
+          <button type="button" className="v8-to-faei" onClick={() => { const entries = cart; setCart([]); onMoveToFaei(entries); }} data-testid="v8-to-faei">
+            <b>بدك كمان أكل من فَيّ؟</b>
+            <span>انقل سلة V8 لسلة فَيّ وكمّل طلبك هناك: طلب واحد وتوصيل واحد.</span>
+          </button>
           <ul>
             {lines.map((line) => (
               <li key={line.id}>
@@ -264,16 +287,24 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
           <label>رقم تلفونك<input type="tel" inputMode="tel" dir="ltr" value={phone} onChange={(event) => onPhone(event.target.value)} placeholder="07XXXXXXXX" className={phone && !phoneNumber ? 'is-wrong' : ''} data-testid="v8-phone" /></label>
           <label>ملاحظات (اختياري)<input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="مثلاً: بدون سكر" maxLength={200} /></label>
           <div className="v8-time">
-            <span>وقت الاستلام</span>
+            <span>الاستلام</span>
+            <div role="group" aria-label="طريقة الاستلام">
+              <button type="button" className={!delivery ? 'is-active' : ''} onClick={() => setDelivery(false)} data-testid="v8-pickup">استلام من V8</button>
+              <button type="button" className={delivery ? 'is-active' : ''} onClick={() => setDelivery(true)} data-testid="v8-delivery">توصيل +{money(DELIVERY_FILS)}</button>
+            </div>
+            {delivery && <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="وين بالزبط؟ (الكلية، القاعة…)" maxLength={200} data-testid="v8-address" />}
+          </div>
+          <div className="v8-time">
+            <span>الوقت</span>
             <div role="group" aria-label="وقت الاستلام">
               <button type="button" className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="v8-asap">بأسرع وقت</button>
               <button type="button" className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="v8-later">بوقت معيّن</button>
             </div>
             {timeMode === 'later' && <input type="time" value={pickupTime} onChange={(event) => setPickupTime(event.target.value)} aria-label="الساعة" data-testid="v8-time" />}
           </div>
-          <p className="v8-pickup">استلام من V8 جوا الفَيّ (ما في توصيل) · الدفع عند الاستلام</p>
-          {!phoneNumber ? <p className="v8-warn">اكتب رقم تلفونك عشان تبعت الطلب.</p> : missingTime && <p className="v8-warn">اختار الساعة اللي بدك تستلم فيها.</p>}
-          <button type="button" className="v8-send" disabled={!phoneNumber || missingTime} onClick={send} data-testid="v8-send">إرسال الطلب · {money(total)}</button>
+          <p className="v8-pickup">{delivery ? 'التوصيل جوا الجامعة بس' : 'استلام من V8 جوا الفَيّ'} · الدفع عند الاستلام</p>
+          {!phoneNumber ? <p className="v8-warn">اكتب رقم تلفونك عشان تبعت الطلب.</p> : missingAddress ? <p className="v8-warn">اكتب وين نوصلك.</p> : missingTime && <p className="v8-warn">اختار الساعة اللي بدك تستلم فيها.</p>}
+          <button type="button" className="v8-send" disabled={!phoneNumber || missingTime || missingAddress} onClick={send} data-testid="v8-send">إرسال الطلب · {money(total)}</button>
         </section>
       )}
     </div>
