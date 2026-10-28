@@ -4,6 +4,7 @@
   "برغر سماش",
   "تشكن برغر",
   "السناك",
+  "أجنحة",
   "بوكس فَيّ",
   "كساديا",
   "بيتزا",
@@ -1080,6 +1081,57 @@
     }
    ],
    "image": "/images/menu/nachos.webp"
+  },
+  {
+   "id": "wings-bbq",
+   "name": "أجنحة باربيكيو",
+   "category": "أجنحة",
+   "options": [
+    {
+     "label": "6 حبات",
+     "priceFils": 1500
+    },
+    {
+     "label": "10 حبات",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/wings-bbq.webp",
+   "alt": "أجنحة باربيكيو"
+  },
+  {
+   "id": "wings-buffalo",
+   "name": "أجنحة بافلو",
+   "category": "أجنحة",
+   "options": [
+    {
+     "label": "6 حبات",
+     "priceFils": 1500
+    },
+    {
+     "label": "10 حبات",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/wings-buffalo.webp",
+   "alt": "أجنحة بافلو"
+  },
+  {
+   "id": "wings-honey-mustard",
+   "name": "أجنحة عسل وخردل",
+   "category": "أجنحة",
+   "options": [
+    {
+     "label": "6 حبات",
+     "priceFils": 1500
+    },
+    {
+     "label": "10 حبات",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/wings-honey-mustard.webp",
+   "alt": "أجنحة عسل وخردل"
   }
  ]
 }
