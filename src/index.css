@@ -581,31 +581,9 @@
 .unavailable-tag { margin-inline-start: auto; font-size: 12.5px; font-weight: 800; color: #9a3b2e; background: #fbe9e6; border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
 @media (prefers-color-scheme: dark) { .unavailable-tag { background: #3a2220; color: #f2b8ad; } }
 
-/* 25. Phone menu: one compact row per item (photo on the side, sizes as small pills) */
+/* 25. Admin preview frame draws the cards on a clear background */
 .preview-page { background: transparent; padding: 2px; overflow: visible; }
 .preview-page .catalog-grid { gap: 10px; }
-@media (max-width: 700px) {
-  .catalog-grid { grid-template-columns: 1fr; gap: 10px; }
-  .product-card { flex-direction: row; align-items: stretch; border-radius: 16px; }
-  .product-card:hover { transform: none; }
-  .product-image { flex: none; width: 104px; height: auto; aspect-ratio: auto; min-height: 104px; }
-  .product-body { padding: 10px 12px 11px; min-width: 0; gap: 0; }
-  .product-meta { margin-bottom: 3px; font-size: 10.5px; }
-  .product-body h3 { font-size: 15.5px; line-height: 1.45; margin: 0 0 8px; }
-  .option-list { flex-direction: row; flex-wrap: wrap; gap: 6px; }
-  .option-row { gap: 6px; padding: 3px; padding-inline-start: 10px; border: 1px solid #e5e1d8; border-radius: 999px; background: #fbfaf6; }
-  .option-row .price { margin-inline-start: 0; font-size: 13px; }
-  .option-label { font-size: 12px; }
-  .product-card .option-row .add-button { width: 30px; height: 30px; min-width: 30px; min-height: 30px; padding: 0; border-radius: 50% !important; }
-  .product-card .option-row .add-button svg { width: 15px; height: 15px; }
-  .option-row .card-stepper { padding: 1px; }
-  .option-row .card-stepper button { width: 28px; height: 28px; }
-  .option-row .card-stepper span { min-width: 16px; font-size: 13px; }
-  .product-card .unavailable-tag { margin-inline-start: 0; padding: 4px 9px; font-size: 11.5px; }
-  .product-card.is-unavailable .option-list { flex-wrap: nowrap; }
-}
-@media (max-width: 700px) and (prefers-color-scheme: dark) { .option-row { background: #1b2d3c; } }
-@media (max-width: 360px) { .product-image { width: 88px; min-height: 88px; } }
 
 /* 26. Phone number in the cart (needed to send an order) */
 .compact-options .phone-input { grid-column: 2; height: 40px; min-width: 0; border: 1px solid #d8d5cc; border-radius: var(--radius, 8px); padding: 0 12px; background: #fff; color: var(--ink); font: 600 15px 'DM Sans', sans-serif; letter-spacing: .5px; outline: 0; text-align: left; }
@@ -614,8 +592,22 @@
 .compact-options h3 label { font: inherit; color: inherit; }
 @media (prefers-color-scheme: dark) { .compact-options .phone-input { background: #1e3142; border-color: #2f4659; color: #e8eef3; } }
 
-/* 27. Send button: solid WhatsApp green, no icon */
-.faei-app .wa-button { min-height: 52px; justify-content: center; border-radius: 14px !important; background: linear-gradient(180deg, #2bd46a, #1fb456); color: #fff; font-size: 16px; font-weight: 800; letter-spacing: .2px; box-shadow: 0 8px 18px rgba(31,180,86,.28), inset 0 -2px 0 rgba(0,0,0,.08); }
+/* 27. Send button: the site's gold, like the other main buttons */
+.faei-app .wa-button { min-height: 52px; justify-content: center; border-radius: 14px !important; background: var(--gold); color: var(--ink); font-size: 16px; font-weight: 800; box-shadow: 0 8px 18px rgba(244,197,66,.3); }
+.faei-app .wa-button:hover { background: #ecb92c; }
 .faei-app .wa-button:active { transform: scale(.98); }
-.faei-app .wa-button:disabled { background: #d9dedb; color: #7b8780; box-shadow: none; opacity: 1; }
+.faei-app .wa-button:disabled { background: #e4e1d8; color: #8a949a; box-shadow: none; opacity: 1; }
 @media (prefers-color-scheme: dark) { .faei-app .wa-button:disabled { background: #26394a; color: #7f93a4; } }
+
+/* 28. Categories: photo pills; on phones one row you swipe instead of a tall grid */
+.category-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.category-button img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none; box-shadow: 0 0 0 2px #fff; }
+.category-button.is-active img { box-shadow: 0 0 0 2px var(--gold); }
+@media (max-width: 700px) {
+  .faei-app .category-list { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; margin-inline: -16px; padding: 4px 16px 8px; -webkit-mask-image: linear-gradient(to left, #000 88%, transparent); mask-image: linear-gradient(to left, #000 88%, transparent); }
+  .faei-app .category-list::-webkit-scrollbar { display: none; }
+  .faei-app .category-button { flex: none; scroll-snap-align: start; min-height: 44px; padding: 4px 6px 4px 16px; border-radius: 999px !important; font-size: 13.5px; font-weight: 700; background: #fff; box-shadow: 0 2px 8px rgba(24,43,58,.06); }
+  .faei-app .category-button.is-all { padding: 4px 16px; }
+  .faei-app .category-button.is-active { background: var(--ink); color: #fff; border-color: var(--ink); }
+}
+@media (prefers-color-scheme: dark) { .category-button img { box-shadow: 0 0 0 2px #1e3142; } }
