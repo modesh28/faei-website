@@ -30,11 +30,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 2000
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 2000
     }
    ]
@@ -46,11 +46,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 1500
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 1500
     }
    ]
@@ -62,11 +62,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 1500
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 1500
     }
    ]
@@ -78,11 +78,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 1750
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 1750
     }
    ]
@@ -94,11 +94,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 1500
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 1500
     }
    ]
@@ -110,11 +110,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 2000
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 2000
     }
    ]
@@ -126,11 +126,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 2500
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 2500
     }
    ]
@@ -142,11 +142,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 2000
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 2000
     }
    ]
@@ -158,11 +158,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 2000
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 2000
     }
    ]
@@ -174,11 +174,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 2000
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 2000
     }
    ]
@@ -202,11 +202,11 @@
    "category": "القهوة",
    "options": [
     {
-     "label": "ساخن",
+     "label": "Hot",
      "priceFils": 2000
     },
     {
-     "label": "مثلج",
+     "label": "Ice",
      "priceFils": 2000
     }
    ]
