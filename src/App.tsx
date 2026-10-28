@@ -311,7 +311,7 @@ function OpenInBrowser() {
 // After an order is sent, a small card counts down to when it should be ready, then rings.
 // It's an estimate made on the phone, so it works with no staff action and no server.
 const ACTIVE_ORDER_KEY = 'faei-active-order-v1';
-type ActiveOrder = { id: string; ref?: string; placedAt: number; readyAt: number | null };
+type ActiveOrder = { id: string; ref?: string; placedAt: number; readyAt: number | null; sent?: boolean };
 function readActiveOrder(): ActiveOrder | null {
   try {
     const order = JSON.parse(localStorage.getItem(ACTIVE_ORDER_KEY) ?? 'null') as ActiveOrder | null;
@@ -351,7 +351,10 @@ function playChime() {
     });
   } catch { /* Sound is a bonus. */ }
 }
-function OrderTracker({ order, raised, onClose }: { order: ActiveOrder; raised: boolean; onClose: () => void }) {
+type Answer = 'sent' | 'edit' | 'cancel';
+function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder; raised: boolean; onClose: () => void; onAnswer: (answer: Answer) => Promise<string> }) {
+  const [asking, setAsking] = useState<Answer | ''>('');
+  const [answerError, setAnswerError] = useState('');
   const [now, setNow] = useState(Date.now());
   // The order's real status from the shop's orders screen ('' until known, or if it isn't connected).
   const [live, setLive] = useState('');
@@ -409,6 +412,13 @@ function OrderTracker({ order, raised, onClose }: { order: ActiveOrder; raised: 
     : live && timerDone ? `${id} · بيرنّ تلفونك أول ما يجهز` : `${id} · جاهز بعد حوالي`;
   const minutes = Math.floor(left / 60_000);
   const seconds = Math.floor((left % 60_000) / 1000);
+  // Back from WhatsApp: the shop only sees the order on its screen, so ask whether it was really sent.
+  const ask = !!order.ref && !order.sent && !cancelled && (!live || live === 'جديد') && now - order.placedAt < 30 * 60_000;
+  async function answer(choice: Answer) {
+    setAsking(choice);
+    setAnswerError(await onAnswer(choice));
+    setAsking('');
+  }
   return (
     <div className={`order-tracker${raised ? ' is-raised' : ''}${ready ? ' is-ready' : ''}${cancelled ? ' is-cancelled' : ''}`} role="status" aria-live="polite" data-testid="order-tracker">
       <div className="order-tracker-row">
@@ -421,7 +431,18 @@ function OrderTracker({ order, raised, onClose }: { order: ActiveOrder; raised: 
         <button type="button" className="order-tracker-close" onClick={onClose} aria-label="سكّر"><X size={16} /></button>
       </div>
       {(order.readyAt !== null || confirmed) && <div className="order-tracker-bar"><span style={{ width: `${progress * 100}%` }} /></div>}
-      {canNotify && !ready && order.readyAt !== null && <button type="button" className="order-tracker-notify" onClick={askNotify}>نبّهني لما يجهز</button>}
+      {ask && (
+        <div className="order-tracker-ask" data-testid="order-ask">
+          <p>بعتت رسالة الطلب عالواتساب؟</p>
+          <div>
+            <button type="button" className="is-yes" onClick={() => void answer('sent')} disabled={!!asking} data-testid="button-order-sent">{asking === 'sent' ? 'لحظة…' : 'آه بعتها ✓'}</button>
+            <button type="button" onClick={() => void answer('edit')} disabled={!!asking} data-testid="button-order-edit">{asking === 'edit' ? 'لحظة…' : 'بدي أعدّل'}</button>
+            <button type="button" className="is-no" onClick={() => void answer('cancel')} disabled={!!asking} data-testid="button-order-cancel">{asking === 'cancel' ? 'لحظة…' : 'ألغيه'}</button>
+          </div>
+          {answerError && <small>{answerError}</small>}
+        </div>
+      )}
+      {!ask && canNotify && !ready && order.readyAt !== null && <button type="button" className="order-tracker-notify" onClick={askNotify}>نبّهني لما يجهز</button>}
     </div>
   );
 }
@@ -918,6 +939,40 @@ function App() {
   }
 
 
+  function closeTracker() {
+    setActiveOrder(null);
+    try { localStorage.removeItem(ACTIVE_ORDER_KEY); } catch { /* fine */ }
+  }
+  // The customer's answer after WhatsApp. Returns an error to show, or ''.
+  async function answerOrder(choice: 'sent' | 'edit' | 'cancel'): Promise<string> {
+    if (!activeOrder?.ref) return '';
+    let status = 0;
+    let data: { status?: string } = {};
+    try {
+      const response = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: activeOrder.ref, action: choice === 'sent' ? 'sent' : 'cancel', reason: choice }) });
+      status = response.status;
+      data = await response.json().catch(() => ({})) as { status?: string };
+    } catch { /* offline */ }
+    if (choice === 'sent') {
+      const next = { ...activeOrder, sent: true };
+      setActiveOrder(next);
+      try { localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(next)); } catch { /* fine */ }
+      return '';
+    }
+    if (status === 409) return `ما بنقدر نلغيه من هون، الطلب ${data.status === 'جاهز' ? 'جاهز' : 'صار عم يتحضّر'}. احكي معنا عالواتساب.`;
+    if (status !== 200 && status !== 404 && status !== 503) return 'ما في نت. جرّب كمان مرة.';
+    closeTracker();
+    if (choice === 'edit' && lastOrder) {
+      setCart(lastOrder.cart);
+      setExtras(lastOrder.extras);
+      setCartOpen(true);
+      setToastAction(null); setToast('عدّل طلبك وابعته من جديد');
+    } else {
+      setToastAction(null); setToast('انلغى طلبك');
+    }
+    return '';
+  }
+
   function selectCategory(category: Category | 'الكل') {
     setSelectedCategory(category);
     setSearch('');
@@ -1196,7 +1251,7 @@ function App() {
           <span className="cart-bar-total">{money(totalFils)}</span>
         </button>
       )}
-      {activeOrder && !cartOpen && <OrderTracker key={activeOrder.id} order={activeOrder} raised={itemCount > 0} onClose={() => { setActiveOrder(null); try { localStorage.removeItem(ACTIVE_ORDER_KEY); } catch { /* fine */ } }} />}
+      {activeOrder && !cartOpen && <OrderTracker key={activeOrder.id} order={activeOrder} raised={itemCount > 0} onClose={closeTracker} onAnswer={answerOrder} />}
       {toast && <div className={`toast-message${itemCount > 0 && !cartOpen ? ' is-raised' : ''}`} role="status" aria-live="polite"><Check size={16} /> {toast}{toastAction && <button type="button" className="toast-action" onClick={() => toastAction.run()} data-testid="button-toast-upgrade">{toastAction.label}</button>}</div>}
     </div>
   );

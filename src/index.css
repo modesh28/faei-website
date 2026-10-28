@@ -611,3 +611,13 @@
   .faei-app .category-button.is-active { background: var(--ink); color: #fff; border-color: var(--ink); }
 }
 @media (prefers-color-scheme: dark) { .category-button img { box-shadow: 0 0 0 2px #1e3142; } }
+
+/* 29. After WhatsApp: did you send it? */
+.order-tracker-ask { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(24,43,58,.15); }
+.order-tracker-ask p { margin: 0 0 8px; font-size: 14px; font-weight: 800; }
+.order-tracker-ask div { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 6px; }
+.order-tracker-ask button { min-height: 40px; border: 1px solid rgba(24,43,58,.18); border-radius: 12px; background: #fff; color: #182b3a; font-weight: 800; font-size: 13px; }
+.order-tracker-ask button.is-yes { background: #f4c542; border-color: #f4c542; }
+.order-tracker-ask button.is-no { color: #b23b2a; }
+.order-tracker-ask small { display: block; margin-top: 6px; color: #b23b2a; font-size: 12.5px; }
+@media (prefers-color-scheme: dark) { .order-tracker-ask button { background: #1e3142; color: #f2f2f2; border-color: #2f4659; } .order-tracker-ask button.is-yes { background: #f4c542; color: #182b3a; } }

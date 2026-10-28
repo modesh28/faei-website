@@ -3,6 +3,9 @@
 // call answers 503 and the site works as before: WhatsApp + the Google Sheet.
 //
 //   POST  /api/orders          the website records a new order (public)
+//   POST  /api/orders {action: 'sent' | 'cancel', ref}
+//                              the customer, back from WhatsApp, says they sent the message, or takes
+//                              the order back (to change it or cancel). Only the customer's phone knows the ref.
 //   GET   /api/orders?ref=…    a customer's phone asks for its order's status (public, status only)
 //   GET   /api/orders?version  a number that changes with every order or status change (public),
 //                              so the admin page only downloads the list when something changed
@@ -30,6 +33,7 @@ export async function POST(request: Request): Promise<Response> {
   let body: Record<string, unknown>;
   try { body = JSON.parse(raw) as Record<string, unknown>; } catch { return json({ error: 'bad-json' }, 400); }
   if (!validRef(body.ref)) return json({ error: 'bad-ref' }, 400);
+  if (body.action === 'sent' || body.action === 'cancel') return customerAnswer(body.ref, body.action, body.reason === 'edit');
   const items = Array.isArray(body.items) ? body.items.slice(0, 40).map((item) => {
     const line = item as Record<string, unknown>;
     return { name: text(line.name, 120), quantity: Math.min(99, Math.max(1, Math.round(Number(line.quantity) || 1))), price: amount(line.price) };
@@ -54,6 +58,22 @@ export async function POST(request: Request): Promise<Response> {
   const [created] = await redis([['SET', `order:${order.ref}`, JSON.stringify(order), 'EX', KEEP_SECONDS, 'NX']]);
   if (created !== 'OK') return json({ ok: true, duplicate: true });
   const [, , version] = await redis([['LPUSH', 'orders', order.ref], ['LTRIM', 'orders', 0, 1999], ['INCR', 'orders:version']]);
+  lastVersion = { value: Number(version) || 0, at: Date.now() };
+  return json({ ok: true });
+}
+
+async function customerAnswer(ref: string, action: 'sent' | 'cancel', edit: boolean): Promise<Response> {
+  const [stored] = await redis([['GET', `order:${ref}`]]);
+  if (!stored) return json({ error: 'not-found' }, 404);
+  const order = JSON.parse(stored as string) as Record<string, unknown>;
+  if (action === 'cancel') {
+    // Once the kitchen started, the customer has to talk to the shop instead.
+    if (order.status !== 'جديد') return json({ error: 'started', status: order.status }, 409);
+    Object.assign(order, { status: 'ملغي', 'at_ملغي': Date.now(), cancelledBy: edit ? 'edit' : 'customer' });
+  } else {
+    order.customerSent = Date.now();
+  }
+  const [, version] = await redis([['SET', `order:${ref}`, JSON.stringify(order), 'KEEPTTL'], ['INCR', 'orders:version']]);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true });
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Bell, Camera, ClipboardList, Eye, ExternalLink, LogOut, Pencil, Phone, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Bell, Camera, ClipboardList, Eye, ExternalLink, LogOut, MessageCircle, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
@@ -663,6 +663,7 @@ type LiveOrder = {
   ref: string; id: string; createdAt: number; status: string; items: OrderItem[]; extras: string;
   fulfillment: string; address: string; phone?: string; time: string; payment: string; preorder: boolean;
   discount: number; delivery: number | string; total: number;
+  customerSent?: number; cancelledBy?: 'customer' | 'edit';
 };
 type Live = { orders: LiveOrder[] | null; error: string; waiting: number; soundOn: boolean; enableSound: () => void; setStatus: (ref: string, status: string) => Promise<void>; fresh: Set<string> };
 
@@ -835,12 +836,14 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
         <span className="admin-order-time">{ago(order.createdAt)}</span>
       </header>
       {order.preorder && <p className="admin-order-flag">طلب مسبق (انبعت والمحل مسكّر)</p>}
+      {order.status === 'ملغي' && order.cancelledBy && <p className="admin-order-flag">{order.cancelledBy === 'edit' ? 'الزبون رجع عدّله (بيوصل الطلب الجديد لحاله)' : 'الزبون لغاه'}</p>}
+      {ACTIVE.includes(order.status) && <p className={`admin-order-sent${order.customerSent ? ' is-yes' : ''}`}>{order.customerSent ? '✓ الزبون أكّد إنه بعت الواتساب' : 'لسا الزبون ما أكّد إنه بعت الواتساب'}</p>}
       <ul>
         {order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}
         {order.extras && <li className="admin-order-extras">من الكافتيريا: {order.extras}</li>}
       </ul>
       <dl>
-        {order.phone && <div><dt>التلفون</dt><dd><a href={`tel:${order.phone}`} className="admin-phone" dir="ltr"><Phone size={13} /> {order.phone}</a></dd></div>}
+        {order.phone && <div><dt>التلفون</dt><dd><a href={`https://wa.me/962${order.phone.replace(/^0/, '')}?text=${encodeURIComponent(`مرحبا، بخصوص طلبك رقم ${order.id} من FAEI`)}`} target="_blank" rel="noreferrer" className="admin-phone" dir="ltr" data-testid="link-customer-whatsapp"><MessageCircle size={13} /> {order.phone} · واتساب</a></dd></div>}
         <div><dt>الاستلام</dt><dd>{order.fulfillment}{order.address ? ` · ${order.address}` : ''}</dd></div>
         <div><dt>الوقت</dt><dd>{order.time}</dd></div>
         <div><dt>الدفع</dt><dd className={order.payment === 'كليك' ? 'is-cliq' : ''}>{order.payment === 'كليك' ? 'كليك (تأكد من التحويل)' : order.payment}</dd></div>
