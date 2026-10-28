@@ -8,7 +8,7 @@ import { ArrowLeft, Citrus, Coffee, CupSoda, GlassWater, Leaf, Milk, Minus, Plus
 import data from '../public/v8.json';
 import type { Product } from './menu';
 
-type V8Menu = { launchAt?: string; whatsapp?: string; categories: string[]; products: Product[] };
+type V8Menu = { launchAt?: string; whatsapp?: string; instagram?: string; categories: string[]; products: Product[] };
 const v8 = data as V8Menu;
 const CART_KEY = 'v8-cart-v1';
 const PREVIEW_KEY = 'faei-v8-preview';
@@ -104,6 +104,10 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
   const [cart, setCart] = useState<Entry[]>(readCart);
   const [checkout, setCheckout] = useState(false);
   const [notes, setNotes] = useState('');
+  const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
+  const [pickupTime, setPickupTime] = useState('');
+  const when = timeMode === 'asap' ? 'بأسرع وقت' : pickupTime;
+  const missingTime = timeMode === 'later' && !pickupTime;
   const [sent, setSent] = useState('');
   useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch { /* fine */ } }, [cart]);
   useEffect(() => {
@@ -126,12 +130,12 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
   useEffect(() => { if (!count) setCheckout(false); }, [count]);
 
   function send() {
-    if (!lines.length || !phoneNumber) return;
+    if (!lines.length || !phoneNumber || missingTime) return;
     const now = new Date();
     const orderId = `V${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}-${Math.floor(Math.random() * 90 + 10)}`;
     const ref = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => 'abcdefghijklmnopqrstuvwxyz0123456789'[byte % 36]).join('');
     const itemsText = lines.map((line) => `• ${line.name} × ${line.quantity}: ${money(line.option.priceFils * line.quantity)}`).join('\n');
-    const message = `مرحباً V8، بدي أطلب (رقم ${orderId}):\n\n${itemsText}\n${notes.trim() ? `\nملاحظات: ${notes.trim()}\n` : ''}\nالاستلام من V8 جوا الفَيّ\nرقم تلفوني: ${phoneNumber}\n\nالإجمالي: ${money(total)}\n\nشكراً!`;
+    const message = `مرحباً V8، بدي أطلب (رقم ${orderId}):\n\n${itemsText}\n${notes.trim() ? `\nملاحظات: ${notes.trim()}\n` : ''}\nالاستلام من V8 جوا الفَيّ\nالوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${pickupTime}`}\nرقم تلفوني: ${phoneNumber}\n\nالإجمالي: ${money(total)}\n\nشكراً!`;
     try {
       fetch('/api/orders', {
         method: 'POST',
@@ -141,7 +145,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
           ref, id: orderId, shop: 'v8',
           items: lines.map((line) => ({ name: line.name, quantity: line.quantity, price: line.option.priceFils / 1000 })),
           extras: notes.trim(), fulfillment: 'استلام من V8', address: '', phone: phoneNumber,
-          time: 'بأسرع وقت', payment: 'كاش', preorder: false, discount: 0, delivery: 0, total: total / 1000,
+          time: when, payment: 'كاش', preorder: false, discount: 0, delivery: 0, total: total / 1000,
         }),
       }).catch(() => {});
     } catch { /* The order still goes to WhatsApp. */ }
@@ -231,7 +235,14 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
             </section>
           );
         })}
-        <p className="v8-foot"><span className="v8-script">Study · Coffee · Repeat</span>الاستلام من V8 جوا الفَيّ</p>
+        <div className="v8-foot">
+          <span className="v8-script">Study · Coffee · Repeat</span>
+          <span>الاستلام من V8 جوا الفَيّ</span>
+          {v8.instagram && <a href={v8.instagram} target="_blank" rel="noreferrer" className="v8-insta" data-testid="v8-instagram">
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>
+            تابع V8 على إنستغرام
+          </a>}
+        </div>
       </div>
       {sent && !count && (
         <div className="v8-sent" data-testid="v8-sent"><b>انبعت طلبك ✅</b><span>رقم {sent}. استلمه من V8 جوا الفَيّ.</span><button type="button" onClick={() => setSent('')} aria-label="سكّر"><X size={16} /></button></div>
@@ -253,9 +264,17 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
           </ul>
           <label>رقم تلفونك<input type="tel" inputMode="tel" dir="ltr" value={phone} onChange={(event) => onPhone(event.target.value)} placeholder="07XXXXXXXX" className={phone && !phoneNumber ? 'is-wrong' : ''} data-testid="v8-phone" /></label>
           <label>ملاحظات (اختياري)<input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="مثلاً: بدون سكر" maxLength={200} /></label>
-          <p className="v8-pickup">الاستلام من V8 جوا الفَيّ · الدفع عند الاستلام</p>
-          {!phoneNumber && <p className="v8-warn">اكتب رقم تلفونك عشان تبعت الطلب.</p>}
-          <button type="button" className="v8-send" disabled={!phoneNumber} onClick={send} data-testid="v8-send">إرسال الطلب · {money(total)}</button>
+          <div className="v8-time">
+            <span>وقت الاستلام</span>
+            <div role="group" aria-label="وقت الاستلام">
+              <button type="button" className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="v8-asap">بأسرع وقت</button>
+              <button type="button" className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="v8-later">بوقت معيّن</button>
+            </div>
+            {timeMode === 'later' && <input type="time" value={pickupTime} onChange={(event) => setPickupTime(event.target.value)} aria-label="الساعة" data-testid="v8-time" />}
+          </div>
+          <p className="v8-pickup">استلام من V8 جوا الفَيّ (ما في توصيل) · الدفع عند الاستلام</p>
+          {!phoneNumber ? <p className="v8-warn">اكتب رقم تلفونك عشان تبعت الطلب.</p> : missingTime && <p className="v8-warn">اختار الساعة اللي بدك تستلم فيها.</p>}
+          <button type="button" className="v8-send" disabled={!phoneNumber || missingTime} onClick={send} data-testid="v8-send">إرسال الطلب · {money(total)}</button>
         </section>
       )}
     </div>

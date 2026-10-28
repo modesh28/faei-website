@@ -699,6 +699,8 @@ html.lite .v8-window { animation: none; }
 .v8-stepper i { min-width: 14px; text-align: center; font: 800 14px 'DM Sans', sans-serif; font-style: normal; }
 .v8-foot { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 34px 0 0; color: var(--v8-muted); font-size: 13px; text-align: center; }
 .v8-foot .v8-script { font-size: 18px; }
+.v8-insta { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 10px 18px; border: 1px solid var(--v8-gold); border-radius: 999px; color: var(--v8-cream); font-weight: 700; text-decoration: none; }
+.v8-insta svg { color: var(--v8-gold); }
 .v8-bar { position: fixed; bottom: 16px; left: 16px; right: 16px; z-index: 4; max-width: 520px; margin: 0 auto; display: flex; align-items: center; gap: 8px; padding: 15px 18px; border: 0; border-radius: 14px; background: var(--v8-gold); color: #111; font-size: 15px; font-weight: 800; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
 .v8-bar b { margin-inline-start: auto; font-family: 'DM Sans', sans-serif; direction: ltr; }
 .v8-sent { position: fixed; bottom: 16px; left: 16px; right: 16px; z-index: 4; max-width: 520px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 14px 16px; border: 1px solid var(--v8-gold); border-radius: 14px; background: #151515; color: var(--v8-cream); }
@@ -715,6 +717,11 @@ html.lite .v8-window { animation: none; }
 .v8-cart input { height: 46px; padding: 0 12px; border: 1px solid #333; border-radius: 10px; font-size: 15px; background: #0b0b0b; color: var(--v8-cream); outline: 0; }
 .v8-cart input:focus { border-color: var(--v8-gold); }
 .v8-cart input.is-wrong { border-color: #e0604f; }
+.v8-time { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 700; color: var(--v8-muted); }
+.v8-time div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.v8-time button { height: 42px; border: 1px solid #3a3a3a; border-radius: 10px; background: transparent; color: var(--v8-cream); font-size: 14px; font-weight: 700; }
+.v8-time button.is-active { background: var(--v8-gold); border-color: var(--v8-gold); color: #111; }
+.v8-time input { height: 46px; padding: 0 12px; border: 1px solid #333; border-radius: 10px; background: #0b0b0b; color: var(--v8-cream); font-size: 15px; color-scheme: dark; }
 .v8-pickup { margin: 0; font-size: 13px; color: var(--v8-muted); }
 .v8-warn { margin: 0; font-size: 13px; color: #e0604f; }
 .v8-send { height: 52px; border: 0; border-radius: 12px; background: var(--v8-gold); color: #111; font-size: 16px; font-weight: 800; }
