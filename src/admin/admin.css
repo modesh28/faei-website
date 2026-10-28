@@ -165,3 +165,15 @@ a { color: inherit; }
 .admin-days li { display: grid; grid-template-columns: 44px 1fr 56px; align-items: center; gap: 8px; font-size: 13px; }
 .admin-days i { height: 10px; border-radius: 999px; background: var(--gold); min-width: 4px; }
 .admin-days b { text-align: end; }
+
+/* Preview of an item as the site shows it, and the review before publishing */
+.admin-preview { border: 1px dashed #c9c4b7; border-radius: 14px; padding: 10px; background: #f7f5ef; }
+.admin-preview h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 13px; color: #53636b; }
+.admin-preview-frame { display: block; width: 100%; border: 0; background: transparent; }
+.admin-changes { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.admin-changes li { padding: 9px 12px; border-radius: 10px; background: #f1efe8; font-size: 14px; }
+.admin-changes li.is-add { background: #e3f4e8; }
+.admin-changes li.is-edit { background: #e6f0f8; }
+.admin-changes li.is-remove { background: #fbe9e6; }
+.admin-item-main:disabled { cursor: default; color: inherit; opacity: 1; }
+.admin-phone { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #1676b8; text-decoration: none; }

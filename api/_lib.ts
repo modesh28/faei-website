@@ -46,9 +46,57 @@ export async function sessionUser(request: Request): Promise<string> {
   return typeof user === 'string' ? user : '';
 }
 
+export type Role = 'dev' | 'admin' | 'staff';
+export const ROLES: Role[] = ['dev', 'admin', 'staff'];
+
+// The signed-in user's name and role, or null without a valid session.
+export async function sessionAccount(request: Request): Promise<{ username: string; role: Role } | null> {
+  const username = await sessionUser(request);
+  if (!username) return null;
+  const [stored] = await redis([['HGET', 'users', username]]);
+  if (typeof stored !== 'string') return null;
+  return { username, role: (JSON.parse(stored) as { role: Role }).role };
+}
+
+// Before there were three roles, "admin" could do everything. Those accounts become developers once.
+export async function upgradeRoles() {
+  const [done] = await redis([['GET', 'config:roles']]);
+  if (done === '3') return;
+  const [all] = await redis([['HGETALL', 'users']]) as [string[]];
+  const commands: (string | number)[][] = [];
+  for (let i = 0; i < all.length; i += 2) {
+    const record = JSON.parse(all[i + 1]) as { role: string };
+    if (record.role === 'admin') commands.push(['HSET', 'users', all[i], JSON.stringify({ ...record, role: 'dev' })]);
+  }
+  commands.push(['SET', 'config:roles', '3']);
+  await redis(commands);
+}
+
 export async function githubToken(): Promise<string> {
   const [token] = await redis([['GET', 'config:github']]);
   return typeof token === 'string' ? token : '';
+}
+
+// Reads and writes one JSON file in the site's repo (a commit straight to main).
+export async function githubFile(token: string, path: string): Promise<{ text: string; sha: string }> {
+  const response = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}?ref=main`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'faei-admin' },
+  });
+  if (!response.ok) throw new Error(`github ${response.status}`);
+  const data = await response.json() as { content: string; sha: string };
+  const bytes = Uint8Array.from(atob(data.content.replace(/\s/g, '')), (char) => char.charCodeAt(0));
+  return { text: new TextDecoder().decode(bytes), sha: data.sha };
+}
+export async function githubWrite(token: string, path: string, text: string, sha: string, message: string): Promise<number> {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  const response = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'faei-admin', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, content: btoa(binary), sha, branch: 'main' }),
+  });
+  return response.status;
 }
 
 // True when a GitHub key may change the site's repo.

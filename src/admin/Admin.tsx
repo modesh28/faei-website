@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Bell, Camera, ClipboardList, ExternalLink, LogOut, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Bell, Camera, ClipboardList, Eye, ExternalLink, LogOut, Pencil, Phone, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
@@ -17,7 +17,9 @@ function write(key: string, value: string) { try { if (value) localStorage.setIt
 const jod = (fils: number) => `${(fils / 1000).toFixed(fils % 1000 === 0 ? 0 : fils % 100 === 0 ? 1 : 2)} د.أ`;
 const stringify = (value: unknown) => `${JSON.stringify(value, null, 1)}\n`;
 
-type Session = { session: string; username: string; role: 'admin' | 'staff' };
+type Role = 'dev' | 'admin' | 'staff';
+type Session = { session: string; username: string; role: Role };
+const ROLE_NAMES: Record<Role, string> = { dev: 'مطوّر', admin: 'إدارة', staff: 'موظف' };
 function readSession(): Session | null { try { return JSON.parse(read(SESSION_STORAGE) || 'null') as Session | null; } catch { return null; } }
 
 export async function adminCall<T = Record<string, unknown>>(body: Record<string, unknown>, session?: string): Promise<{ status: number; data: T }> {
@@ -53,7 +55,7 @@ export default function Admin() {
   if (state === 'not-connected') return <ConnectStorage onRetry={() => void check()} />;
   if (state === 'setup') return <Setup onDone={signIn} />;
   if (!session) return <Login onDone={signIn} />;
-  return <Dashboard me={session} onLogout={signOut} />;
+  return <Dashboard key={session.role} me={session} onLogout={signOut} onRole={(role) => signIn({ ...session, role })} />;
 }
 
 function ConnectStorage({ onRetry }: { onRetry: () => void }) {
@@ -152,9 +154,17 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
 
 type Tab = 'orders' | 'items' | 'offer' | 'sales' | 'accounts';
 
-function Dashboard({ me, onLogout }: { me: Session; onLogout: () => void }) {
+function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void; onRole: (role: Role) => void }) {
   const token = me.session;
-  const isAdmin = me.role === 'admin';
+  // dev: everything. admin: orders, items on/off, sales. staff: orders.
+  const isDev = me.role === 'dev';
+  const isAdmin = me.role === 'dev' || me.role === 'admin';
+  // The role can change on the server (another account edited it), so check it once on open.
+  useEffect(() => {
+    adminCall<{ role?: Role }>({ action: 'me' }, token)
+      .then(({ status, data }) => { if (status === 401) onLogout(); else if (data.role && data.role !== me.role) onRole(data.role); })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [tab, setTab] = useState<Tab>('orders');
   const live = useOrders(token, onLogout);
   const [menu, setMenu] = useState<Menu | null>(null);
@@ -164,11 +174,20 @@ function Dashboard({ me, onLogout }: { me: Session; onLogout: () => void }) {
   const [loadError, setLoadError] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState<'idle' | 'saving' | 'live-wait' | 'live' | 'error'>('idle');
+  const [reviewing, setReviewing] = useState(false);
   const [saveError, setSaveError] = useState('');
   const pollTimer = useRef(0);
 
   async function load() {
     setLoadError('');
+    if (!isDev) {
+      try {
+        const response = await fetch(`/menu.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(String(response.status));
+        setMenu(await response.json() as Menu);
+      } catch { setLoadError('ما قدرنا نجيب المنيو. تأكد من النت وجرّب كمان مرة.'); }
+      return;
+    }
     try {
       const [loadedMenu, loadedOffer] = await Promise.all([readJson<Menu>(token, MENU_PATH), readJson<Offer>(token, OFFER_PATH)]);
       setMenu(loadedMenu.data);
@@ -184,7 +203,7 @@ function Dashboard({ me, onLogout }: { me: Session; onLogout: () => void }) {
 
   const menuText = menu ? stringify(menu) : '';
   const offerText = offer ? stringify(offer) : '';
-  const dirty = !!menu && (menuText !== saved.menu || offerText !== saved.offer);
+  const dirty = isDev && !!menu && (menuText !== saved.menu || offerText !== saved.offer);
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
@@ -202,6 +221,24 @@ function Dashboard({ me, onLogout }: { me: Session; onLogout: () => void }) {
   }
   function removeProduct(id: string) {
     setMenu((current) => current && { ...current, products: current.products.filter((item) => item.id !== id) });
+  }
+  // The shop's managers turn an item on or off and it's saved right away (no save bar).
+  const [switching, setSwitching] = useState<Record<string, 'saving' | 'saved' | 'error'>>({});
+  async function quickToggle(id: string) {
+    const product = menu?.products.find((item) => item.id === id);
+    if (!product || switching[id] === 'saving') return;
+    const available = product.available === false;
+    toggle(id);
+    setSwitching((current) => ({ ...current, [id]: 'saving' }));
+    try {
+      const { status } = await adminCall({ action: 'availability', id, available }, token);
+      if (status === 401) { onLogout(); return; }
+      if (status !== 200) throw new Error(String(status));
+      setSwitching((current) => ({ ...current, [id]: 'saved' }));
+    } catch {
+      toggle(id);
+      setSwitching((current) => ({ ...current, [id]: 'error' }));
+    }
   }
   function toggle(id: string) {
     setMenu((current) => current && {
@@ -283,7 +320,7 @@ function Dashboard({ me, onLogout }: { me: Session; onLogout: () => void }) {
     <div className="admin-app">
       <header className="admin-top">
         <img src="/images/faei-logo.webp" alt="FAEI" />
-        <strong>لوحة الإدارة <small>{me.username}</small></strong>
+        <strong>لوحة الإدارة <small>{me.username} · {ROLE_NAMES[me.role]}</small></strong>
         <a href="/" target="_blank" rel="noreferrer" className="admin-ghost">الموقع <ExternalLink size={14} /></a>
         <button type="button" className="admin-ghost" onClick={() => { if (!dirty || confirm('في تعديلات ما انحفظت. أكيد بدك تطلع؟')) onLogout(); }} aria-label="تسجيل خروج"><LogOut size={16} /></button>
       </header>
@@ -291,14 +328,16 @@ function Dashboard({ me, onLogout }: { me: Session; onLogout: () => void }) {
         <button type="button" className={tab === 'orders' ? 'is-active' : ''} onClick={() => setTab('orders')} data-testid="tab-orders"><ClipboardList size={16} /> الطلبات{live.waiting > 0 && <i className="admin-badge">{live.waiting}</i>}</button>
         {isAdmin && <>
           <button type="button" className={tab === 'items' ? 'is-active' : ''} onClick={() => setTab('items')} data-testid="tab-items"><UtensilsCrossed size={16} /> الأصناف</button>
-          <button type="button" className={tab === 'offer' ? 'is-active' : ''} onClick={() => setTab('offer')} data-testid="tab-offer"><Tag size={16} /> العرض</button>
+          {isDev && <button type="button" className={tab === 'offer' ? 'is-active' : ''} onClick={() => setTab('offer')} data-testid="tab-offer"><Tag size={16} /> العرض</button>}
           <button type="button" className={tab === 'sales' ? 'is-active' : ''} onClick={() => setTab('sales')} data-testid="tab-sales"><BarChart3 size={16} /> المبيعات</button>
         </>}
-        <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isAdmin ? 'الحسابات' : 'حسابي'}</button>
+        <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
       <main className="admin-shell">
         {tab === 'orders' && <Orders live={live} />}
-        {tab === 'items' && (menu ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} /> : menuState)}
+        {tab === 'items' && (menu ? (isDev
+          ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} />
+          : <Items menu={menu} photos={photos} onToggle={(id) => void quickToggle(id)} switching={switching} />) : menuState)}
         {tab === 'offer' && (offer ? <OfferForm offer={offer} onChange={setOffer} /> : menuState)}
         {tab === 'sales' && <Sales session={token} />}
         {tab === 'accounts' && <Accounts me={me} />}
@@ -309,8 +348,18 @@ function Dashboard({ me, onLogout }: { me: Session; onLogout: () => void }) {
             : saving === 'live-wait' && !dirty ? <span>انحفظ ✅ بيظهر عالموقع خلال دقيقة تقريباً…</span>
             : saving === 'live' && !dirty ? <><span>صار عالموقع ✅</span><button type="button" onClick={() => setSaving('idle')} aria-label="سكّر"><X size={16} /></button></>
             : saving === 'error' ? <><span>{saveError}</span><button type="button" className="admin-primary" onClick={() => void save()}>جرّب كمان مرة</button></>
-            : <><span>عندك تعديلات ما انحفظت</span><button type="button" className="admin-primary" onClick={() => void save()} data-testid="button-save">احفظ ونزّل عالموقع</button></>}
+            : <><span>عندك تعديلات ما انحفظت</span><button type="button" className="admin-primary" onClick={() => setReviewing(true)} data-testid="button-save"><Eye size={16} /> راجع ونزّل عالموقع</button></>}
         </div>
+      )}
+      {reviewing && menu && (
+        <Review
+          before={JSON.parse(saved.menu || 'null') as Menu | null}
+          after={menu}
+          photos={photos}
+          offerChanged={offerText !== saved.offer}
+          onCancel={() => setReviewing(false)}
+          onConfirm={() => { setReviewing(false); void save(); }}
+        />
       )}
       {editing && menu && (
         <ItemForm
@@ -330,7 +379,8 @@ function Dashboard({ me, onLogout }: { me: Session; onLogout: () => void }) {
   );
 }
 
-function Items({ menu, photos, onToggle, onEdit, onNew, onMove }: { menu: Menu; photos: Record<string, string>; onToggle: (id: string) => void; onEdit: (product: Product) => void; onNew: () => void; onMove: (category: string, direction: -1 | 1) => void }) {
+// With onEdit (developers) every part of an item can change; without it (the shop's managers) only the on/off switch.
+function Items({ menu, photos, onToggle, onEdit, onNew, onMove, switching = {} }: { menu: Menu; photos: Record<string, string>; onToggle: (id: string) => void; onEdit?: (product: Product) => void; onNew?: () => void; onMove?: (category: string, direction: -1 | 1) => void; switching?: Record<string, 'saving' | 'saved' | 'error'> }) {
   const [query, setQuery] = useState('');
   const q = query.trim().toLocaleLowerCase('ar');
   const off = menu.products.filter((item) => item.available === false).length;
@@ -338,8 +388,9 @@ function Items({ menu, photos, onToggle, onEdit, onNew, onMove }: { menu: Menu; 
     <>
       <div className="admin-row">
         <label className="admin-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="دوّر على صنف" /></label>
-        <button type="button" className="admin-primary" onClick={onNew} data-testid="button-new-item"><Plus size={16} /> صنف جديد</button>
+        {onNew && <button type="button" className="admin-primary" onClick={onNew} data-testid="button-new-item"><Plus size={16} /> صنف جديد</button>}
       </div>
+      {!onEdit && <p className="admin-hint">سكّر الصنف لما يخلص، وبيطلع عالموقع "مش متوفر" خلال دقيقة تقريباً.</p>}
       {off > 0 && <p className="admin-note">{off === 1 ? 'في صنف واحد موقّف' : `في ${off} أصناف موقّفة`}.</p>}
       {menu.categories.map((category, index) => {
         const items = menu.products.filter((item) => item.category === category && (!q || item.name.toLocaleLowerCase('ar').includes(q)));
@@ -348,7 +399,7 @@ function Items({ menu, photos, onToggle, onEdit, onNew, onMove }: { menu: Menu; 
           <section key={category} className="admin-category">
             <div className="admin-category-head">
               <h2>{category}</h2>
-              {!q && <>
+              {!q && onMove && <>
                 <button type="button" onClick={() => onMove(category, -1)} disabled={index === 0} aria-label="طلّع القسم لفوق"><ArrowUp size={15} /></button>
                 <button type="button" onClick={() => onMove(category, 1)} disabled={index === menu.categories.length - 1} aria-label="نزّل القسم لتحت"><ArrowDown size={15} /></button>
               </>}
@@ -358,18 +409,18 @@ function Items({ menu, photos, onToggle, onEdit, onNew, onMove }: { menu: Menu; 
               const image = item.image ? photos[item.image] ?? item.image : undefined;
               return (
                 <article key={item.id} className={`admin-item${on ? '' : ' is-off'}`} data-testid={`admin-item-${item.id}`}>
-                  <button type="button" className="admin-item-main" onClick={() => onEdit(item)}>
+                  <button type="button" className="admin-item-main" onClick={() => onEdit?.(item)} disabled={!onEdit}>
                     {image ? <img src={image} alt="" loading="lazy" /> : <span className="admin-noimg"><Camera size={18} /></span>}
                     <span className="admin-item-text">
                       <b>{item.name}</b>
-                      <small>{item.options.map((option) => `${option.label ? `${option.label} ` : ''}${jod(option.priceFils)}`).join(' · ')}</small>
+                      <small>{switching[item.id] === 'saving' ? 'عم نحفظ…' : switching[item.id] === 'saved' ? 'انحفظ ✅ بيظهر عالموقع خلال دقيقة' : switching[item.id] === 'error' ? 'ما انحفظ، جرّب كمان مرة' : item.options.map((option) => `${option.label ? `${option.label} ` : ''}${jod(option.priceFils)}`).join(' · ')}</small>
                     </span>
-                    <Pencil size={15} className="admin-item-edit" />
+                    {onEdit && <Pencil size={15} className="admin-item-edit" />}
                   </button>
-                  <label className="admin-switch" title={on ? 'متوفر' : 'موقّف'}>
-                    <input type="checkbox" checked={on} onChange={() => onToggle(item.id)} data-testid={`toggle-${item.id}`} />
+                  <label className="admin-switch" title={on ? 'متوفر' : 'مش متوفر'}>
+                    <input type="checkbox" checked={on} onChange={() => onToggle(item.id)} disabled={switching[item.id] === 'saving'} data-testid={`toggle-${item.id}`} />
                     <span />
-                    <em>{on ? 'متوفر' : 'موقّف'}</em>
+                    <em>{on ? 'متوفر' : 'مش متوفر'}</em>
                   </label>
                 </article>
               );
@@ -420,6 +471,19 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { p
   const [error, setError] = useState('');
   const isNew = !product.id;
   const preview = newPhoto ?? photo ?? product.image;
+  // What the item will look like on the site, updated as you type.
+  const draft = useMemo<Product[]>(() => {
+    const next: Product = {
+      id: product.id || 'preview',
+      name: name.trim() || 'اسم الصنف',
+      category: category === '__new' ? newCategory.trim() : category,
+      options: options.map((option) => ({ label: option.label.trim(), priceFils: Math.round(Number(option.price.replace(',', '.')) * 1000) || 0 })),
+    };
+    if (preview) next.image = preview;
+    if (popular) next.popular = true;
+    if (!available) next.available = false;
+    return [next];
+  }, [product.id, name, category, newCategory, options, preview, popular, available]);
 
   async function pickPhoto(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -480,13 +544,75 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { p
         </fieldset>
         <label className="admin-check"><input type="checkbox" checked={available} onChange={(event) => setAvailable(event.target.checked)} /> متوفر</label>
         <label className="admin-check"><input type="checkbox" checked={popular} onChange={(event) => setPopular(event.target.checked)} /> علامة "الأكثر طلباً"</label>
+        <div className="admin-preview">
+          <h3><Eye size={15} /> هيك رح يطلع عالتلفون</h3>
+          <SitePreview products={draft} />
+        </div>
         {error && <p className="admin-error">{error}</p>}
         <div className="admin-sheet-actions">
           <button type="submit" className="admin-primary" disabled={busy} data-testid="button-item-done">تمام</button>
           {onDelete && <button type="button" className="admin-danger" onClick={() => { if (confirm(`أكيد بدك تحذف "${product.name}" من المنيو؟`)) onDelete(); }} data-testid="button-delete"><Trash2 size={15} /> احذف</button>}
         </div>
-        <p className="admin-hint">التعديل بيصير عالموقع لما تكبس "احفظ ونزّل عالموقع" تحت.</p>
+        <p className="admin-hint">التعديل بيصير عالموقع لما تكبس "راجع ونزّل عالموقع" تحت وتأكد.</p>
       </form>
+    </div>
+  );
+}
+
+// The real site draws the products (/?preview), so the preview matches the menu exactly.
+function SitePreview({ products }: { products: Product[] }) {
+  const frame = useRef<HTMLIFrameElement>(null);
+  const [ready, setReady] = useState(false);
+  const [height, setHeight] = useState(130);
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== frame.current?.contentWindow) return;
+      if (event.data?.type === 'faei-preview-ready') setReady(true);
+      if (event.data?.type === 'faei-preview-height' && event.data.height > 0) setHeight(event.data.height + 6);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+  useEffect(() => {
+    if (ready) frame.current?.contentWindow?.postMessage({ type: 'faei-preview', products }, window.location.origin);
+  }, [ready, products]);
+  return <iframe ref={frame} src="/?preview" title="معاينة" className="admin-preview-frame" style={{ height }} data-testid="item-preview" />;
+}
+
+// Before anything goes live, the developer sees every change and how changed items will look.
+function Review({ before, after, photos, offerChanged, onCancel, onConfirm }: { before: Menu | null; after: Menu; photos: Record<string, string>; offerChanged: boolean; onCancel: () => void; onConfirm: () => void }) {
+  const old = new Map((before?.products ?? []).map((item) => [item.id, item]));
+  const now = new Map(after.products.map((item) => [item.id, item]));
+  const added = after.products.filter((item) => !old.has(item.id));
+  const removed = (before?.products ?? []).filter((item) => !now.has(item.id));
+  const changed = after.products.filter((item) => old.has(item.id) && JSON.stringify(old.get(item.id)) !== JSON.stringify(item));
+  const onlySwitch = (item: Product) => { const a = { ...old.get(item.id) }; const b = { ...item }; delete a.available; delete b.available; return JSON.stringify(a) === JSON.stringify(b); };
+  const switched = changed.filter(onlySwitch);
+  const edited = changed.filter((item) => !onlySwitch(item));
+  const reordered = JSON.stringify(before?.categories ?? []) !== JSON.stringify(after.categories.filter((category) => after.products.some((item) => item.category === category)));
+  const shown = useMemo(() => [...added, ...edited].map((item) => (item.image && photos[item.image] ? { ...item, image: photos[item.image] } : item)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <div className="admin-sheet-wrap" role="dialog" aria-modal="true">
+      <button type="button" className="admin-sheet-backdrop" onClick={onCancel} aria-label="سكّر" />
+      <section className="admin-sheet" data-testid="review">
+        <div className="admin-sheet-head">
+          <h2>راجع قبل ما ينزل عالموقع</h2>
+          <button type="button" onClick={onCancel} aria-label="سكّر"><X size={18} /></button>
+        </div>
+        <ul className="admin-changes">
+          {added.map((item) => <li key={`a${item.id}`} className="is-add">صنف جديد: <b>{item.name}</b></li>)}
+          {edited.map((item) => <li key={`e${item.id}`} className="is-edit">تعديل: <b>{item.name}</b></li>)}
+          {switched.map((item) => <li key={`s${item.id}`}>{item.available === false ? 'تسكير' : 'فتح'}: <b>{item.name}</b></li>)}
+          {removed.map((item) => <li key={`r${item.id}`} className="is-remove">حذف: <b>{item.name}</b></li>)}
+          {reordered && <li>ترتيب الأقسام تغيّر</li>}
+          {offerChanged && <li>شريط العرض تغيّر</li>}
+        </ul>
+        {shown.length > 0 && <div className="admin-preview"><h3><Eye size={15} /> هيك رح يطلعوا عالتلفون</h3><SitePreview products={shown} /></div>}
+        <div className="admin-sheet-actions">
+          <button type="button" className="admin-primary" onClick={onConfirm} data-testid="button-confirm-save">تمام، نزّل عالموقع</button>
+          <button type="button" className="admin-link" onClick={onCancel}>رجوع وعدّل</button>
+        </div>
+      </section>
     </div>
   );
 }
@@ -535,7 +661,7 @@ function OfferForm({ offer, onChange }: { offer: Offer; onChange: (offer: Offer)
 type OrderItem = { name: string; quantity: number; price: number };
 type LiveOrder = {
   ref: string; id: string; createdAt: number; status: string; items: OrderItem[]; extras: string;
-  fulfillment: string; address: string; time: string; payment: string; preorder: boolean;
+  fulfillment: string; address: string; phone?: string; time: string; payment: string; preorder: boolean;
   discount: number; delivery: number | string; total: number;
 };
 type Live = { orders: LiveOrder[] | null; error: string; waiting: number; soundOn: boolean; enableSound: () => void; setStatus: (ref: string, status: string) => Promise<void>; fresh: Set<string> };
@@ -565,7 +691,18 @@ function ring() {
   navigator.vibrate?.([300, 120, 300]);
 }
 
-// Checks for orders every 8 seconds while the page is on screen and rings for new ones.
+// A phone notification for new orders while the page is in the background.
+function notify(orders: LiveOrder[]) {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted' || document.visibilityState === 'visible') return;
+  const title = orders.length === 1 ? `طلب جديد #${orders[0].id}` : `${orders.length} طلبات جديدة`;
+  const body = orders.flatMap((order) => order.items.map((item) => `${item.quantity}× ${item.name}`)).join('، ').slice(0, 140) || 'افتح اللوحة';
+  const options = { body, tag: 'faei-order', renotify: true, icon: '/icon-192.png' } as NotificationOptions;
+  navigator.serviceWorker?.getRegistration('/')
+    .then((registration) => { if (registration) return registration.showNotification(title, options); new Notification(title, options); })
+    .catch(() => { try { new Notification(title, options); } catch { /* not supported here */ } });
+}
+
+// Checks for orders every 3 seconds while the page is on screen (15 in the background) and rings for new ones.
 function useOrders(session: string, onLogout: () => void): Live {
   const [orders, setOrders] = useState<LiveOrder[] | null>(null);
   const [error, setError] = useState('');
@@ -599,6 +736,7 @@ function useOrders(session: string, onLogout: () => void): Live {
         const added = data.orders.filter((order) => !known.current!.has(order.ref) && order.status === 'جديد');
         if (added.length) {
           if (soundRef.current) ring();
+          notify(added);
           setFresh((current) => new Set([...current, ...added.map((order) => order.ref)]));
         }
       }
@@ -607,7 +745,13 @@ function useOrders(session: string, onLogout: () => void): Live {
   }
   useEffect(() => {
     void fetchOrders();
-    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void poll(); }, 8000);
+    let last = 0;
+    const timer = window.setInterval(() => {
+      const gap = document.visibilityState === 'visible' ? 3000 : 15000;
+      if (Date.now() - last < gap - 200) return;
+      last = Date.now();
+      void poll();
+    }, 1000);
     const wake = () => { if (document.visibilityState === 'visible') void poll(); };
     document.addEventListener('visibilitychange', wake);
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', wake); };
@@ -635,7 +779,10 @@ function useOrders(session: string, onLogout: () => void): Live {
     } catch { /* the next poll shows the real state */ }
     void fetchOrders();
   }
-  function enableSound() { soundRef.current = true; setSoundOn(true); ring(); }
+  function enableSound() {
+    soundRef.current = true; setSoundOn(true); ring();
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') void Notification.requestPermission().catch(() => {});
+  }
   return { orders, error, waiting, soundOn, enableSound, setStatus, fresh };
 }
 
@@ -657,7 +804,7 @@ function Orders({ live }: { live: Live }) {
   const todays = live.orders.filter((order) => isToday(order) && order.status !== 'ملغي');
   return (
     <>
-      {!live.soundOn && <button type="button" className="admin-sound" onClick={live.enableSound} data-testid="button-sound"><Bell size={18} /> اكبس هون عشان يرنّ لما يوصل طلب جديد</button>}
+      {!live.soundOn && <button type="button" className="admin-sound" onClick={live.enableSound} data-testid="button-sound"><Bell size={18} /> اكبس هون عشان يرنّ ويطلعلك إشعار لما يوصل طلب جديد</button>}
       {live.error && <p className="admin-error">{live.error}</p>}
       <div className="admin-stats">
         <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هلّق</em></div>
@@ -692,6 +839,7 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
         {order.extras && <li className="admin-order-extras">من الكافتيريا: {order.extras}</li>}
       </ul>
       <dl>
+        {order.phone && <div><dt>التلفون</dt><dd><a href={`tel:${order.phone}`} className="admin-phone" dir="ltr"><Phone size={13} /> {order.phone}</a></dd></div>}
         <div><dt>الاستلام</dt><dd>{order.fulfillment}{order.address ? ` · ${order.address}` : ''}</dd></div>
         <div><dt>الوقت</dt><dd>{order.time}</dd></div>
         <div><dt>الدفع</dt><dd className={order.payment === 'كليك' ? 'is-cliq' : ''}>{order.payment === 'كليك' ? 'كليك (تأكد من التحويل)' : order.payment}</dd></div>
@@ -763,12 +911,12 @@ function Accounts({ me }: { me: Session }) {
   const [users, setUsers] = useState<{ username: string; role: string }[]>([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'staff' | 'admin'>('staff');
+  const [role, setRole] = useState<Role>('staff');
   const [myPassword, setMyPassword] = useState('');
   const [message, setMessage] = useState('');
-  const isAdmin = me.role === 'admin';
+  const isDev = me.role === 'dev';
   async function loadUsers() {
-    if (!isAdmin) return;
+    if (!isDev) return;
     const { data } = await adminCall<{ users?: { username: string; role: string }[] }>({ action: 'users' }, me.session);
     setUsers(data.users ?? []);
   }
@@ -788,14 +936,14 @@ function Accounts({ me }: { me: Session }) {
   return (
     <>
       {message && <p className="admin-note">{message}</p>}
-      {isAdmin && (
+      {isDev && (
         <section className="admin-card">
           <h2>الحسابات</h2>
-          <p className="admin-hint"><b>مدير</b>: كل إشي. <b>موظف</b>: بيشوف الطلبات وبيغيّر حالتها بس.</p>
+          <p className="admin-hint"><b>موظف</b>: الطلبات بس. <b>إدارة</b>: الطلبات، وتسكير وفتح الأصناف، والمبيعات. <b>مطوّر</b>: كل إشي، ومعه تعديل وإضافة وحذف الأصناف والعرض والحسابات.</p>
           <ul className="admin-users">
             {users.map((user) => (
               <li key={user.username}>
-                <b dir="ltr">{user.username}</b><span>{user.role === 'admin' ? 'مدير' : 'موظف'}</span>
+                <b dir="ltr">{user.username}</b><span>{ROLE_NAMES[user.role as Role] ?? user.role}</span>
                 {user.username !== me.username && <button type="button" className="admin-link" onClick={async () => { if (confirm(`حذف ${user.username}؟`)) { await adminCall({ action: 'remove-user', username: user.username }, me.session); void loadUsers(); } }}>احذف</button>}
               </li>
             ))}
@@ -804,9 +952,10 @@ function Accounts({ me }: { me: Session }) {
             <h3><UserPlus size={16} /> حساب جديد</h3>
             <input className="admin-input" value={username} onChange={(event) => setUsername(event.target.value)} placeholder="اليوزر (إنجليزي)" dir="ltr" autoCapitalize="none" data-testid="input-new-user" />
             <input className="admin-input" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="الباسوورد" dir="ltr" data-testid="input-new-password" />
-            <select className="admin-input" value={role} onChange={(event) => setRole(event.target.value as 'staff' | 'admin')}>
+            <select className="admin-input" value={role} onChange={(event) => setRole(event.target.value as Role)} data-testid="select-role">
               <option value="staff">موظف (الطلبات بس)</option>
-              <option value="admin">مدير (كل إشي)</option>
+              <option value="admin">إدارة (الطلبات، تسكير الأصناف، المبيعات)</option>
+              <option value="dev">مطوّر (كل إشي)</option>
             </select>
             <button type="submit" className="admin-primary" data-testid="button-add-user">زيد الحساب</button>
           </form>

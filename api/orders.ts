@@ -6,10 +6,14 @@
 //   GET   /api/orders?ref=…    a customer's phone asks for its order's status (public, status only)
 //   GET   /api/orders?version  a number that changes with every order or status change (public),
 //                              so the admin page only downloads the list when something changed
-//   GET   /api/orders          the admin page lists recent orders (needs a signed-in admin)
+//   GET   /api/orders          the admin page lists recent orders (needs a signed-in account)
 //   PATCH /api/orders          the admin page changes an order's status (needs a signed-in admin)
 
-import { connected, json, notConnected, redis, sessionUser } from './_lib.js';
+import { connected, json, notConnected, redis, sessionAccount, sessionUser } from './_lib.js';
+
+// The admin screens ask for the version every few seconds. An instance that answered in the
+// last second and a half reuses its answer, which keeps the free Redis plan well within limits.
+let lastVersion = { value: 0, at: 0 };
 
 // Kept 35 days, so the sales page can show the last few weeks.
 const KEEP_SECONDS = 35 * 24 * 3600;
@@ -39,6 +43,7 @@ export async function POST(request: Request): Promise<Response> {
     extras: text(body.extras, 500),
     fulfillment: text(body.fulfillment, 60),
     address: text(body.address, 300),
+    phone: text(body.phone, 20).replace(/[^\d+]/g, ''),
     time: text(body.time, 40),
     payment: text(body.payment, 30),
     preorder: body.preorder === true,
@@ -48,7 +53,8 @@ export async function POST(request: Request): Promise<Response> {
   };
   const [created] = await redis([['SET', `order:${order.ref}`, JSON.stringify(order), 'EX', KEEP_SECONDS, 'NX']]);
   if (created !== 'OK') return json({ ok: true, duplicate: true });
-  await redis([['LPUSH', 'orders', order.ref], ['LTRIM', 'orders', 0, 1999], ['INCR', 'orders:version']]);
+  const [, , version] = await redis([['LPUSH', 'orders', order.ref], ['LTRIM', 'orders', 0, 1999], ['INCR', 'orders:version']]);
+  lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true });
 }
 
@@ -56,8 +62,10 @@ export async function GET(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
   const params = new URL(request.url).searchParams;
   if (params.has('version')) {
+    if (Date.now() - lastVersion.at < 1500) return json({ version: lastVersion.value });
     const [version] = await redis([['GET', 'orders:version']]);
-    return json({ version: Number(version) || 0 });
+    lastVersion = { value: Number(version) || 0, at: Date.now() };
+    return json({ version: lastVersion.value });
   }
   const ref = params.get('ref');
   if (ref !== null) {
@@ -65,8 +73,10 @@ export async function GET(request: Request): Promise<Response> {
     const [stored] = await redis([['GET', `order:${ref}`]]);
     return json({ status: stored ? (JSON.parse(stored as string) as { status: string }).status : '' });
   }
-  if (!(await sessionUser(request))) return json({ error: 'not-allowed' }, 401);
-  const limit = Math.min(1000, Math.max(1, Number(params.get('limit')) || 150));
+  const me = await sessionAccount(request);
+  if (!me) return json({ error: 'not-allowed' }, 401);
+  // Staff see today's work; the long list behind the sales page is for the shop's managers.
+  const limit = Math.min(me.role === 'staff' ? 150 : 1000, Math.max(1, Number(params.get('limit')) || 150));
   const [refs, version] = await redis([['LRANGE', 'orders', 0, limit - 1], ['GET', 'orders:version']]) as [string[], string | null];
   if (!refs.length) return json({ orders: [], version: Number(version) || 0 });
   const [values] = await redis([['MGET', ...refs.map((item) => `order:${item}`)]]) as [(string | null)[]];
@@ -82,6 +92,7 @@ export async function PATCH(request: Request): Promise<Response> {
   const [stored] = await redis([['GET', `order:${body.ref}`]]);
   if (!stored) return json({ error: 'not-found' }, 404);
   const order = { ...(JSON.parse(stored as string) as Record<string, unknown>), status: body.status, [`at_${body.status}`]: Date.now() };
-  await redis([['SET', `order:${body.ref}`, JSON.stringify(order), 'KEEPTTL'], ['INCR', 'orders:version']]);
+  const [, version] = await redis([['SET', `order:${body.ref}`, JSON.stringify(order), 'KEEPTTL'], ['INCR', 'orders:version']]);
+  lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true, order });
 }

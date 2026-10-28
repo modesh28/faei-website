@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Analytics } from '@vercel/analytics/react';
 
-import App from './App';
+import App, { PreviewPage } from './App';
 import './index.css';
 import { products, categories } from './menu';
 
@@ -77,9 +77,9 @@ menuScript.type = 'application/ld+json';
 menuScript.textContent = JSON.stringify(menuData);
 document.head.appendChild(menuScript);
 
+const isPreview = new URLSearchParams(window.location.search).has('preview');
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
-    <Analytics />
+    {isPreview ? <PreviewPage /> : <><App /><Analytics /></>}
   </StrictMode>,
 );

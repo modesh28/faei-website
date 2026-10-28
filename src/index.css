@@ -580,3 +580,42 @@
 .product-card.is-unavailable .product-image, .product-card.is-unavailable h3, .product-card.is-unavailable .price { opacity: .45; filter: grayscale(1); }
 .unavailable-tag { margin-inline-start: auto; font-size: 12.5px; font-weight: 800; color: #9a3b2e; background: #fbe9e6; border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
 @media (prefers-color-scheme: dark) { .unavailable-tag { background: #3a2220; color: #f2b8ad; } }
+
+/* 25. Phone menu: one compact row per item (photo on the side, sizes as small pills) */
+.preview-page { background: transparent; padding: 2px; overflow: visible; }
+.preview-page .catalog-grid { gap: 10px; }
+@media (max-width: 700px) {
+  .catalog-grid { grid-template-columns: 1fr; gap: 10px; }
+  .product-card { flex-direction: row; align-items: stretch; border-radius: 16px; }
+  .product-card:hover { transform: none; }
+  .product-image { flex: none; width: 104px; height: auto; aspect-ratio: auto; min-height: 104px; }
+  .product-body { padding: 10px 12px 11px; min-width: 0; gap: 0; }
+  .product-meta { margin-bottom: 3px; font-size: 10.5px; }
+  .product-body h3 { font-size: 15.5px; line-height: 1.45; margin: 0 0 8px; }
+  .option-list { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .option-row { gap: 6px; padding: 3px; padding-inline-start: 10px; border: 1px solid #e5e1d8; border-radius: 999px; background: #fbfaf6; }
+  .option-row .price { margin-inline-start: 0; font-size: 13px; }
+  .option-label { font-size: 12px; }
+  .product-card .option-row .add-button { width: 30px; height: 30px; min-width: 30px; min-height: 30px; padding: 0; border-radius: 50% !important; }
+  .product-card .option-row .add-button svg { width: 15px; height: 15px; }
+  .option-row .card-stepper { padding: 1px; }
+  .option-row .card-stepper button { width: 28px; height: 28px; }
+  .option-row .card-stepper span { min-width: 16px; font-size: 13px; }
+  .product-card .unavailable-tag { margin-inline-start: 0; padding: 4px 9px; font-size: 11.5px; }
+  .product-card.is-unavailable .option-list { flex-wrap: nowrap; }
+}
+@media (max-width: 700px) and (prefers-color-scheme: dark) { .option-row { background: #1b2d3c; } }
+@media (max-width: 360px) { .product-image { width: 88px; min-height: 88px; } }
+
+/* 26. Phone number in the cart (needed to send an order) */
+.compact-options .phone-input { grid-column: 2; height: 40px; min-width: 0; border: 1px solid #d8d5cc; border-radius: var(--radius, 8px); padding: 0 12px; background: #fff; color: var(--ink); font: 600 15px 'DM Sans', sans-serif; letter-spacing: .5px; outline: 0; text-align: left; }
+.compact-options .phone-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(22,118,184,.12); }
+.compact-options .phone-input.is-wrong { border-color: #c0513f; }
+.compact-options h3 label { font: inherit; color: inherit; }
+@media (prefers-color-scheme: dark) { .compact-options .phone-input { background: #1e3142; border-color: #2f4659; color: #e8eef3; } }
+
+/* 27. Send button: solid WhatsApp green, no icon */
+.faei-app .wa-button { min-height: 52px; justify-content: center; border-radius: 14px !important; background: linear-gradient(180deg, #2bd46a, #1fb456); color: #fff; font-size: 16px; font-weight: 800; letter-spacing: .2px; box-shadow: 0 8px 18px rgba(31,180,86,.28), inset 0 -2px 0 rgba(0,0,0,.08); }
+.faei-app .wa-button:active { transform: scale(.98); }
+.faei-app .wa-button:disabled { background: #d9dedb; color: #7b8780; box-shadow: none; opacity: 1; }
+@media (prefers-color-scheme: dark) { .faei-app .wa-button:disabled { background: #26394a; color: #7f93a4; } }

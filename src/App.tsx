@@ -554,6 +554,14 @@ function readLastOrder(): LastOrder | null {
 }
 
 // Short order number shared by the WhatsApp message and the sheet, e.g. "1432-7".
+// Jordanian mobile numbers in any common shape (Arabic digits, +962, spaces) become 07XXXXXXXX.
+const PHONE_KEY = 'faei-phone-v1';
+export function normalizePhone(value: string): string {
+  const digits = value.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660)).replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x6f0)).replace(/\D/g, '');
+  const local = digits.replace(/^(00962|962)/, '0').replace(/^7/, '07');
+  return /^07[789]\d{7}$/.test(local) ? local : '';
+}
+
 function makeOrderId(): string {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}-${Math.floor(Math.random() * 90 + 10)}`;
@@ -616,6 +624,35 @@ function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { p
   );
 }
 
+// /?preview: the admin page shows a product here, drawn exactly like the menu, before it goes live.
+export function PreviewPage() {
+  const [items, setItems] = useState<Product[]>([]);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.data?.type !== 'faei-preview') return;
+      setItems(event.data.products as Product[]);
+    };
+    window.addEventListener('message', onMessage);
+    window.parent.postMessage({ type: 'faei-preview-ready' }, window.location.origin);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+  useEffect(() => {
+    const send = () => window.parent.postMessage({ type: 'faei-preview-height', height: ref.current?.offsetHeight ?? 0 }, window.location.origin);
+    send();
+    const observer = new ResizeObserver(send);
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [items]);
+  return (
+    <div className="faei-app preview-page" dir="rtl" ref={ref}>
+      <div className="catalog-grid">
+        {items.map((product) => <ProductCard key={product.id || product.name} product={product} onAdd={() => {}} onChange={() => {}} quantities={new Map()} showCategory={false} />)}
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [cart, setCart] = useState<CartEntry[]>(readCart);
   // Opening a shared group-order link adds its items to this phone's cart once.
@@ -662,6 +699,8 @@ function App() {
   const [fulfillment, setFulfillment] = useState<Fulfillment>('pickup');
   const [zone, setZone] = useState<DeliveryZone>('inside');
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState(() => { try { return localStorage.getItem(PHONE_KEY) ?? ''; } catch { return ''; } });
+  useEffect(() => { try { if (normalizePhone(phone)) localStorage.setItem(PHONE_KEY, phone.trim()); } catch { /* fine */ } }, [phone]);
   const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
   const [orderTime, setOrderTime] = useState('');
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(readActiveOrder);
@@ -794,7 +833,9 @@ function App() {
   function copyCliq() {
     navigator.clipboard?.writeText(settings.cliqAlias).then(() => { setCliqCopied(true); window.setTimeout(() => setCliqCopied(false), 1800); }).catch(() => {});
   }
-  const canCheckout = (cartLines.length > 0 || hasExtras) && !missingAddress && !missingTime;
+  const phoneNumber = normalizePhone(phone);
+  const missingPhone = !phoneNumber;
+  const canCheckout = (cartLines.length > 0 || hasExtras) && !missingAddress && !missingTime && !missingPhone;
 
   function checkout() {
     if (!canCheckout) return;
@@ -817,7 +858,7 @@ function App() {
     const orderId = makeOrderId();
     const paid = isCliq ? `الدفع: كليك على ${settings.cliqAlias} (رح أبعت صورة التحويل)` : 'الدفع: كاش عند الاستلام';
     const closedNote = isOpenNow() ? '' : '\n(طلب مسبق، انبعت والمحل مسكّر)';
-    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي (رقم ${orderId}):${closedNote}\n\n${itemsText}${extrasText}${how}\n${when}\n${paid}\n\n${totalsText}\n\nشكراً!`;
+    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي (رقم ${orderId}):${closedNote}\n\n${itemsText}${extrasText}${how}\n${when}\n${paid}\nرقم تلفوني: ${phoneNumber}\n\n${totalsText}\n\nشكراً!`;
     logOrder(settings.sheetUrl, {
       orderId,
       items: cartLines.map(({ name, option, quantity }) => `${name}${option.label ? ` (${option.label})` : ''} × ${quantity}`).join('، '),
@@ -831,6 +872,7 @@ function App() {
       time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
       payment: isCliq ? 'كليك' : 'كاش',
       extras: extras.trim(),
+      phone: phoneNumber,
       source: VISIT_SOURCE,
     });
     // Also send it to the shop's live orders screen (/admin). Fire-and-forget, like the sheet.
@@ -847,6 +889,7 @@ function App() {
           extras: extras.trim(),
           fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}` : 'استلام',
           address: isDelivery ? address.trim() : '',
+          phone: phoneNumber,
           time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
           payment: isCliq ? 'كليك' : 'كاش',
           preorder: !isOpenNow(),
@@ -1049,6 +1092,8 @@ function App() {
                 <strong className="line-total">{money(option.priceFils * quantity)}</strong>
               </article>)}
               <section className="order-options foot-options compact-options" aria-label="طريقة الاستلام">
+                <h3><label htmlFor="input-phone">تلفونك</label></h3>
+                <input id="input-phone" className={`phone-input${phone && missingPhone ? ' is-wrong' : ''}`} type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XXXXXXXX" maxLength={20} data-testid="input-phone" />
                 <h3>الاستلام</h3>
                 <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
                   <button type="button" role="radio" aria-checked={!isDelivery} className={!isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('pickup')} data-testid="option-pickup">استلام</button>
@@ -1134,8 +1179,8 @@ function App() {
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
               {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هلأ وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هلأ، وبنرد عليك أول ما نفتح.</p>}
-              {(missingAddress || missingTime) && <p className="order-warning">{missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
-              <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب عبر واتساب <ArrowLeft size={18} /></button>
+              {(missingPhone || missingAddress || missingTime) && <p className="order-warning" data-testid="order-warning">{missingPhone ? (phone.trim() ? 'رقم التلفون مش صحيح. اكتبه هيك: 07XXXXXXXX' : 'اكتب رقم تلفونك فوق عشان تقدر تبعت الطلب.') : missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
+              <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب عبر واتساب</button>
               <p className="checkout-note">رح يفتح واتساب برسالة طلب جاهزة. الطلب بيتأكد لما FAEI يرد عليك.</p>
             </div>
           </> : <div className="cart-empty"><ShoppingBag size={34} /><h3>السلة فاضية حالياً</h3><p>تصفّح المنيو وأضف الأصناف اللي بدك إياها.</p>{lastOrder && <button type="button" className="reorder-empty" onClick={() => { setCart(lastOrder.cart); setExtras(lastOrder.extras); if (lastOrder.extras) setExtrasOpen(true); }} data-testid="button-reorder-empty">اطلب طلبك المعتاد</button>}<button type="button" className="button button-gold" onClick={() => setCartOpen(false)}>تصفّح المنيو</button><button type="button" className="clear-button extras-only" onClick={() => setExtrasOpen(true)} data-testid="button-extras-only">بدي بس عصير أو سناك من الكافتيريا</button></div>}

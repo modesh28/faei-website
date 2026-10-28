@@ -1,12 +1,13 @@
 // Admin accounts for /admin: username + password, no GitHub key needed day to day.
 // The first visit sets things up once (a GitHub key the server keeps, and the first account).
-// Roles: "admin" can do everything; "staff" only sees and updates orders.
+// Roles: "dev" can do everything; "admin" runs the shop (orders, items on/off, sales);
+// "staff" only sees and updates orders.
 //
-//   POST /api/admin  { action: 'state' | 'setup' | 'login' | 'logout' | 'me' | 'users' | 'add-user' | 'remove-user' | 'password', … }
+//   POST /api/admin  { action: 'state' | 'setup' | 'login' | 'logout' | 'me' | 'users' | 'add-user' | 'remove-user' | 'password' | 'availability', … }
 
-import { connected, githubCanPush, hashPassword, json, notConnected, randomId, redis, SESSION_SECONDS, sessionUser } from './_lib.js';
+import { connected, githubCanPush, githubFile, githubToken, githubWrite, hashPassword, json, notConnected, randomId, redis, type Role, ROLES, SESSION_SECONDS, sessionUser, upgradeRoles } from './_lib.js';
 
-type Account = { salt: string; hash: string; role: 'admin' | 'staff' };
+type Account = { salt: string; hash: string; role: Role };
 const validName = (name: unknown): name is string => typeof name === 'string' && /^[a-z0-9_.-]{3,30}$/.test(name);
 const validPassword = (password: unknown): password is string => typeof password === 'string' && password.length >= 6 && password.length <= 100;
 
@@ -30,6 +31,7 @@ export async function POST(request: Request): Promise<Response> {
   let body: Record<string, unknown>;
   try { body = await request.json() as Record<string, unknown>; } catch { return json({ error: 'bad-json' }, 400); }
   const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
+  if (body.action === 'login' || body.action === 'me') await upgradeRoles();
 
   switch (body.action) {
     case 'state': {
@@ -43,9 +45,9 @@ export async function POST(request: Request): Promise<Response> {
       if (!validPassword(body.password)) return json({ error: 'bad-password' }, 400);
       const token = typeof body.githubToken === 'string' ? body.githubToken.trim() : '';
       if (!token || !(await githubCanPush(token))) return json({ error: 'bad-github-key' }, 400);
-      await redis([['SET', 'config:github', token]]);
-      await saveAccount(username, body.password, 'admin');
-      return json({ session: await startSession(username), username, role: 'admin' });
+      await redis([['SET', 'config:github', token], ['SET', 'config:roles', '3']]);
+      await saveAccount(username, body.password, 'dev');
+      return json({ session: await startSession(username), username, role: 'dev' });
     }
     case 'login': {
       // Ten wrong tries lock that username for 15 minutes.
@@ -81,7 +83,26 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  if (mine.role !== 'admin') return json({ error: 'not-allowed' }, 403);
+  // Turning an item on or off ("مش متوفر") is a one-line change, saved straight to the site.
+  if (body.action === 'availability') {
+    if (mine.role === 'staff') return json({ error: 'not-allowed' }, 403);
+    const id = typeof body.id === 'string' ? body.id : '';
+    const token = await githubToken();
+    if (!token) return json({ error: 'no-github-key' }, 503);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const file = await githubFile(token, 'public/menu.json');
+      const menu = JSON.parse(file.text) as { products: { id: string; name: string; available?: boolean }[] };
+      const product = menu.products.find((item) => item.id === id);
+      if (!product) return json({ error: 'not-found' }, 404);
+      if (body.available === false) product.available = false; else delete product.available;
+      const status = await githubWrite(token, 'public/menu.json', `${JSON.stringify(menu, null, 1)}\n`, file.sha, `${body.available === false ? 'تسكير' : 'فتح'} ${product.name} من لوحة الإدارة`);
+      if (status === 200 || status === 201) return json({ ok: true });
+      if (status !== 409 && status !== 422) return json({ error: 'github' }, 502);
+    }
+    return json({ error: 'busy' }, 409);
+  }
+
+  if (mine.role !== 'dev') return json({ error: 'not-allowed' }, 403);
   switch (body.action) {
     case 'users': {
       const [all] = await redis([['HGETALL', 'users']]) as [string[]];
@@ -93,7 +114,7 @@ export async function POST(request: Request): Promise<Response> {
       if (!validName(username)) return json({ error: 'bad-username' }, 400);
       if (!validPassword(body.password)) return json({ error: 'bad-password' }, 400);
       if (await account(username)) return json({ error: 'exists' }, 409);
-      await saveAccount(username, body.password, body.role === 'admin' ? 'admin' : 'staff');
+      await saveAccount(username, body.password, ROLES.includes(body.role as Role) ? body.role as Role : 'staff');
       return json({ ok: true });
     }
     case 'remove-user': {
