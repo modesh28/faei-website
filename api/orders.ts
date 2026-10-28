@@ -12,7 +12,7 @@
 //   GET   /api/orders          the admin page lists recent orders (needs a signed-in account)
 //   PATCH /api/orders          the admin page changes an order's status (needs a signed-in admin)
 
-import { connected, countCustomerOrder, json, notConnected, redis, sessionAccount, sessionUser } from './_lib.js';
+import { connected, countCustomerOrder, json, notConnected, redis, type Role, sessionAccount } from './_lib.js';
 
 // The admin screens ask for the version every few seconds. An instance that answered in the
 // last second and a half reuses its answer, which keeps the free Redis plan well within limits.
@@ -114,18 +114,27 @@ export async function GET(request: Request): Promise<Response> {
   const [refs, version] = await redis([['LRANGE', 'orders', 0, limit - 1], ['GET', 'orders:version']]) as [string[], string | null];
   if (!refs.length) return json({ orders: [], version: Number(version) || 0 });
   const [values] = await redis([['MGET', ...refs.map((item) => `order:${item}`)]]) as [(string | null)[]];
-  return json({ orders: values.filter(Boolean).map((value) => JSON.parse(value as string)), version: Number(version) || 0 });
+  const orders = values.filter(Boolean).map((value) => JSON.parse(value as string) as { shop?: string }).filter((order) => seesOrder(me.role, order));
+  return json({ orders, version: Number(version) || 0 });
+}
+
+// V8's orders (the coffee house inside FAEI) go to V8's own employee accounts and the developer;
+// FAEI's staff and managers don't see them, and V8's employees see nothing else.
+function seesOrder(role: Role, order: { shop?: string }): boolean {
+  return role === 'dev' || (role === 'v8') === (order.shop === 'v8');
 }
 
 export async function PATCH(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
-  if (!(await sessionUser(request))) return json({ error: 'not-allowed' }, 401);
+  const me = await sessionAccount(request);
+  if (!me) return json({ error: 'not-allowed' }, 401);
   let body: { ref?: unknown; status?: unknown };
   try { body = await request.json() as { ref?: unknown; status?: unknown }; } catch { return json({ error: 'bad-json' }, 400); }
   if (!validRef(body.ref) || typeof body.status !== 'string' || !STATUSES.includes(body.status)) return json({ error: 'bad-request' }, 400);
   const [stored] = await redis([['GET', `order:${body.ref}`]]);
   if (!stored) return json({ error: 'not-found' }, 404);
   const before = JSON.parse(stored as string) as Record<string, unknown>;
+  if (!seesOrder(me.role, before as { shop?: string })) return json({ error: 'not-allowed' }, 403);
   const order = { ...before, status: body.status, [`at_${body.status}`]: Date.now() };
   if (before.status !== 'ملغي' && body.status === 'ملغي') await countCustomerOrder(order, -1);
   if (before.status === 'ملغي' && body.status !== 'ملغي') await countCustomerOrder(order, 1);

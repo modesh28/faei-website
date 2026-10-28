@@ -18,9 +18,9 @@ function write(key: string, value: string) { try { if (value) localStorage.setIt
 const jod = (fils: number) => `${(fils / 1000).toFixed(fils % 1000 === 0 ? 0 : fils % 100 === 0 ? 1 : 2)} د.أ`;
 const stringify = (value: unknown) => `${JSON.stringify(value, null, 1)}\n`;
 
-type Role = 'dev' | 'admin' | 'staff';
+type Role = 'dev' | 'admin' | 'staff' | 'v8';
 type Session = { session: string; username: string; role: Role };
-const ROLE_NAMES: Record<Role, string> = { dev: 'مطوّر', admin: 'إدارة', staff: 'موظف' };
+const ROLE_NAMES: Record<Role, string> = { dev: 'مطوّر', admin: 'إدارة', staff: 'موظف', v8: 'موظف V8' };
 function readSession(): Session | null { try { return JSON.parse(read(SESSION_STORAGE) || 'null') as Session | null; } catch { return null; } }
 
 export async function adminCall<T = Record<string, unknown>>(body: Record<string, unknown>, session?: string): Promise<{ status: number; data: T }> {
@@ -323,7 +323,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
   return (
     <div className="admin-app">
       <header className="admin-top">
-        <img src="/images/faei-logo.webp" alt="FAEI" />
+        {me.role === 'v8' ? <img src="/images/v8/v8-logo.webp" alt="V8" className="admin-v8-logo" /> : <img src="/images/faei-logo.webp" alt="FAEI" />}
         <strong>لوحة الإدارة <small>{me.username} · {ROLE_NAMES[me.role]}</small></strong>
         <a href="/" target="_blank" rel="noreferrer" className="admin-ghost">الموقع <ExternalLink size={14} /></a>
         <button type="button" className="admin-ghost" onClick={() => { if (!dirty || confirm('في تعديلات ما انحفظت. أكيد بدك تطلع؟')) onLogout(); }} aria-label="تسجيل خروج"><LogOut size={16} /></button>
@@ -340,12 +340,12 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
       <main className="admin-shell">
-        {tab === 'orders' && <Orders live={live} showSales={isAdmin} />}
+        {tab === 'orders' && <Orders live={live} showSales={isAdmin} showV8={isDev} />}
         {tab === 'items' && (menu ? (isDev
           ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} />
           : <Items menu={menu} photos={photos} onToggle={(id) => void quickToggle(id)} switching={switching} />) : menuState)}
         {tab === 'offer' && (offer ? <OfferForm offer={offer} onChange={setOffer} /> : menuState)}
-        {tab === 'sales' && <Sales session={token} />}
+        {tab === 'sales' && <Sales session={token} showV8={isDev} />}
         {tab === 'customers' && <Customers session={token} />}
         {isDev && v8Opened && <div hidden={tab !== 'v8'}><V8Editor session={token} onLogout={onLogout} /></div>}
         {tab === 'accounts' && <Accounts me={me} />}
@@ -823,7 +823,7 @@ function ShopSwitch({ shop, onChange, counts }: { shop: Shop; onChange: (shop: S
 }
 
 // Staff see the day's orders but not how much money came in.
-function Orders({ live, showSales }: { live: Live; showSales: boolean }) {
+function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; showV8: boolean }) {
   const [, tick] = useState(0);
   const [showDone, setShowDone] = useState(false);
   const [shop, setShop] = useState<Shop>('faei');
@@ -831,7 +831,8 @@ function Orders({ live, showSales }: { live: Live; showSales: boolean }) {
   if (live.orders === null) return <>{live.error ? <p className="admin-error">{live.error}</p> : <p className="admin-loading">لحظة، عم نجيب الطلبات…</p>}</>;
   const all = live.orders;
   const openIn = (name: Shop) => all.filter((order) => shopOf(order) === name && ACTIVE.includes(order.status)).length;
-  const orders = all.filter((order) => shopOf(order) === shop);
+  // Only the developer gets both lists; everyone else already gets just their shop's orders.
+  const orders = showV8 ? all.filter((order) => shopOf(order) === shop) : all;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date());
   const isToday = (order: LiveOrder) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date(order.createdAt)) === today;
   const active = orders.filter((order) => ACTIVE.includes(order.status)).sort((a, b) => b.createdAt - a.createdAt);
@@ -841,7 +842,7 @@ function Orders({ live, showSales }: { live: Live; showSales: boolean }) {
     <>
       {!live.soundOn && <button type="button" className="admin-sound" onClick={live.enableSound} data-testid="button-sound"><Bell size={18} /> اكبس هون عشان يرنّ ويطلعلك إشعار لما يوصل طلب جديد</button>}
       {live.error && <p className="admin-error">{live.error}</p>}
-      <ShopSwitch shop={shop} onChange={setShop} counts={{ faei: openIn('faei'), v8: openIn('v8') }} />
+      {showV8 && <ShopSwitch shop={shop} onChange={setShop} counts={{ faei: openIn('faei'), v8: openIn('v8') }} />}
       <div className="admin-stats">
         <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هسه</em></div>
         {showSales && <div><small>مبيعات اليوم</small><b>{todays.reduce((sum, order) => sum + order.total, 0).toFixed(2)} د.أ</b><em>بدون الملغي</em></div>}
@@ -893,10 +894,10 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
   );
 }
 
-function Sales({ session }: { session: string }) {
+function Sales({ session, showV8 }: { session: string; showV8: boolean }) {
   const [all, setOrders] = useState<LiveOrder[] | null>(null);
   const [shop, setShop] = useState<Shop>('faei');
-  const orders = useMemo(() => all && all.filter((order) => shopOf(order) === shop), [all, shop]);
+  const orders = useMemo(() => all && (showV8 ? all.filter((order) => shopOf(order) === shop) : all), [all, shop, showV8]);
   useEffect(() => {
     fetch('/api/orders?limit=1000', { cache: 'no-store', headers: { Authorization: `Bearer ${session}` } })
       .then((response) => (response.ok ? response.json() : { orders: [] }))
@@ -926,7 +927,7 @@ function Sales({ session }: { session: string }) {
   const most = Math.max(1, ...stats.days.map(([, total]) => total));
   return (
     <>
-      <ShopSwitch shop={shop} onChange={setShop} />
+      {showV8 && <ShopSwitch shop={shop} onChange={setShop} />}
       <div className="admin-stats">
         <div><small>مبيعات اليوم</small><b>{stats.todayTotal.toFixed(2)} د.أ</b><em>{stats.todayCount} طلب</em></div>
         <div><small>آخر 7 أيام</small><b>{stats.weekTotal.toFixed(2)} د.أ</b><em>{stats.weekCount} طلب · كليك {stats.cliq.toFixed(2)}</em></div>
@@ -1116,7 +1117,7 @@ function Accounts({ me }: { me: Session }) {
       {isDev && (
         <section className="admin-card">
           <h2>الحسابات</h2>
-          <p className="admin-hint"><b>موظف</b>: الطلبات بس. <b>إدارة</b>: الطلبات، وتسكير وفتح الأصناف، والمبيعات. <b>مطوّر</b>: كل إشي، ومعه تعديل وإضافة وحذف الأصناف والعرض والحسابات.</p>
+          <p className="admin-hint"><b>موظف</b>: طلبات فَيّ بس. <b>موظف V8</b>: طلبات V8 بس. <b>إدارة</b>: الطلبات، وتسكير وفتح الأصناف، والمبيعات. <b>مطوّر</b>: كل إشي، ومعه تعديل وإضافة وحذف الأصناف والعرض والحسابات.</p>
           <ul className="admin-users">
             {users.map((user) => (
               <li key={user.username}>
@@ -1131,6 +1132,7 @@ function Accounts({ me }: { me: Session }) {
             <input className="admin-input" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="الباسوورد" dir="ltr" data-testid="input-new-password" />
             <select className="admin-input" value={role} onChange={(event) => setRole(event.target.value as Role)} data-testid="select-role">
               <option value="staff">موظف (الطلبات بس)</option>
+              <option value="v8">موظف V8 (طلبات V8 بس)</option>
               <option value="admin">إدارة (الطلبات، تسكير الأصناف، المبيعات)</option>
               <option value="dev">مطوّر (كل إشي)</option>
             </select>

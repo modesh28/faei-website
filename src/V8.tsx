@@ -2,8 +2,8 @@
 // the developer's "V8" tab in /admin) and opens in its own black-and-white window with its own
 // cart. Orders go to V8's WhatsApp and to the "V8" list on the orders screen.
 // Nothing shows before launchAt, except on a phone that opened the site once with ?v8.
-import { useEffect, useState } from 'react';
-import { ArrowLeft, Minus, Plus, ShoppingBag, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Citrus, Coffee, CupSoda, GlassWater, Leaf, Milk, Minus, Plus, ShoppingBag, X, type LucideIcon } from 'lucide-react';
 
 import data from '../public/v8.json';
 import type { Product } from './menu';
@@ -15,6 +15,17 @@ const PREVIEW_KEY = 'faei-v8-preview';
 const FALLBACK_WHATSAPP = '962797607843';
 
 type Entry = { id: string; quantity: number };
+
+// The English titles and icons from V8's printed menu; a new section added from /admin gets a cup.
+const SECTION_LOOK: Record<string, { en: string; icon: LucideIcon }> = {
+  'القهوة': { en: 'Coffee', icon: Coffee },
+  'سموذي': { en: 'Smoothies', icon: CupSoda },
+  'عصائر طبيعية': { en: 'Fresh Juice', icon: Citrus },
+  'موهيتو': { en: 'Mojito', icon: Leaf },
+  'ميلك شيك': { en: 'Milk Shakes', icon: Milk },
+  'شاي مثلج': { en: 'Ice Tea', icon: GlassWater },
+};
+const lookOf = (category: string) => SECTION_LOOK[category] ?? { en: '', icon: CupSoda };
 
 function previewing(): boolean {
   try {
@@ -75,9 +86,13 @@ export default function V8Section({ phone, phoneNumber, onPhone }: { phone: stri
   return (
     <>
       <button type="button" className="v8-card" onClick={() => setOpen(true)} data-testid="button-v8">
-        <img src="/images/v8/v8-logo.webp" alt="V8 Coffee To Go" width={56} height={56} />
-        <span><b>V8 Coffee To Go</b><small>قهوة، سموذي، موهيتو وعصاير، جوا الفَيّ</small></span>
-        <em>المنيو <ArrowLeft size={15} aria-hidden="true" /></em>
+        <span className="v8-card-text">
+          <img src="/images/v8/v8-logo.webp" alt="V8 Coffee To Go" width={58} height={58} />
+          <span className="v8-script">Fuel your Uni Days</span>
+          <b>قهوة جيدة لأيام أفضل</b>
+          <small>قهوة، سموذي، موهيتو وعصاير، جوا الفَيّ</small>
+          <em>افتح منيو V8 <ArrowLeft size={15} aria-hidden="true" /></em>
+        </span>
       </button>
       {open && <V8Window phone={phone} phoneNumber={phoneNumber} onPhone={onPhone} onClose={close} />}
     </>
@@ -139,51 +154,85 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
     if (popup) popup.opener = null; else window.location.assign(url);
   }
 
-  const items = v8.products.filter((product) => product.category === category);
+  const listRef = useRef<HTMLDivElement>(null);
+  // The tab follows whichever section is on screen while scrolling.
+  useEffect(() => {
+    const root = listRef.current;
+    if (!root || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver((entries) => {
+      const top = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (top) setCategory((top.target as HTMLElement).dataset.category ?? '');
+    }, { root, rootMargin: '-150px 0px -60% 0px' });
+    root.querySelectorAll('[data-category]').forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+  function jump(name: string) {
+    setCategory(name);
+    const section = listRef.current?.querySelector<HTMLElement>(`[data-category="${name}"]`);
+    if (section && listRef.current) listRef.current.scrollTo({ top: section.offsetTop - 70, behavior: 'smooth' });
+  }
+
   return (
-    <div className="v8-window" role="dialog" aria-modal="true" aria-label="منيو V8" data-testid="v8-window">
-      <header className="v8-head">
-        <img src="/images/v8/v8-logo.webp" alt="V8 Coffee To Go" />
-        <p>قهوة جيدة لأيام أفضل</p>
-        <button type="button" onClick={onClose} aria-label="سكّر"><X size={22} /></button>
+    <div className="v8-window" role="dialog" aria-modal="true" aria-label="منيو V8" data-testid="v8-window" ref={listRef}>
+      <button type="button" className="v8-close" onClick={onClose} aria-label="سكّر"><X size={22} /></button>
+      <header className="v8-hero">
+        <img className="v8-hero-photo" src="/images/v8/v8-hero.webp" alt="" />
+        <div className="v8-hero-text">
+          <img src="/images/v8/v8-logo.webp" alt="V8 Coffee To Go" />
+          <p className="v8-script">Good Coffee, Better Days</p>
+          <p className="v8-ar">قهوة جيدة لأيام أفضل</p>
+        </div>
       </header>
-      <nav className="v8-cats" aria-label="أقسام V8">
-        {v8.categories.map((item) => <button key={item} type="button" className={item === category ? 'is-active' : ''} onClick={() => setCategory(item)}>{item}</button>)}
-      </nav>
-      <ul className="v8-list">
-        {items.map((product) => {
-          const off = product.available === false;
-          // Hot and iced at the same price: show the price once, under the name.
-          const samePrice = product.options.every((option) => option.priceFils === product.options[0].priceFils);
+      <ul className="v8-values" aria-hidden="true"><li><Coffee size={18} />Good coffee</li><li><Leaf size={18} />Good energy</li><li><CupSoda size={18} />Better days</li></ul>
+      <div className="v8-catbar">
+        <nav className="v8-cats" aria-label="أقسام V8">
+          {v8.categories.map((item) => { const Icon = lookOf(item).icon; return <button key={item} type="button" className={item === category ? 'is-active' : ''} onClick={() => jump(item)}><Icon size={16} aria-hidden="true" />{item}</button>; })}
+        </nav>
+      </div>
+      <div className="v8-list">
+        {v8.categories.map((name) => {
+          const look = lookOf(name);
+          const Icon = look.icon;
           return (
-            <li key={product.id} className={`v8-item${off ? ' is-off' : ''}`} data-testid={`v8-item-${product.id}`}>
-              {product.image && <img src={product.image} alt="" loading="lazy" />}
-              <div className="v8-item-text">
-                <b>{product.name}</b>
-                {samePrice && <em>{money(product.options[0].priceFils)}</em>}
-                {off && <small>مش متوفر هسه</small>}
-              </div>
-              <div className="v8-options">
-                {product.options.map((option, index) => {
-                  const id = `${product.id}::${index}`;
-                  const qty = quantity(id);
+            <section key={name} data-category={name} className="v8-section">
+              <h3><Icon size={22} aria-hidden="true" />{look.en && <span className="v8-en">{look.en}</span>}<span className="v8-ar-title">{name}</span></h3>
+              <ul>
+                {v8.products.filter((product) => product.category === name).map((product) => {
+                  const off = product.available === false;
+                  // Hot and iced at the same price: the price shows once, beside the name.
+                  const samePrice = product.options.every((option) => option.priceFils === product.options[0].priceFils);
+                  const labelled = product.options.some((option) => option.label);
                   return (
-                    <div key={index} className="v8-option">
-                      {option.label && <span>{option.label}</span>}
-                      {!samePrice && <em>{money(option.priceFils)}</em>}
-                      {off ? null : qty ? (
-                        <span className="v8-stepper"><button type="button" onClick={() => change(id, 1)} aria-label="زيد"><Plus size={14} /></button><i>{qty}</i><button type="button" onClick={() => change(id, -1)} aria-label="نقّص"><Minus size={14} /></button></span>
-                      ) : (
-                        <button type="button" className="v8-add" onClick={() => change(id, 1)} aria-label={`أضف ${product.name} ${option.label}`} data-testid={`v8-add-${product.id}-${index}`}><Plus size={15} /></button>
-                      )}
-                    </div>
+                    <li key={product.id} className={`v8-item${off ? ' is-off' : ''}`} data-testid={`v8-item-${product.id}`}>
+                      {product.image && <img src={product.image} alt="" loading="lazy" />}
+                      <div className="v8-item-main">
+                        {(() => {
+                          // One button per option; a single-option drink keeps its button on the name's line.
+                          const buttons = product.options.map((option, index) => {
+                            const id = `${product.id}::${index}`;
+                            const qty = quantity(id);
+                            const text = `${option.label}${samePrice ? '' : ` · ${money(option.priceFils)}`}`;
+                            return qty ? (
+                              <span key={index} className="v8-stepper">{labelled && <span>{option.label}</span>}<button type="button" onClick={() => change(id, 1)} aria-label="زيد"><Plus size={14} /></button><i>{qty}</i><button type="button" onClick={() => change(id, -1)} aria-label="نقّص"><Minus size={14} /></button></span>
+                            ) : (
+                              <button key={index} type="button" className={`v8-add${labelled ? '' : ' is-round'}`} onClick={() => change(id, 1)} aria-label={`أضف ${product.name} ${option.label}`} data-testid={`v8-add-${product.id}-${index}`}><Plus size={15} />{labelled && text}</button>
+                            );
+                          });
+                          return <>
+                            <div className="v8-item-line"><b>{product.name}</b><i aria-hidden="true" />{samePrice && <em>{money(product.options[0].priceFils)}</em>}{!labelled && !off && buttons}</div>
+                            {off ? <small>مش متوفر هسه</small> : labelled && <div className="v8-options">{buttons}</div>}
+                          </>;
+                        })()}
+                      </div>
+                    </li>
                   );
                 })}
-              </div>
-            </li>
+              </ul>
+            </section>
           );
         })}
-      </ul>
+        <p className="v8-foot"><span className="v8-script">Study · Coffee · Repeat</span>الاستلام من V8 جوا الفَيّ</p>
+      </div>
       {sent && !count && (
         <div className="v8-sent" data-testid="v8-sent"><b>انبعت طلبك ✅</b><span>رقم {sent}. استلمه من V8 جوا الفَيّ.</span><button type="button" onClick={() => setSent('')} aria-label="سكّر"><X size={16} /></button></div>
       )}

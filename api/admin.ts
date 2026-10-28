@@ -85,7 +85,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // Turning an item on or off ("مش متوفر") is a one-line change, saved straight to the site.
   if (body.action === 'availability') {
-    if (mine.role === 'staff') return json({ error: 'not-allowed' }, 403);
+    if (mine.role === 'staff' || mine.role === 'v8') return json({ error: 'not-allowed' }, 403);
     const id = typeof body.id === 'string' ? body.id : '';
     const token = await githubToken();
     if (!token) return json({ error: 'no-github-key' }, 503);

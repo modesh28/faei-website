@@ -46,8 +46,9 @@ export async function sessionUser(request: Request): Promise<string> {
   return typeof user === 'string' ? user : '';
 }
 
-export type Role = 'dev' | 'admin' | 'staff';
-export const ROLES: Role[] = ['dev', 'admin', 'staff'];
+// v8: a V8 Coffee To Go employee, who sees V8's orders only.
+export type Role = 'dev' | 'admin' | 'staff' | 'v8';
+export const ROLES: Role[] = ['dev', 'admin', 'staff', 'v8'];
 
 // The signed-in user's name and role, or null without a valid session.
 export async function sessionAccount(request: Request): Promise<{ username: string; role: Role } | null> {
