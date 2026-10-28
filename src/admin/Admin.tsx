@@ -800,7 +800,7 @@ function Orders({ live, showSales }: { live: Live; showSales: boolean }) {
   if (live.orders === null) return <>{live.error ? <p className="admin-error">{live.error}</p> : <p className="admin-loading">لحظة، عم نجيب الطلبات…</p>}</>;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date());
   const isToday = (order: LiveOrder) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date(order.createdAt)) === today;
-  const active = live.orders.filter((order) => ACTIVE.includes(order.status)).sort((a, b) => a.createdAt - b.createdAt);
+  const active = live.orders.filter((order) => ACTIVE.includes(order.status)).sort((a, b) => b.createdAt - a.createdAt);
   const done = live.orders.filter((order) => !ACTIVE.includes(order.status) && isToday(order));
   const todays = live.orders.filter((order) => isToday(order) && order.status !== 'ملغي');
   return (
