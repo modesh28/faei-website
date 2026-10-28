@@ -11,7 +11,7 @@
   "كالزوني",
   "مناقيش",
   "ساندويش بارد",
-  "السلطات"
+  "وجبات صحية"
  ],
  "products": [
   {
@@ -300,6 +300,14 @@
     {
      "label": "تورتيلا",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
     }
    ],
    "image": "/images/menu/bbq2.webp"
@@ -320,6 +328,14 @@
     {
      "label": "تورتيلا",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
     }
    ],
    "image": "/images/menu/bbq2.webp"
@@ -340,6 +356,14 @@
     {
      "label": "تورتيلا",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
     }
    ],
    "image": "/images/menu/bbq2.webp",
@@ -357,6 +381,14 @@
     {
      "label": "تورتيلا",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
     }
    ],
    "image": "/images/menu/bbq2.webp"
@@ -377,6 +409,14 @@
     {
      "label": "تورتيلا",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
     }
    ],
    "image": "/images/menu/bbq2.webp"
@@ -389,6 +429,10 @@
     {
      "label": "سوبر",
      "priceFils": 1250
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
     }
    ],
    "image": "/images/menu/chicken2.webp"
@@ -409,6 +453,14 @@
     {
      "label": "تورتيلا",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
     }
    ],
    "image": "/images/menu/bbq2.webp"
@@ -429,6 +481,14 @@
     {
      "label": "تورتيلا",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
     }
    ],
    "image": "/images/menu/bbq2.webp"
@@ -461,6 +521,14 @@
     {
      "label": "تورتيلا",
      "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
     }
    ],
    "image": "/images/menu/bbq2.webp"
@@ -473,6 +541,10 @@
     {
      "label": "سوبر",
      "priceFils": 1500
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
     }
    ],
    "image": "/images/menu/bbq2.webp"
@@ -655,7 +727,7 @@
    "image": "/images/menu/quesadilla2.webp"
   },
   {
-   "id": "quesadilla-honey-mustard",
+   "id": "quesadilla-bbq",
    "name": "كساديا باربيكيو",
    "category": "كساديا",
    "options": [
@@ -1037,7 +1109,7 @@
   {
    "id": "salad-caesar",
    "name": "سيزر",
-   "category": "السلطات",
+   "category": "وجبات صحية",
    "options": [
     {
      "label": "",
@@ -1049,7 +1121,7 @@
   {
    "id": "salad-rocket",
    "name": "جرجير",
-   "category": "السلطات",
+   "category": "وجبات صحية",
    "options": [
     {
      "label": "",
@@ -1061,7 +1133,7 @@
   {
    "id": "salad-greek",
    "name": "يونانية",
-   "category": "السلطات",
+   "category": "وجبات صحية",
    "options": [
     {
      "label": "",
@@ -1073,7 +1145,7 @@
   {
    "id": "salad-coleslaw",
    "name": "كولسلو",
-   "category": "السلطات",
+   "category": "وجبات صحية",
    "options": [
     {
      "label": "",
@@ -1085,7 +1157,7 @@
   {
    "id": "salad-nachos",
    "name": "ناتشوز",
-   "category": "السلطات",
+   "category": "وجبات صحية",
    "options": [
     {
      "label": "",
