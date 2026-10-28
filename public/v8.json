@@ -14,6 +14,7 @@
   {
    "id": "v8-espresso",
    "name": "إسبريسو",
+   "nameEn": "Espresso",
    "category": "القهوة",
    "options": [
     {
@@ -25,6 +26,7 @@
   {
    "id": "v8-v60",
    "name": "V60",
+   "nameEn": "V60",
    "category": "القهوة",
    "options": [
     {
@@ -40,6 +42,7 @@
   {
    "id": "v8-americano",
    "name": "أمريكانو",
+   "nameEn": "Americano",
    "category": "القهوة",
    "options": [
     {
@@ -55,6 +58,7 @@
   {
    "id": "v8-american",
    "name": "أمريكان",
+   "nameEn": "American",
    "category": "القهوة",
    "options": [
     {
@@ -70,6 +74,7 @@
   {
    "id": "v8-flat-white",
    "name": "فلات وايت",
+   "nameEn": "Flat White",
    "category": "القهوة",
    "options": [
     {
@@ -85,6 +90,7 @@
   {
    "id": "v8-latte",
    "name": "لاتيه",
+   "nameEn": "Coffee Latte",
    "category": "القهوة",
    "options": [
     {
@@ -100,6 +106,7 @@
   {
    "id": "v8-spanish-latte",
    "name": "سبانش لاتيه",
+   "nameEn": "Spanish Latte",
    "category": "القهوة",
    "options": [
     {
@@ -115,6 +122,7 @@
   {
    "id": "v8-pistachio-latte",
    "name": "لاتيه فستق",
+   "nameEn": "Pistachio Latte",
    "category": "القهوة",
    "options": [
     {
@@ -130,6 +138,7 @@
   {
    "id": "v8-caramel-macchiato",
    "name": "كراميل ماكياتو",
+   "nameEn": "Caramel Macchiato",
    "category": "القهوة",
    "options": [
     {
@@ -145,6 +154,7 @@
   {
    "id": "v8-dark-mocha",
    "name": "موكا داكنة",
+   "nameEn": "Dark Mocha",
    "category": "القهوة",
    "options": [
     {
@@ -160,6 +170,7 @@
   {
    "id": "v8-white-mocha",
    "name": "موكا بيضاء",
+   "nameEn": "White Mocha",
    "category": "القهوة",
    "options": [
     {
@@ -175,6 +186,7 @@
   {
    "id": "v8-ice-shake",
    "name": "آيس شيك",
+   "nameEn": "Ice Shake",
    "category": "القهوة",
    "options": [
     {
@@ -186,6 +198,7 @@
   {
    "id": "v8-tiramisu-latte",
    "name": "لاتيه تيراميسو",
+   "nameEn": "Tiramisu Latte",
    "category": "القهوة",
    "options": [
     {
@@ -201,6 +214,7 @@
   {
    "id": "v8-frappe",
    "name": "فرابيه",
+   "nameEn": "Frappe",
    "category": "القهوة",
    "options": [
     {
@@ -212,6 +226,7 @@
   {
    "id": "v8-extra-flavour",
    "name": "إضافة نكهة",
+   "nameEn": "Extra Flavour",
    "category": "القهوة",
    "options": [
     {
@@ -223,6 +238,7 @@
   {
    "id": "v8-smoothie-passion",
    "name": "خليط فاكهة الباشن",
+   "nameEn": "Passion Fruit Mix",
    "category": "سموذي",
    "options": [
     {
@@ -234,6 +250,7 @@
   {
    "id": "v8-smoothie-dragon",
    "name": "فاكهة التنين",
+   "nameEn": "Dragon Fruit",
    "category": "سموذي",
    "options": [
     {
@@ -245,6 +262,7 @@
   {
    "id": "v8-smoothie-strawberry",
    "name": "فراولة",
+   "nameEn": "Strawberry",
    "category": "سموذي",
    "options": [
     {
@@ -256,6 +274,7 @@
   {
    "id": "v8-smoothie-peach-pineapple",
    "name": "خوخ وأناناس",
+   "nameEn": "Peach & Pineapple",
    "category": "سموذي",
    "options": [
     {
@@ -267,6 +286,7 @@
   {
    "id": "v8-juice-mango",
    "name": "مانجو",
+   "nameEn": "Mango",
    "category": "عصائر طبيعية",
    "options": [
     {
@@ -278,6 +298,7 @@
   {
    "id": "v8-juice-orange",
    "name": "برتقال",
+   "nameEn": "Orange",
    "category": "عصائر طبيعية",
    "options": [
     {
@@ -289,6 +310,7 @@
   {
    "id": "v8-juice-lemon",
    "name": "ليمون",
+   "nameEn": "Lemon",
    "category": "عصائر طبيعية",
    "options": [
     {
@@ -300,6 +322,7 @@
   {
    "id": "v8-mojito-blue",
    "name": "بلو كوراساو",
+   "nameEn": "Blue Curaçao",
    "category": "موهيتو",
    "options": [
     {
@@ -311,6 +334,7 @@
   {
    "id": "v8-mojito-blackberry",
    "name": "توت أسود",
+   "nameEn": "Black Berry",
    "category": "موهيتو",
    "options": [
     {
@@ -322,6 +346,7 @@
   {
    "id": "v8-mojito-strawberry",
    "name": "فراولة ميكس",
+   "nameEn": "Strawberry Mix",
    "category": "موهيتو",
    "options": [
     {
@@ -333,6 +358,7 @@
   {
    "id": "v8-mojito-kiwi-apple",
    "name": "كيوي وتفاح",
+   "nameEn": "Kiwi & Apple",
    "category": "موهيتو",
    "options": [
     {
@@ -344,6 +370,7 @@
   {
    "id": "v8-mojito-mixberry",
    "name": "مكس بيري",
+   "nameEn": "Mix Berry",
    "category": "موهيتو",
    "options": [
     {
@@ -355,6 +382,7 @@
   {
    "id": "v8-mojito-watermelon-peach",
    "name": "بطيخ وخوخ",
+   "nameEn": "Watermelon & Peach",
    "category": "موهيتو",
    "options": [
     {
@@ -366,6 +394,7 @@
   {
    "id": "v8-extra-redbull",
    "name": "إضافة ريد بول",
+   "nameEn": "Extra Red Bull",
    "category": "موهيتو",
    "options": [
     {
@@ -377,6 +406,7 @@
   {
    "id": "v8-extra-bombom",
    "name": "إضافة بمبوم",
+   "nameEn": "Extra Bombom",
    "category": "موهيتو",
    "options": [
     {
@@ -388,6 +418,7 @@
   {
    "id": "v8-milkshake",
    "name": "ميلك شيك",
+   "nameEn": "Milk Shake",
    "category": "ميلك شيك",
    "options": [
     {
@@ -399,6 +430,7 @@
   {
    "id": "v8-icetea-passion",
    "name": "باشن فروت",
+   "nameEn": "Passion Fruit",
    "category": "شاي مثلج",
    "options": [
     {
@@ -410,6 +442,7 @@
   {
    "id": "v8-icetea-raspberry",
    "name": "توت أحمر",
+   "nameEn": "Raspberry",
    "category": "شاي مثلج",
    "options": [
     {
@@ -421,6 +454,7 @@
   {
    "id": "v8-icetea-peach",
    "name": "خوخ",
+   "nameEn": "Peach",
    "category": "شاي مثلج",
    "options": [
     {

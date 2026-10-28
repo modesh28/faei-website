@@ -89,7 +89,7 @@ export default function V8Section({ phone, phoneNumber, onPhone }: { phone: stri
         <span className="v8-card-text">
           <img src="/images/v8/v8-logo.webp" alt="V8 Coffee To Go" width={58} height={58} />
           <span className="v8-script">Fuel your Uni Days</span>
-          <b>قهوة جيدة لأيام أفضل</b>
+          <b lang="en">V8 Coffee To Go</b>
           <small>قهوة، سموذي، موهيتو وعصاير، جوا الفَيّ</small>
           <em>افتح منيو V8 <ArrowLeft size={15} aria-hidden="true" /></em>
         </span>
@@ -184,7 +184,6 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
         <div className="v8-hero-text">
           <img src="/images/v8/v8-logo.webp" alt="V8 Coffee To Go" />
           <p className="v8-script">Good Coffee, Better Days</p>
-          <p className="v8-ar">قهوة جيدة لأيام أفضل</p>
         </div>
       </header>
       <ul className="v8-values" aria-hidden="true"><li><Coffee size={18} />Good coffee</li><li><Leaf size={18} />Good energy</li><li><CupSoda size={18} />Better days</li></ul>
@@ -223,7 +222,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose }: { phone: string; pho
                             );
                           });
                           return <>
-                            <div className="v8-item-line"><b>{product.name}</b><i aria-hidden="true" />{samePrice && <em>{money(product.options[0].priceFils)}</em>}{!labelled && !off && buttons}</div>
+                            <div className="v8-item-line"><b>{product.name}{product.nameEn && product.nameEn !== product.name && <span className="v8-name-en" lang="en">{product.nameEn}</span>}</b><i aria-hidden="true" />{samePrice && <em>{money(product.options[0].priceFils)}</em>}{!labelled && !off && buttons}</div>
                             {off ? <small>مش متوفر هسه</small> : labelled && <div className="v8-options">{buttons}</div>}
                           </>;
                         })()}

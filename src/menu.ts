@@ -17,6 +17,8 @@ export type Product = {
   alt?: string;
   // Groups items under a sub-heading inside their category, e.g. معجنات كبير / معجنات شامية.
   section?: string;
+  // English name shown under the Arabic one (V8's menu).
+  nameEn?: string;
   // Shows the "الأكثر طلباً" badge.
   popular?: boolean;
   // false hides the add button and shows "مش متوفر".

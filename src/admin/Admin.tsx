@@ -472,6 +472,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete, simpl
   const [category, setCategory] = useState(product.category);
   const [newCategory, setNewCategory] = useState('');
   const [section, setSection] = useState(product.section ?? '');
+  const [nameEn, setNameEn] = useState(product.nameEn ?? '');
   const [options, setOptions] = useState(product.options.map((option) => ({ label: option.label, price: option.priceFils ? String(option.priceFils / 1000) : '' })));
   const [popular, setPopular] = useState(!!product.popular);
   const [available, setAvailable] = useState(product.available !== false);
@@ -515,6 +516,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete, simpl
     const image = newPhoto ? `/images/menu/${id}-${Date.now().toString(36)}.${newPhoto.startsWith('data:image/webp') ? 'webp' : 'jpg'}` : product.image;
     const next: Product = { id, name: name.trim(), category: finalCategory, options: cleanOptions };
     if (section.trim()) next.section = section.trim();
+    if (nameEn.trim()) next.nameEn = nameEn.trim();
     if (image) next.image = image;
     if (product.alt) next.alt = product.alt;
     if (popular) next.popular = true;
@@ -535,6 +537,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete, simpl
           <input type="file" accept="image/*" onChange={pickPhoto} data-testid="input-photo" />
         </label>
         <label className="admin-field">اسم الصنف<input value={name} onChange={(event) => setName(event.target.value)} placeholder="مثلاً: وجبة شاورما سوبر" data-testid="input-name" /></label>
+        {simple && <label className="admin-field">الاسم بالإنجليزي<input value={nameEn} onChange={(event) => setNameEn(event.target.value)} dir="ltr" placeholder="Spanish Latte" data-testid="input-name-en" /></label>}
         <label className="admin-field">القسم
           <select value={category} onChange={(event) => setCategory(event.target.value)} data-testid="select-category">
             {categories.map((item) => <option key={item} value={item}>{item}</option>)}
