@@ -41,6 +41,8 @@ export async function POST(request: Request): Promise<Response> {
   const order = {
     ref: body.ref,
     id: text(body.id, 20),
+    // Orders for V8 (the coffee house inside FAEI) show on their own list.
+    ...(body.shop === 'v8' ? { shop: 'v8' } : {}),
     createdAt: Date.now(),
     status: 'جديد',
     items,

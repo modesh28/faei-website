@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
+import V8Section from './V8';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
@@ -1066,6 +1067,7 @@ function App() {
                 <button type="button" onClick={() => { if (!sameAsLast(cart)) setCart(lastOrder.cart); setExtras(lastOrder.extras); if (lastOrder.extras) setExtrasOpen(true); openCart(); }} data-testid="button-reorder">اطلبه</button>
               </div>
             )}
+            <V8Section phone={phone} phoneNumber={phoneNumber} onPhone={setPhone} />
             <div className="menu-tools">
               <label className="search-wrap">
                 <Search size={18} aria-hidden="true" />

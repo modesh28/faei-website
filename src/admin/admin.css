@@ -202,3 +202,12 @@ a { color: inherit; }
 .admin-chips button { border: 1px solid #d8d5cc; background: #fff; border-radius: 999px; padding: 7px 12px; font-weight: 700; font-size: 13px; color: #53636b; }
 .admin-chips button.is-active { background: #182b3a; border-color: #182b3a; color: #fff; }
 .admin-ghost-dark { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d8d5cc; background: #fff; border-radius: 10px; padding: 8px 12px; font-weight: 700; color: #182b3a; white-space: nowrap; }
+
+/* FAEI / V8 order lists and the V8 menu editor */
+.admin-shops { display: flex; gap: 6px; margin-bottom: 12px; }
+.admin-shops button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 1px solid #d8d5cc; border-radius: 8px; background: #fff; font-weight: 800; font-size: 15px; color: #182b3a; }
+.admin-shops button.is-active { background: #182b3a; color: #fff; border-color: #182b3a; }
+.admin-shops button:last-child.is-active { background: #000; border-color: #000; }
+.admin-order-shop { padding: 1px 8px; border-radius: 999px; background: #000; color: #fff; font: 800 12px 'DM Sans', sans-serif; }
+.admin-v8 h2 { display: flex; align-items: center; gap: 10px; }
+.admin-v8 h2 img { width: 40px; height: 40px; border-radius: 50%; }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, LogOut, MessageCircle, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Coffee, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, LogOut, MessageCircle, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
@@ -7,6 +7,7 @@ import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './git
 const SESSION_STORAGE = 'faei-admin-session';
 const MENU_PATH = 'public/menu.json';
 const OFFER_PATH = 'public/offer.json';
+const V8_PATH = 'public/v8.json';
 const NEW_KEY_URL = 'https://github.com/settings/tokens/new?scopes=public_repo&description=FAEI%20admin';
 
 type Offer = { show: boolean; title: string; text: string; productId?: string; optionIndex?: number; discountPercent?: number; endsAt?: string };
@@ -152,7 +153,7 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
   );
 }
 
-type Tab = 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'accounts';
+type Tab = 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'v8' | 'accounts';
 
 function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void; onRole: (role: Role) => void }) {
   const token = me.session;
@@ -166,6 +167,9 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [tab, setTab] = useState<Tab>('orders');
+  // The V8 editor stays mounted once opened, so its unsaved edits survive a tab switch.
+  const [v8Opened, setV8Opened] = useState(false);
+  useEffect(() => { if (tab === 'v8') setV8Opened(true); }, [tab]);
   const live = useOrders(token, onLogout);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [offer, setOffer] = useState<Offer | null>(null);
@@ -331,6 +335,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
           {isDev && <button type="button" className={tab === 'offer' ? 'is-active' : ''} onClick={() => setTab('offer')} data-testid="tab-offer"><Tag size={16} /> العرض</button>}
           <button type="button" className={tab === 'sales' ? 'is-active' : ''} onClick={() => setTab('sales')} data-testid="tab-sales"><BarChart3 size={16} /> المبيعات</button>
           {isDev && <button type="button" className={tab === 'customers' ? 'is-active' : ''} onClick={() => setTab('customers')} data-testid="tab-customers"><Contact size={16} /> الزباين</button>}
+          {isDev && <button type="button" className={tab === 'v8' ? 'is-active' : ''} onClick={() => setTab('v8')} data-testid="tab-v8"><Coffee size={16} /> V8</button>}
         </>}
         <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
@@ -342,6 +347,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         {tab === 'offer' && (offer ? <OfferForm offer={offer} onChange={setOffer} /> : menuState)}
         {tab === 'sales' && <Sales session={token} />}
         {tab === 'customers' && <Customers session={token} />}
+        {isDev && v8Opened && <div hidden={tab !== 'v8'}><V8Editor session={token} onLogout={onLogout} /></div>}
         {tab === 'accounts' && <Accounts me={me} />}
       </main>
       {(dirty || saving !== 'idle') && (
@@ -461,7 +467,7 @@ async function preparePhoto(file: File): Promise<string> {
 
 function slug() { return `item-${Date.now().toString(36)}`; }
 
-function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { product: Product; categories: string[]; photo?: string; onClose: () => void; onSave: (product: Product, photo?: string) => void; onDelete?: () => void }) {
+function ItemForm({ product, categories, photo, onClose, onSave, onDelete, simple = false }: { product: Product; categories: string[]; photo?: string; onClose: () => void; onSave: (product: Product, photo?: string) => void; onDelete?: () => void; simple?: boolean }) {
   const [name, setName] = useState(product.name);
   const [category, setCategory] = useState(product.category);
   const [newCategory, setNewCategory] = useState('');
@@ -536,7 +542,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { p
           </select>
         </label>
         {category === '__new' && <label className="admin-field">اسم القسم الجديد<input value={newCategory} onChange={(event) => setNewCategory(event.target.value)} placeholder="مثلاً: مشروبات" /></label>}
-        <label className="admin-field">قسم فرعي (اختياري)<input value={section} onChange={(event) => setSection(event.target.value)} placeholder="مثلاً: معجنات شامية" /></label>
+        {!simple && <label className="admin-field">قسم فرعي (اختياري)<input value={section} onChange={(event) => setSection(event.target.value)} placeholder="مثلاً: معجنات شامية" /></label>}
         <fieldset className="admin-options">
           <legend>الأسعار (بالدينار)</legend>
           {options.map((option, index) => (
@@ -549,17 +555,19 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete }: { p
           <button type="button" className="admin-link" onClick={() => setOptions([...options, { label: '', price: '' }])}><Plus size={14} /> زيد حجم ثاني</button>
         </fieldset>
         <label className="admin-check"><input type="checkbox" checked={available} onChange={(event) => setAvailable(event.target.checked)} /> متوفر</label>
-        <label className="admin-check"><input type="checkbox" checked={popular} onChange={(event) => setPopular(event.target.checked)} /> علامة "الأكثر طلباً"</label>
-        <div className="admin-preview">
-          <h3><Eye size={15} /> هيك رح يطلع عالتلفون</h3>
-          <SitePreview products={draft} />
-        </div>
+        {!simple && <>
+          <label className="admin-check"><input type="checkbox" checked={popular} onChange={(event) => setPopular(event.target.checked)} /> علامة "الأكثر طلباً"</label>
+          <div className="admin-preview">
+            <h3><Eye size={15} /> هيك رح يطلع عالتلفون</h3>
+            <SitePreview products={draft} />
+          </div>
+        </>}
         {error && <p className="admin-error">{error}</p>}
         <div className="admin-sheet-actions">
           <button type="submit" className="admin-primary" disabled={busy} data-testid="button-item-done">تمام</button>
           {onDelete && <button type="button" className="admin-danger" onClick={() => { if (confirm(`أكيد بدك تحذف "${product.name}" من المنيو؟`)) onDelete(); }} data-testid="button-delete"><Trash2 size={15} /> احذف</button>}
         </div>
-        <p className="admin-hint">التعديل بيصير عالموقع لما تكبس "راجع ونزّل عالموقع" تحت وتأكد.</p>
+        <p className="admin-hint">التعديل بيصير عالموقع لما تكبس {simple ? '"نزّل عالموقع"' : '"راجع ونزّل عالموقع"'} تحت وتأكد.</p>
       </form>
     </div>
   );
@@ -669,7 +677,7 @@ type LiveOrder = {
   ref: string; id: string; createdAt: number; status: string; items: OrderItem[]; extras: string;
   fulfillment: string; address: string; phone?: string; time: string; payment: string; preorder: boolean;
   discount: number; delivery: number | string; total: number;
-  customerSent?: number; cancelledBy?: 'customer' | 'edit';
+  customerSent?: number; cancelledBy?: 'customer' | 'edit'; shop?: 'v8';
 };
 type Live = { orders: LiveOrder[] | null; error: string; waiting: number; soundOn: boolean; enableSound: () => void; setStatus: (ref: string, status: string) => Promise<void>; fresh: Set<string> };
 
@@ -701,7 +709,7 @@ function ring() {
 // A phone notification for new orders while the page is in the background.
 function notify(orders: LiveOrder[]) {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted' || document.visibilityState === 'visible') return;
-  const title = orders.length === 1 ? `طلب جديد #${orders[0].id}` : `${orders.length} طلبات جديدة`;
+  const title = orders.length === 1 ? `طلب ${orders[0].shop === 'v8' ? 'V8 ' : ''}جديد #${orders[0].id}` : `${orders.length} طلبات جديدة`;
   const body = orders.flatMap((order) => order.items.map((item) => `${item.quantity}× ${item.name}`)).join('، ').slice(0, 140) || 'افتح اللوحة';
   const options = { body, tag: 'faei-order', renotify: true, icon: '/icon-192.png' } as NotificationOptions;
   navigator.serviceWorker?.getRegistration('/')
@@ -799,21 +807,41 @@ const ago = (time: number) => {
 };
 const ACTIVE = ['جديد', 'عم يتحضّر', 'جاهز'];
 
+// FAEI's own orders and V8's (the coffee house inside) are kept on separate lists.
+type Shop = 'faei' | 'v8';
+const shopOf = (order: LiveOrder): Shop => (order.shop === 'v8' ? 'v8' : 'faei');
+function ShopSwitch({ shop, onChange, counts }: { shop: Shop; onChange: (shop: Shop) => void; counts?: Record<Shop, number> }) {
+  return (
+    <div className="admin-shops" role="tablist">
+      {(['faei', 'v8'] as const).map((name) => (
+        <button key={name} type="button" role="tab" aria-selected={shop === name} className={shop === name ? 'is-active' : ''} onClick={() => onChange(name)} data-testid={`shop-${name}`}>
+          {name === 'faei' ? 'فَيّ' : 'V8'}{counts && counts[name] > 0 && <i className="admin-badge">{counts[name]}</i>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // Staff see the day's orders but not how much money came in.
 function Orders({ live, showSales }: { live: Live; showSales: boolean }) {
   const [, tick] = useState(0);
   const [showDone, setShowDone] = useState(false);
+  const [shop, setShop] = useState<Shop>('faei');
   useEffect(() => { const timer = window.setInterval(() => tick((n) => n + 1), 30_000); return () => window.clearInterval(timer); }, []);
   if (live.orders === null) return <>{live.error ? <p className="admin-error">{live.error}</p> : <p className="admin-loading">لحظة، عم نجيب الطلبات…</p>}</>;
+  const all = live.orders;
+  const openIn = (name: Shop) => all.filter((order) => shopOf(order) === name && ACTIVE.includes(order.status)).length;
+  const orders = all.filter((order) => shopOf(order) === shop);
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date());
   const isToday = (order: LiveOrder) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date(order.createdAt)) === today;
-  const active = live.orders.filter((order) => ACTIVE.includes(order.status)).sort((a, b) => b.createdAt - a.createdAt);
-  const done = live.orders.filter((order) => !ACTIVE.includes(order.status) && isToday(order));
-  const todays = live.orders.filter((order) => isToday(order) && order.status !== 'ملغي');
+  const active = orders.filter((order) => ACTIVE.includes(order.status)).sort((a, b) => b.createdAt - a.createdAt);
+  const done = orders.filter((order) => !ACTIVE.includes(order.status) && isToday(order));
+  const todays = orders.filter((order) => isToday(order) && order.status !== 'ملغي');
   return (
     <>
       {!live.soundOn && <button type="button" className="admin-sound" onClick={live.enableSound} data-testid="button-sound"><Bell size={18} /> اكبس هون عشان يرنّ ويطلعلك إشعار لما يوصل طلب جديد</button>}
       {live.error && <p className="admin-error">{live.error}</p>}
+      <ShopSwitch shop={shop} onChange={setShop} counts={{ faei: openIn('faei'), v8: openIn('v8') }} />
       <div className="admin-stats">
         <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هسه</em></div>
         {showSales && <div><small>مبيعات اليوم</small><b>{todays.reduce((sum, order) => sum + order.total, 0).toFixed(2)} د.أ</b><em>بدون الملغي</em></div>}
@@ -838,6 +866,7 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
     <article className={`admin-order is-${['جديد', 'عم يتحضّر', 'جاهز', 'تم', 'ملغي'].indexOf(order.status)}${fresh ? ' is-fresh' : ''}${late ? ' is-late' : ''}`} data-testid={`order-${order.ref}`}>
       <header>
         <b dir="ltr">#{order.id}</b>
+        {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
         <span className="admin-order-status">{order.status}</span>
         <span className="admin-order-time">{ago(order.createdAt)}</span>
       </header>
@@ -845,10 +874,10 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
       {order.status === 'ملغي' && order.cancelledBy && <p className="admin-order-flag">{order.cancelledBy === 'edit' ? 'الزبون رجع عدّله (بيوصل الطلب الجديد لحاله)' : 'الزبون لغاه'}</p>}
       <ul>
         {order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}
-        {order.extras && <li className="admin-order-extras">من الكافتيريا: {order.extras}</li>}
+        {order.extras && <li className="admin-order-extras">{order.shop === 'v8' ? 'ملاحظات' : 'من الكافتيريا'}: {order.extras}</li>}
       </ul>
       <dl>
-        {order.phone && <div><dt>التلفون</dt><dd><a href={`https://wa.me/962${order.phone.replace(/^0/, '')}?text=${encodeURIComponent(`مرحبا، بخصوص طلبك رقم ${order.id} من FAEI`)}`} target="_blank" rel="noreferrer" className="admin-phone" dir="ltr" data-testid="link-customer-whatsapp"><MessageCircle size={13} /> {order.phone} · واتساب</a></dd></div>}
+        {order.phone && <div><dt>التلفون</dt><dd><a href={`https://wa.me/962${order.phone.replace(/^0/, '')}?text=${encodeURIComponent(`مرحبا، بخصوص طلبك رقم ${order.id} من ${order.shop === 'v8' ? 'V8' : 'FAEI'}`)}`} target="_blank" rel="noreferrer" className="admin-phone" dir="ltr" data-testid="link-customer-whatsapp"><MessageCircle size={13} /> {order.phone} · واتساب</a></dd></div>}
         <div><dt>الاستلام</dt><dd>{order.fulfillment}{order.address ? ` · ${order.address}` : ''}</dd></div>
         <div><dt>الوقت</dt><dd>{order.time}</dd></div>
         <div><dt>الدفع</dt><dd className={order.payment === 'كليك' ? 'is-cliq' : ''}>{order.payment === 'كليك' ? 'كليك (تأكد من التحويل)' : order.payment}</dd></div>
@@ -865,7 +894,9 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
 }
 
 function Sales({ session }: { session: string }) {
-  const [orders, setOrders] = useState<LiveOrder[] | null>(null);
+  const [all, setOrders] = useState<LiveOrder[] | null>(null);
+  const [shop, setShop] = useState<Shop>('faei');
+  const orders = useMemo(() => all && all.filter((order) => shopOf(order) === shop), [all, shop]);
   useEffect(() => {
     fetch('/api/orders?limit=1000', { cache: 'no-store', headers: { Authorization: `Bearer ${session}` } })
       .then((response) => (response.ok ? response.json() : { orders: [] }))
@@ -895,6 +926,7 @@ function Sales({ session }: { session: string }) {
   const most = Math.max(1, ...stats.days.map(([, total]) => total));
   return (
     <>
+      <ShopSwitch shop={shop} onChange={setShop} />
       <div className="admin-stats">
         <div><small>مبيعات اليوم</small><b>{stats.todayTotal.toFixed(2)} د.أ</b><em>{stats.todayCount} طلب</em></div>
         <div><small>آخر 7 أيام</small><b>{stats.weekTotal.toFixed(2)} د.أ</b><em>{stats.weekCount} طلب · كليك {stats.cliq.toFixed(2)}</em></div>
@@ -1113,6 +1145,134 @@ function Accounts({ me }: { me: Session }) {
           <button type="submit" className="admin-primary">غيّر</button>
         </form>
       </section>
+    </>
+  );
+}
+
+// ---- V8 Coffee To Go menu (developers only) ----
+
+type V8Menu = Menu & { launchAt?: string; whatsapp?: string };
+
+function V8Editor({ session, onLogout }: { session: string; onLogout: () => void }) {
+  const [menu, setMenu] = useState<V8Menu | null>(null);
+  const [saved, setSaved] = useState({ text: '', sha: '' });
+  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [error, setError] = useState('');
+  async function load() {
+    setError('');
+    try {
+      const file = await readJson<V8Menu>(session, V8_PATH);
+      setMenu(file.data);
+      setSaved({ text: stringify(file.data), sha: file.sha });
+      setPhotos({});
+    } catch (problem) {
+      if (problem instanceof GitHubError && problem.status === 401) onLogout();
+      else setError('ما قدرنا نجيب منيو V8. تأكد من النت وجرّب كمان مرة.');
+    }
+  }
+  useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const dirty = !!menu && stringify(menu) !== saved.text;
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+  if (!menu) return error ? <><p className="admin-error">{error}</p><button type="button" className="admin-primary" onClick={() => void load()}>جرّب كمان مرة</button></> : <p className="admin-loading">لحظة، عم نجيب منيو V8…</p>;
+
+  const update = (patch: (current: V8Menu) => V8Menu) => { setMenu((current) => current && patch(current)); setState('idle'); };
+  function upsert(product: Product) {
+    update((current) => {
+      const exists = current.products.some((item) => item.id === product.id);
+      const categories = current.categories.includes(product.category) ? current.categories : [...current.categories, product.category];
+      return { ...current, categories, products: exists ? current.products.map((item) => (item.id === product.id ? product : item)) : [...current.products, product] };
+    });
+  }
+  function toggle(id: string) {
+    update((current) => ({ ...current, products: current.products.map((item) => {
+      if (item.id !== id) return item;
+      const next = { ...item };
+      if (item.available === false) delete next.available; else next.available = false;
+      return next;
+    }) }));
+  }
+  function move(category: string, direction: -1 | 1) {
+    update((current) => {
+      const list = [...current.categories];
+      const from = list.indexOf(category);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= list.length) return current;
+      [list[from], list[to]] = [list[to], list[from]];
+      return { ...current, categories: list };
+    });
+  }
+  async function save() {
+    if (!menu || state === 'saving') return;
+    if (!confirm('أكيد بدك تنزّل تعديلات V8 عالموقع؟')) return;
+    setState('saving');
+    try {
+      if (await fileSha(session, V8_PATH) !== saved.sha) { setState('error'); setError('في حدا ثاني عدّل منيو V8 من جهاز ثاني. حدّث الصفحة وأعد تعديلك.'); return; }
+      const clean: V8Menu = { ...menu, categories: menu.categories.filter((category) => menu.products.some((item) => item.category === category)) };
+      const text = stringify(clean);
+      const files: NewFile[] = [{ path: V8_PATH, text }];
+      Object.entries(photos).forEach(([path, base64]) => {
+        if (clean.products.some((item) => item.image === path)) files.push({ path: `public${path}`, base64: base64.split(',')[1] });
+      });
+      await commitFiles(session, files, 'تعديل منيو V8 من لوحة الإدارة');
+      setMenu(clean);
+      setSaved({ text, sha: await fileSha(session, V8_PATH) });
+      setPhotos({});
+      setState('saved');
+    } catch (problem) {
+      if (problem instanceof GitHubError && problem.status === 401) { onLogout(); return; }
+      setState('error');
+      setError('ما انحفظ. تأكد من النت وجرّب كمان مرة.');
+    }
+  }
+  const launchAt = menu.launchAt ? Date.parse(menu.launchAt) : 0;
+  return (
+    <>
+      <section className="admin-card admin-v8">
+        <h2><img src="/images/v8/v8-logo.webp" alt="" /> V8 Coffee To Go</h2>
+        <p className="admin-hint">{launchAt && Date.now() < launchAt
+          ? `مخفي عن الزباين لحد ${new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', weekday: 'long', day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(launchAt))}. إنت بتشوفه إذا فتحت الموقع مرة وحدة من هالرابط: faei-website.vercel.app/?v8`
+          : 'ظاهر عالموقع للكل.'}</p>
+        <label className="admin-field">رقم واتساب V8 (طلباتهم بتروح عليه)
+          <input value={menu.whatsapp ?? ''} onChange={(event) => update((current) => ({ ...current, whatsapp: event.target.value.trim() }))} inputMode="tel" dir="ltr" placeholder="07XXXXXXXX" data-testid="v8-whatsapp" />
+        </label>
+        {!menu.whatsapp && <p className="admin-note">لحد ما تحط رقم، طلبات V8 بتروح على واتساب فَيّ.</p>}
+      </section>
+      <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={move} />
+      {(dirty || state !== 'idle') && (
+        <div className={`admin-savebar is-${state === 'saved' ? 'live-wait' : state}`} data-testid="v8-savebar">
+          {state === 'saving' ? <span>عم نحفظ…</span>
+            : state === 'saved' && !dirty ? <><span>انحفظ ✅ بيظهر عالموقع خلال دقيقة تقريباً</span><button type="button" onClick={() => setState('idle')} aria-label="سكّر"><X size={16} /></button></>
+            : state === 'error' ? <><span>{error}</span><button type="button" className="admin-primary" onClick={() => void save()}>جرّب كمان مرة</button></>
+            : <><span>عندك تعديلات على V8 ما انحفظت</span><button type="button" className="admin-primary" onClick={() => void save()} data-testid="v8-save">نزّل عالموقع</button></>}
+        </div>
+      )}
+      {editing && (
+        <ItemForm
+          simple
+          product={editing}
+          categories={menu.categories}
+          photo={editing.image ? photos[editing.image] : undefined}
+          onClose={() => setEditing(null)}
+          onSave={(product, photo) => {
+            const next = product.id.startsWith('item-') ? { ...product, id: `v8-${product.id}` } : product;
+            if (photo && next.image) {
+              const image = next.image.replace(`/images/menu/${product.id}`, `/images/v8/${next.id}`);
+              next.image = image;
+              setPhotos((current) => ({ ...current, [image]: photo }));
+            }
+            upsert(next);
+            setEditing(null);
+          }}
+          onDelete={editing.id && menu.products.some((item) => item.id === editing.id) ? () => { update((current) => ({ ...current, products: current.products.filter((item) => item.id !== editing.id) })); setEditing(null); } : undefined}
+        />
+      )}
     </>
   );
 }

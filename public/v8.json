@@ -1,0 +1,432 @@
+{
+ "launchAt": "2026-11-01T09:00:00+03:00",
+ "whatsapp": "",
+ "categories": [
+  "القهوة",
+  "سموذي",
+  "عصائر طبيعية",
+  "موهيتو",
+  "ميلك شيك",
+  "شاي مثلج"
+ ],
+ "products": [
+  {
+   "id": "v8-espresso",
+   "name": "إسبريسو",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1250
+    }
+   ]
+  },
+  {
+   "id": "v8-v60",
+   "name": "V60",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 2000
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-americano",
+   "name": "أمريكانو",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 1500
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-american",
+   "name": "أمريكان",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 1500
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-flat-white",
+   "name": "فلات وايت",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 1750
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 1750
+    }
+   ]
+  },
+  {
+   "id": "v8-latte",
+   "name": "لاتيه",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 1500
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-spanish-latte",
+   "name": "سبانش لاتيه",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 2000
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-pistachio-latte",
+   "name": "لاتيه فستق",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 2500
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 2500
+    }
+   ]
+  },
+  {
+   "id": "v8-caramel-macchiato",
+   "name": "كراميل ماكياتو",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 2000
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-dark-mocha",
+   "name": "موكا داكنة",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 2000
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-white-mocha",
+   "name": "موكا بيضاء",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 2000
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-ice-shake",
+   "name": "آيس شيك",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-tiramisu-latte",
+   "name": "لاتيه تيراميسو",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "ساخن",
+     "priceFils": 2000
+    },
+    {
+     "label": "مثلج",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-frappe",
+   "name": "فرابيه",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2500
+    }
+   ]
+  },
+  {
+   "id": "v8-extra-flavour",
+   "name": "إضافة نكهة",
+   "category": "القهوة",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "v8-smoothie-passion",
+   "name": "خليط فاكهة الباشن",
+   "category": "سموذي",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2500
+    }
+   ]
+  },
+  {
+   "id": "v8-smoothie-dragon",
+   "name": "فاكهة التنين",
+   "category": "سموذي",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2500
+    }
+   ]
+  },
+  {
+   "id": "v8-smoothie-strawberry",
+   "name": "فراولة",
+   "category": "سموذي",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2500
+    }
+   ]
+  },
+  {
+   "id": "v8-smoothie-peach-pineapple",
+   "name": "خوخ وأناناس",
+   "category": "سموذي",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2500
+    }
+   ]
+  },
+  {
+   "id": "v8-juice-mango",
+   "name": "مانجو",
+   "category": "عصائر طبيعية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-juice-orange",
+   "name": "برتقال",
+   "category": "عصائر طبيعية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-juice-lemon",
+   "name": "ليمون",
+   "category": "عصائر طبيعية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ]
+  },
+  {
+   "id": "v8-mojito-blue",
+   "name": "بلو كوراساو",
+   "category": "موهيتو",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-mojito-blackberry",
+   "name": "توت أسود",
+   "category": "موهيتو",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-mojito-strawberry",
+   "name": "فراولة ميكس",
+   "category": "موهيتو",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-mojito-kiwi-apple",
+   "name": "كيوي وتفاح",
+   "category": "موهيتو",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-mojito-mixberry",
+   "name": "مكس بيري",
+   "category": "موهيتو",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-mojito-watermelon-peach",
+   "name": "بطيخ وخوخ",
+   "category": "موهيتو",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-extra-redbull",
+   "name": "إضافة ريد بول",
+   "category": "موهيتو",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1000
+    }
+   ]
+  },
+  {
+   "id": "v8-extra-bombom",
+   "name": "إضافة بمبوم",
+   "category": "موهيتو",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "v8-milkshake",
+   "name": "ميلك شيك",
+   "category": "ميلك شيك",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ]
+  },
+  {
+   "id": "v8-icetea-passion",
+   "name": "باشن فروت",
+   "category": "شاي مثلج",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-icetea-raspberry",
+   "name": "توت أحمر",
+   "category": "شاي مثلج",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  },
+  {
+   "id": "v8-icetea-peach",
+   "name": "خوخ",
+   "category": "شاي مثلج",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ]
+  }
+ ]
+}
