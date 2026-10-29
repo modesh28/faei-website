@@ -323,14 +323,14 @@ function readActiveOrder(): ActiveOrder | null {
   } catch { return null; }
 }
 // Rush hour at FAEI: 11:00–13:00 Jordan time, Sunday–Thursday. Orders take longer then.
-const PEAK_EXTRA_MINUTES = 15;
+const PEAK_EXTRA_MINUTES = 5;
 function isPeakNow(date = new Date()): boolean {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
   const minutes = Number(get('hour')) * 60 + Number(get('minute'));
   return isOpenNow(date) && minutes >= 660 && minutes < 780;
 }
-// 15 minutes, a minute more for each piece after the second, at most 25; delivery adds 10; rush hour adds 15.
+// 15 minutes, a minute more for each piece after the second, at most 25; delivery adds 10; rush hour adds 5.
 function estimateReadyAt(pieces: number, delivery: boolean, time: string | null): number {
   const prep = Math.min(25, 15 + Math.max(0, pieces - 2)) + (delivery ? 10 : 0) + (isPeakNow() ? PEAK_EXTRA_MINUTES : 0);
   const asap = Date.now() + prep * 60_000;
@@ -1315,7 +1315,7 @@ function App() {
               {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
-              {isPeakNow() && <p className="peak-note" data-testid="peak-note">🔥 هسه وقت الذروة بفَيّ (11 لـ 1). الطلبات كثير، فطلبك بياخد وقت أطول من العادة بحوالي ربع ساعة. شكراً على صبرك 🙏</p>}
+              {isPeakNow() && <p className="peak-note" data-testid="peak-note">🔥 هسه وقت الذروة بفَيّ (11 لـ 1). الطلبات كثير، فممكن طلبك يتأخر شوي. شكراً على صبرك 🙏</p>}
               {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هسه وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هسه، وبنرد عليك أول ما نفتح.</p>}
               {recentOrder && (
                 <div className="replace-box" data-testid="replace-box">
