@@ -735,3 +735,51 @@ html.lite .v8-window { animation: none; }
 .suggest-chip.suggest-v8 { background: #0b0b0b; color: #f4efe6; border-color: #0b0b0b; }
 .suggest-chip.suggest-v8 img { border-radius: 50%; }
 .suggest-chip.suggest-v8 small { color: #f2c230; }
+
+/* 33. Cleaner, more "tech" look: cool background, soft floating cards, blue as the main accent; gold kept for small touches only */
+.faei-app { --blue: #1a73e8; --accent: #1a73e8; --accent-2: #4f9cf9; --paper: #f3f5f9; }
+@layer base { body { background: #f3f5f9; } }
+.faei-app .button-gold { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 10px 24px -8px rgba(26,115,232,.6); }
+.faei-app .footer .button-gold { color: #fff !important; }
+.faei-app .wa-button { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: 0 10px 24px -8px rgba(26,115,232,.55); }
+.faei-app .reorder-row button, .faei-app .install-done, .faei-app .gallery-insta-cta { background: var(--accent); color: #fff; }
+.menu-section-title { border-inline-start-color: var(--accent); }
+.faei-app .menu-extras { border-color: #dbe5f3; background: #fff; color: #33475b; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+.faei-app .menu-extras:hover { background: #f5f9ff; }
+
+/* Menu cards: floating, image inset with rounded corners, round dark add button */
+.faei-app .product-card { border: 0; border-radius: 20px; padding: 6px; background: #fff; box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 8px 24px -6px rgba(16,24,40,.08); }
+.faei-app .product-card:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(16,24,40,.05), 0 18px 36px -10px rgba(16,24,40,.16); }
+.faei-app .product-image { border-radius: 15px; background: #e8edf3; }
+.faei-app .product-card:hover .product-image.is-loaded img { transform: scale(1.04); }
+.faei-app .product-body { padding: 10px 8px 6px; }
+.faei-app .product-body h3 { font-size: 15.5px; font-weight: 800; letter-spacing: -.1px; margin-bottom: 8px; }
+.faei-app .option-list { margin-top: auto; }
+.faei-app .option-row { border-top: 0; padding-top: 4px; }
+.faei-app .option-list li + li { border-top: 0; }
+.faei-app .option-label { color: #6b7a88; }
+.faei-app .price { font-size: 16px; font-weight: 800; color: var(--ink); }
+.faei-app .add-button { min-width: 40px; min-height: 40px; border-radius: 999px !important; background: var(--ink); color: #fff; box-shadow: 0 6px 14px -6px rgba(24,43,58,.6); }
+.faei-app .add-button:hover { background: var(--accent); }
+.faei-app .option-row .add-button { min-width: 38px; min-height: 38px; }
+.popular-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: #eaf2fe; color: #1a5fc4; font-size: 11px; font-weight: 800; }
+.faei-app .product-card.is-mini { padding: 0; border-radius: 14px; box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 14px -6px rgba(16,24,40,.08); }
+.faei-app .product-card.is-mini .product-body { padding: 8px 12px; }
+.faei-app .product-card.is-mini:hover { transform: none; }
+.faei-app .category-button.is-active img { box-shadow: 0 0 0 2px var(--accent-2); }
+
+@media (prefers-color-scheme: dark) {
+  .faei-app { --paper: #0d1720; }
+  body { background: #0d1720; }
+  .faei-app .product-card { background: #15222e !important; box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 10px 28px -10px rgba(0,0,0,.6); }
+  .faei-app .product-image { background: #1c2b39; }
+  .faei-app .add-button { background: #eef3f8; color: #0d1720; }
+  .faei-app .add-button:hover { background: var(--accent-2); color: #fff; }
+  .popular-badge { background: rgba(79,156,249,.16); color: #8cbcff; }
+  .faei-app .menu-extras { background: #15222e !important; border-color: #263a4c !important; color: #cfe0f1 !important; }
+  .category-button.is-active, .sticky-cats button.is-active, .segmented button.is-active, .segmented button[aria-pressed="true"] { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
+  .where-toggle, .card-stepper { background: var(--accent); color: #fff; }
+  .card-stepper button { color: #fff; }
+  .cart-bar { background: var(--accent); color: #fff; }
+  .cart-bar-count { background: #fff; color: var(--accent); }
+}

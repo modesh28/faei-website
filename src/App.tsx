@@ -619,7 +619,7 @@ function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { p
       <div className="product-body">
         {!mini && (showCategory || product.popular) && <div className="product-meta">
           {showCategory && <span>{product.category}</span>}
-          {product.popular && <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-800"><Flame size={12} aria-hidden="true" /> الأكثر طلباً</span>}
+          {product.popular && <span className="popular-badge"><Flame size={12} aria-hidden="true" /> الأكثر طلباً</span>}
         </div>}
         <h3>{product.name}</h3>
         <ul className="option-list">
