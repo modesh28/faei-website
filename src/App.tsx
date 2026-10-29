@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
@@ -312,7 +312,7 @@ function OpenInBrowser() {
 // After an order is sent, a small card counts down to when it should be ready, then rings.
 // It's an estimate made on the phone, so it works with no staff action and no server.
 const ACTIVE_ORDER_KEY = 'faei-active-order-v1';
-type ActiveOrder = { id: string; ref?: string; placedAt: number; readyAt: number | null };
+type ActiveOrder = { id: string; ref?: string; placedAt: number; readyAt: number | null; peak?: boolean };
 function readActiveOrder(): ActiveOrder | null {
   try {
     const order = JSON.parse(localStorage.getItem(ACTIVE_ORDER_KEY) ?? 'null') as ActiveOrder | null;
@@ -322,9 +322,17 @@ function readActiveOrder(): ActiveOrder | null {
     return Date.now() < expires ? order : null;
   } catch { return null; }
 }
-// 15 minutes, a minute more for each piece after the second, at most 25; delivery adds 10.
+// Rush hour at FAEI: 11:00–13:00 Jordan time, Sunday–Thursday. Orders take longer then.
+const PEAK_EXTRA_MINUTES = 15;
+function isPeakNow(date = new Date()): boolean {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  const minutes = Number(get('hour')) * 60 + Number(get('minute'));
+  return isOpenNow(date) && minutes >= 660 && minutes < 780;
+}
+// 15 minutes, a minute more for each piece after the second, at most 25; delivery adds 10; rush hour adds 15.
 function estimateReadyAt(pieces: number, delivery: boolean, time: string | null): number {
-  const prep = Math.min(25, 15 + Math.max(0, pieces - 2)) + (delivery ? 10 : 0);
+  const prep = Math.min(25, 15 + Math.max(0, pieces - 2)) + (delivery ? 10 : 0) + (isPeakNow() ? PEAK_EXTRA_MINUTES : 0);
   const asap = Date.now() + prep * 60_000;
   if (!time) return asap;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date());
@@ -410,7 +418,7 @@ function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder
     : live && timerDone ? 'قرّب يجهز 👨‍🍳' : live === 'جديد' ? 'وصلنا طلبك 👍' : 'طلبك عم يتحضّر 👨‍🍳';
   const id = `رقم \u2066${order.id}\u2069`;
   const detail = cancelled ? `${id} · تواصل معنا عالواتساب` : ready ? `${id} · تفضّل استلمه` : order.readyAt === null ? `${id} · بنجهزه أول ما نفتح`
-    : live && timerDone ? `${id} · بيرنّ تلفونك أول ما يجهز` : `${id} · جاهز بعد حوالي`;
+    : live && timerDone ? `${id} · بيرنّ تلفونك أول ما يجهز` : order.peak ? `${id} · وقت ذروة، جاهز بعد حوالي` : `${id} · جاهز بعد حوالي`;
   const minutes = Math.floor(left / 60_000);
   const seconds = Math.floor((left % 60_000) / 1000);
   // The order counts as sent. While the kitchen hasn't started, the customer can still take it back.
@@ -473,14 +481,15 @@ function nextOpenText(date = new Date()): string {
 // Inline styles on purpose: older rules such as `.hero-foot span` would otherwise squash this badge.
 function OpenStatus({ dark = false }: { dark?: boolean }) {
   const open = isOpenNow();
+  const peak = isPeakNow();
   const badge = {
     display: 'inline-flex', alignItems: 'center', gap: 6, width: 'auto', height: 'auto', whiteSpace: 'nowrap' as const,
     padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, lineHeight: 1.4,
-    background: open ? '#d1fae5' : dark ? 'rgba(255,255,255,.12)' : '#e2e8f0',
-    color: open ? '#065f46' : dark ? 'rgba(255,255,255,.85)' : '#334155',
+    background: peak ? '#ffedd5' : open ? '#d1fae5' : dark ? 'rgba(255,255,255,.12)' : '#e2e8f0',
+    color: peak ? '#9a3412' : open ? '#065f46' : dark ? 'rgba(255,255,255,.85)' : '#334155',
   };
-  const dot = { display: 'inline-block', width: 8, height: 8, borderRadius: 999, flex: 'none', background: open ? '#10b981' : '#94a3b8' };
-  return <span style={badge}><span style={dot} />{open ? 'مفتوح هسه' : 'مسكّر هسه'}</span>;
+  const dot = { display: 'inline-block', width: 8, height: 8, borderRadius: 999, flex: 'none', background: peak ? '#f97316' : open ? '#10b981' : '#94a3b8' };
+  return <span style={badge}><span style={dot} />{peak ? 'مفتوح · وقت ذروة 🔥 الطلبات بتطوّل شوي' : open ? 'مفتوح هسه' : 'مسكّر هسه'}</span>;
 }
 
 // Instagram logo as inline SVG, so it doesn't depend on the lucide-react version.
@@ -603,7 +612,7 @@ function money(fils: number): string {
   return `${dinars}${remainder ? `.${String(remainder).padStart(3, '0').replace(/0+$/, '')}` : ''} د.أ`;
 }
 
-function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { product: Product; onAdd: (product: Product, optionIndex: number) => void; onChange: (id: string, delta: number) => void; quantities: Map<string, number>; showCategory: boolean }) {
+function ProductCard({ product, onAdd, onChange, quantities, showCategory, popular = false }: { product: Product; onAdd: (product: Product, optionIndex: number) => void; onChange: (id: string, delta: number) => void; quantities: Map<string, number>; showCategory: boolean; popular?: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const available = isAvailable(product);
@@ -617,9 +626,9 @@ function ProductCard({ product, onAdd, onChange, quantities, showCategory }: { p
         </div>
       )}
       <div className="product-body">
-        {!mini && (showCategory || product.popular) && <div className="product-meta">
+        {!mini && (showCategory || popular) && <div className="product-meta">
           {showCategory && <span>{product.category}</span>}
-          {product.popular && <span className="popular-badge"><Flame size={12} aria-hidden="true" /> الأكثر طلباً</span>}
+          {popular && <span className="popular-badge"><Flame size={12} aria-hidden="true" /> الأكثر طلباً</span>}
         </div>}
         <h3>{product.name}</h3>
         <ul className="option-list">
@@ -677,8 +686,23 @@ export function PreviewPage() {
   );
 }
 
+// "الأكثر طلباً" comes from real orders (counted by the server); the last answer is kept so it shows at once.
+const POPULAR_KEY = 'faei-popular-v1';
+function usePopularNames(): Set<string> {
+  const [names, setNames] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(POPULAR_KEY) ?? '[]') as string[]; } catch { return []; } });
+  useEffect(() => {
+    fetch('/api/orders?popular').then((response) => (response.ok ? response.json() : null)).then((data: { names?: string[] } | null) => {
+      if (!Array.isArray(data?.names)) return;
+      setNames(data.names);
+      try { localStorage.setItem(POPULAR_KEY, JSON.stringify(data.names)); } catch { /* private mode */ }
+    }).catch(() => {});
+  }, []);
+  return useMemo(() => new Set(names), [names]);
+}
+
 function App() {
   const [cart, setCart] = useState<CartEntry[]>(readCart);
+  const popularNames = usePopularNames();
   // Opening a shared group-order link adds its items to this phone's cart once.
   useEffect(() => {
     const shared = readSharedCart();
@@ -963,7 +987,7 @@ function App() {
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(saved)); } catch { /* Reorder is optional. */ }
     setLastOrder(saved);
     const pieces = cartLines.reduce((sum, line) => sum + line.quantity, 0) + (hasExtras ? 1 : 0);
-    const tracked: ActiveOrder = { id: orderId, ref, placedAt: Date.now(), readyAt: isOpenNow() ? estimateReadyAt(pieces, isDelivery, timeMode === 'later' ? orderTime : null) : null };
+    const tracked: ActiveOrder = { id: orderId, ref, placedAt: Date.now(), readyAt: isOpenNow() ? estimateReadyAt(pieces, isDelivery, timeMode === 'later' ? orderTime : null) : null, peak: isPeakNow() && timeMode !== 'later' };
     try { localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(tracked)); } catch { /* The timer is optional. */ }
     setActiveOrder(tracked);
     setAddOn(false);
@@ -1131,7 +1155,7 @@ function App() {
               {[...categories, 'الكل' as const].map((category) => <button key={category} type="button" tabIndex={stickyCats ? 0 : -1} className={!query && selectedCategory === category ? 'is-active' : ''} onClick={() => jumpToCategory(category)}>{category === 'الكل' ? 'كل المنيو' : category}</button>)}
             </div>
             <div className="catalog-grid" ref={catalogRef} aria-live="polite">
-              {visibleProducts.length ? visibleProducts.map((product, index) => <Fragment key={product.id}>{product.section && !query && product.section !== visibleProducts[index - 1]?.section && <h3 className="menu-section-title">{product.section}</h3>}<ProductCard product={product} onAdd={addProduct} onChange={changeQuantity} quantities={quantities} showCategory={!!query || selectedCategory === 'الكل'} /></Fragment>) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
+              {visibleProducts.length ? visibleProducts.map((product, index) => <Fragment key={product.id}>{product.section && !query && product.section !== visibleProducts[index - 1]?.section && <h3 className="menu-section-title">{product.section}</h3>}<ProductCard product={product} onAdd={addProduct} onChange={changeQuantity} quantities={quantities} showCategory={!!query || selectedCategory === 'الكل'} popular={popularNames.has(product.name)} /></Fragment>) : <div className="empty-results"><Search size={25} /><p>ما لقينا أصناف مطابقة. جرّب كلمة بحث ثانية.</p></div>}
             </div>
           </div>
         </section>
@@ -1291,6 +1315,7 @@ function App() {
               {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
+              {isPeakNow() && <p className="peak-note" data-testid="peak-note">🔥 هسه وقت الذروة بفَيّ (11 لـ 1). الطلبات كثير، فطلبك بياخد وقت أطول من العادة بحوالي ربع ساعة. شكراً على صبرك 🙏</p>}
               {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هسه وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هسه، وبنرد عليك أول ما نفتح.</p>}
               {recentOrder && (
                 <div className="replace-box" data-testid="replace-box">

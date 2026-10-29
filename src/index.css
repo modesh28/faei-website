@@ -783,3 +783,7 @@ html.lite .v8-window { animation: none; }
   .cart-bar { background: var(--accent); color: #fff; }
   .cart-bar-count { background: #fff; color: var(--accent); }
 }
+
+/* 34. Rush hour (11–1): a note in the cart so customers expect a longer wait */
+.peak-note { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: #fff4e6; border: 1px solid #fed7aa; color: #9a3412; font-size: 12.5px; font-weight: 600; line-height: 1.6; }
+@media (prefers-color-scheme: dark) { .peak-note { background: #2a1d10; border-color: #5c3a17; color: #fdba74; } }

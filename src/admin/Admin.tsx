@@ -474,7 +474,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete, simpl
   const [section, setSection] = useState(product.section ?? '');
   const [nameEn, setNameEn] = useState(product.nameEn ?? '');
   const [options, setOptions] = useState(product.options.map((option) => ({ label: option.label, price: option.priceFils ? String(option.priceFils / 1000) : '' })));
-  const [popular, setPopular] = useState(!!product.popular);
+  const popular = !!product.popular;
   const [available, setAvailable] = useState(product.available !== false);
   const [newPhoto, setNewPhoto] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -559,7 +559,7 @@ function ItemForm({ product, categories, photo, onClose, onSave, onDelete, simpl
         </fieldset>
         <label className="admin-check"><input type="checkbox" checked={available} onChange={(event) => setAvailable(event.target.checked)} /> متوفر</label>
         {!simple && <>
-          <label className="admin-check"><input type="checkbox" checked={popular} onChange={(event) => setPopular(event.target.checked)} /> علامة "الأكثر طلباً"</label>
+
           <div className="admin-preview">
             <h3><Eye size={15} /> هيك رح يطلع عالتلفون</h3>
             <SitePreview products={draft} />

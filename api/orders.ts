@@ -9,6 +9,7 @@
 //   GET   /api/orders?ref=…    a customer's phone asks for its order's status (public, status only)
 //   GET   /api/orders?version  a number that changes with every order or status change (public),
 //                              so the admin page only downloads the list when something changed
+//   GET   /api/orders?popular  the most ordered FAEI items of the last 14 days (public), for the "الأكثر طلباً" badge
 //   GET   /api/orders          the admin page lists recent orders (needs a signed-in account)
 //   PATCH /api/orders          the admin page changes an order's status (needs a signed-in admin)
 
@@ -17,6 +18,10 @@ import { connected, countCustomerOrder, json, notConnected, redis, type Role, se
 // The admin screens ask for the version every few seconds. An instance that answered in the
 // last second and a half reuses its answer, which keeps the free Redis plan well within limits.
 let lastVersion = { value: 0, at: 0 };
+// The most ordered items change slowly, so one count serves everyone for ten minutes.
+let lastPopular = { names: [] as string[], at: 0 };
+const POPULAR_TOP = 4;
+const POPULAR_MIN = 3;
 
 // Kept 35 days, so the sales page can show the last few weeks.
 const KEEP_SECONDS = 35 * 24 * 3600;
@@ -92,6 +97,31 @@ async function customerAnswer(ref: string, action: 'sent' | 'cancel', edit: bool
   return json({ ok: true });
 }
 
+// Counts real orders from the last 14 days (cancelled ones and V8's left out). An item needs a
+// few orders before it gets the badge, so one order doesn't make anything "the most ordered".
+async function popular(): Promise<Response> {
+  if (Date.now() - lastPopular.at > 10 * 60_000) {
+    const [refs] = await redis([['LRANGE', 'orders', 0, 1999]]) as [string[]];
+    const counts = new Map<string, number>();
+    if (refs.length) {
+      const [values] = await redis([['MGET', ...refs.map((item) => `order:${item}`)]]) as [(string | null)[]];
+      const since = Date.now() - 14 * 24 * 3600_000;
+      for (const value of values) {
+        if (!value) continue;
+        const order = JSON.parse(value) as { shop?: string; status?: string; createdAt?: number; items?: { name: string; quantity: number }[] };
+        if (order.shop === 'v8' || order.status === 'ملغي' || (order.createdAt ?? 0) < since) continue;
+        for (const item of order.items ?? []) {
+          if (item.name.startsWith('V8 · ')) continue;
+          counts.set(item.name, (counts.get(item.name) ?? 0) + (item.quantity || 1));
+        }
+      }
+    }
+    const names = [...counts].filter(([, count]) => count >= POPULAR_MIN).sort((a, b) => b[1] - a[1]).slice(0, POPULAR_TOP).map(([name]) => name);
+    lastPopular = { names, at: Date.now() };
+  }
+  return new Response(JSON.stringify({ names: lastPopular.names }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' } });
+}
+
 export async function GET(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
   const params = new URL(request.url).searchParams;
@@ -101,6 +131,7 @@ export async function GET(request: Request): Promise<Response> {
     lastVersion = { value: Number(version) || 0, at: Date.now() };
     return json({ version: lastVersion.value });
   }
+  if (params.has('popular')) return popular();
   const ref = params.get('ref');
   if (ref !== null) {
     if (!validRef(ref)) return json({ error: 'bad-ref' }, 400);
