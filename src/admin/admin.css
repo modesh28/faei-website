@@ -322,3 +322,8 @@ a { color: inherit; }
 .admin-gallery-actions .is-danger { color: var(--red); margin-inline-start: auto; }
 .admin-gallery-add { min-height: 220px; display: grid; place-content: center; justify-items: center; gap: 8px; border: 2px dashed var(--line); border-radius: 14px; background: transparent; color: var(--muted); font-weight: 700; font-size: 15px; cursor: pointer; }
 .admin-gallery-add:hover { border-color: var(--ink); color: var(--ink); }
+
+/* Receipt printing */
+.admin-autoprint { display: inline-flex; align-items: center; gap: 6px; margin-inline-start: auto; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 700; }
+.admin-autoprint.is-on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.admin-print { margin-inline-start: auto; display: inline-grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Coffee, Images, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Coffee, Images, Printer, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
 import { useTheme } from '../theme';
@@ -775,6 +775,69 @@ function notify(orders: LiveOrder[]) {
     .catch(() => { try { new Notification(title, options); } catch { /* not supported here */ } });
 }
 
+// ---- Receipt printing (the cashier's thermal printer, 80mm) ----
+// The counter PC keeps this page open; with "طباعة تلقائية" on, each new site order prints by itself.
+// Chrome started with --kiosk-printing prints without asking; otherwise the print box opens (Enter).
+const AUTOPRINT_KEY = 'faei-admin-autoprint';
+const PRINTED_KEY = 'faei-admin-printed';
+const escapeHtml = (text: string) => text.replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]!));
+function receiptHtml(order: LiveOrder): string {
+  const time = new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(order.createdAt));
+  const rows = order.items.map((item) => `<tr><td class="q">${item.quantity}×</td><td>${escapeHtml(item.name)}</td><td class="p">${(item.price * item.quantity).toFixed(2)}</td></tr>`).join('');
+  const line = (label: string, value: string) => (value ? `<p><b>${label}:</b> ${escapeHtml(value)}</p>` : '');
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>#${escapeHtml(order.id)}</title><style>
+@page { size: 80mm auto; margin: 3mm; }
+* { box-sizing: border-box; }
+body { margin: 0; width: 74mm; font: 13px/1.45 Tahoma, Arial, sans-serif; color: #000; }
+h1 { margin: 0; text-align: center; font-size: 20px; letter-spacing: 1px; direction: ltr; }
+.sub { text-align: center; margin: 2px 0 8px; font-size: 12px; }
+.id { text-align: center; font-size: 22px; font-weight: 700; border: 2px solid #000; padding: 4px; margin: 6px 0; direction: ltr; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+td { padding: 3px 0; vertical-align: top; border-bottom: 1px dashed #000; font-size: 14px; }
+td.q { width: 30px; font-weight: 700; } td.p { text-align: left; white-space: nowrap; direction: ltr; }
+p { margin: 3px 0; }
+.total { display: flex; justify-content: space-between; font-size: 17px; font-weight: 700; border-top: 2px solid #000; margin-top: 6px; padding-top: 6px; }
+.note { border: 1px solid #000; padding: 4px 6px; margin: 6px 0; font-weight: 700; }
+.foot { text-align: center; margin-top: 10px; font-size: 11px; }
+</style></head><body>
+<h1>${escapeHtml(BRAND.name)}</h1><div class="sub">طلب من الموقع · ${time}</div>
+<div class="id">#${escapeHtml(order.id)}</div>
+${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}
+<table>${rows}</table>
+${order.extras ? `<p class="note">ملاحظات: ${escapeHtml(order.extras)}</p>` : ''}
+${line('الاستلام', `${order.fulfillment}${order.address ? ` · ${order.address}` : ''}`)}
+${line('الوقت', order.time)}
+${line('الدفع', order.payment)}
+${line('التلفون', order.phone ?? '')}
+${order.discount ? line('خصم', order.discount.toFixed(2)) : ''}
+<div class="total"><span>المجموع</span><span dir="ltr">${order.total.toFixed(2)} JOD</span></div>
+<div class="foot">${escapeHtml(BRAND.slogan.start + BRAND.slogan.highlight)}</div>
+</body></html>`;
+}
+let printQueue: Promise<void> = Promise.resolve();
+function printOrder(order: LiveOrder): Promise<void> {
+  printQueue = printQueue.then(() => new Promise<void>((resolve) => {
+    const frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(frame);
+    const done = () => { window.setTimeout(() => { frame.remove(); resolve(); }, 800); };
+    frame.onload = () => {
+      try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } catch { /* printing blocked */ }
+      done();
+    };
+    frame.srcdoc = receiptHtml(order);
+  }));
+  return printQueue;
+}
+function markPrinted(ref: string): boolean {
+  let list: string[] = [];
+  try { list = JSON.parse(read(PRINTED_KEY) || '[]') as string[]; } catch { list = []; }
+  if (list.includes(ref)) return false;
+  write(PRINTED_KEY, JSON.stringify([ref, ...list].slice(0, 300)));
+  return true;
+}
+
 // Checks for orders every 3 seconds while the page is on screen (15 in the background) and rings for new ones.
 function useOrders(session: string, onLogout: () => void): Live {
   const [orders, setOrders] = useState<LiveOrder[] | null>(null);
@@ -810,6 +873,7 @@ function useOrders(session: string, onLogout: () => void): Live {
         if (added.length) {
           if (soundRef.current) ring();
           notify(added);
+          if (read(AUTOPRINT_KEY) === '1') added.filter((order) => markPrinted(order.ref)).forEach((order) => void printOrder(order));
           setFresh((current) => new Set([...current, ...added.map((order) => order.ref)]));
         }
       }
@@ -887,6 +951,13 @@ function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; s
   const [shop, setShop] = useState<Shop>('faei');
   const [view, setViewState] = useState<'list' | 'board'>(() => (read(VIEW_KEY) === 'board' ? 'board' : 'list'));
   const setView = (next: 'list' | 'board') => { write(VIEW_KEY, next); setViewState(next); };
+  const [autoPrint, setAutoPrintState] = useState(() => read(AUTOPRINT_KEY) === '1');
+  const setAutoPrint = (on: boolean) => {
+    write(AUTOPRINT_KEY, on ? '1' : '');
+    setAutoPrintState(on);
+    // Orders already on screen count as printed, so switching on doesn't print the whole day.
+    if (on) (live.orders ?? []).forEach((order) => markPrinted(order.ref));
+  };
   useEffect(() => { const timer = window.setInterval(() => tick((n) => n + 1), 30_000); return () => window.clearInterval(timer); }, []);
   if (live.orders === null) return <>{live.error ? <p className="admin-error">{live.error}</p> : <p className="admin-loading">لحظة، عم نجيب الطلبات…</p>}</>;
   const all = live.orders;
@@ -910,6 +981,7 @@ function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; s
       <div className="admin-view" role="tablist">
         <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'is-active' : ''} onClick={() => setView('list')} data-testid="view-list"><List size={15} /> قائمة</button>
         <button type="button" role="tab" aria-selected={view === 'board'} className={view === 'board' ? 'is-active' : ''} onClick={() => setView('board')} data-testid="view-board"><Columns3 size={15} /> شاشة المطبخ</button>
+        <button type="button" className={`admin-autoprint${autoPrint ? ' is-on' : ''}`} onClick={() => setAutoPrint(!autoPrint)} aria-pressed={autoPrint} title="كل طلب جديد بينطبع لحاله على طابعة هالجهاز" data-testid="button-autoprint"><Printer size={15} /> طباعة تلقائية: {autoPrint ? 'شغّالة' : 'طافية'}</button>
         {view === 'board' && document.fullscreenEnabled && <button type="button" className="admin-view-full" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen().catch(() => {}); }} aria-label="ملء الشاشة"><Maximize size={15} /></button>}
       </div>
       {view === 'board'
@@ -1019,6 +1091,7 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
         {order.status === 'عم يتحضّر' && <button type="button" className="admin-green" onClick={() => onStatus('جاهز')} data-testid="button-ready">جاهز ✅ (بيوصل للزبون)</button>}
         {order.status === 'جاهز' && <button type="button" className="admin-primary" onClick={() => onStatus('تم')} data-testid="button-picked">استلمه 👍</button>}
         {(order.status === 'تم' || order.status === 'ملغي') && <button type="button" className="admin-link" onClick={() => onStatus('جديد')}>رجّعه للطلبات المفتوحة</button>}
+        <button type="button" className="admin-print" onClick={() => { markPrinted(order.ref); void printOrder(order); }} aria-label={`اطبع الطلب ${order.id}`} title="اطبع" data-testid="button-print"><Printer size={15} /></button>
       </footer>
     </article>
   );
