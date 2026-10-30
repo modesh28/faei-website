@@ -325,7 +325,8 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
       <header className="admin-top">
         {me.role === 'v8' ? <img src="/images/v8/v8-logo.webp" alt="V8" className="admin-v8-logo" /> : <img src="/images/faei-logo.webp" alt="FAEI" />}
         <strong>لوحة الإدارة <small>{me.username} · {ROLE_NAMES[me.role]}</small></strong>
-        <a href="/" target="_blank" rel="noreferrer" className="admin-ghost">الموقع <ExternalLink size={14} /></a>
+        <InstallPanel />
+        <a href="/" target="_blank" rel="noreferrer" className="admin-ghost" aria-label="الموقع"><span>الموقع</span> <ExternalLink size={14} /></a>
         <button type="button" className="admin-ghost" onClick={() => { if (!dirty || confirm('في تعديلات ما انحفظت. أكيد بدك تطلع؟')) onLogout(); }} aria-label="تسجيل خروج"><LogOut size={16} /></button>
       </header>
       <nav className="admin-tabs">
@@ -707,6 +708,50 @@ function ring() {
     });
   } catch { /* no sound on this device */ }
   navigator.vibrate?.([300, 120, 300]);
+}
+
+// "Install the panel": its own icon on the phone or computer, opening straight on the orders.
+// Chrome / Edge / Samsung install directly; iPhone needs Share → Add to Home Screen.
+type InstallEvent = Event & { prompt: () => Promise<void> };
+function InstallPanel() {
+  const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null);
+  const [steps, setSteps] = useState(false);
+  const [installed, setInstalled] = useState(() => window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true);
+  useEffect(() => {
+    const onPrompt = (event: Event) => { event.preventDefault(); setInstallEvent(event as InstallEvent); };
+    const onInstalled = () => { setInstalled(true); setInstallEvent(null); };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => { window.removeEventListener('beforeinstallprompt', onPrompt); window.removeEventListener('appinstalled', onInstalled); };
+  }, []);
+  if (installed) return null;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  function start() {
+    if (installEvent) { void installEvent.prompt(); setInstallEvent(null); return; }
+    setSteps(true);
+  }
+  return <>
+    <button type="button" className="admin-ghost admin-install" onClick={start} data-testid="button-install-panel" aria-label="نزّل اللوحة كتطبيق"><Download size={14} /> <span>نزّل اللوحة</span></button>
+    {steps && (
+      <div className="admin-sheet-back" onClick={() => setSteps(false)}>
+        <div className="admin-install-sheet" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+          <img src="/admin-icon-192.png" alt="" />
+          <h3>نزّل لوحة FAEI كتطبيق</h3>
+          {ios ? <ol>
+            <li>افتح اللوحة من <b>سفاري</b></li>
+            <li>اكبس زر <b>المشاركة</b></li>
+            <li>اختار <b>إضافة إلى الشاشة الرئيسية</b> ثم <b>إضافة</b></li>
+          </ol> : <ol>
+            <li>افتح اللوحة من <b>كروم</b></li>
+            <li>اكبس <b>⋮</b> فوق</li>
+            <li>اختار <b>تثبيت التطبيق</b> أو <b>إضافة إلى الشاشة الرئيسية</b></li>
+          </ol>}
+          <p>بتطلع أيقونة "لوحة FAEI" لحالها، غير أيقونة الموقع، وبتفتح عالطلبات مباشرة.</p>
+          <button type="button" className="admin-primary" onClick={() => setSteps(false)}>تمام</button>
+        </div>
+      </div>
+    )}
+  </>;
 }
 
 // A phone notification for new orders while the page is in the background.

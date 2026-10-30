@@ -9,3 +9,8 @@ createRoot(document.getElementById('root')!).render(
     <Admin />
   </StrictMode>,
 );
+
+// Installs the panel as its own app (admin-manifest.webmanifest) and lets order notifications show.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}
