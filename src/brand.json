@@ -1,0 +1,124 @@
+{
+  "name": "FAEI",
+  "nameAr": "فَيّ",
+  "kind": "مطعم ومقهى",
+  "slogan": {
+    "start": "تعي نقعد ",
+    "highlight": "بالفَيّ"
+  },
+  "description": "منيو FAEI، المطعم والمقهى في كلية الأمير عبدالله بن غازي لتكنولوجيا المعلومات، جامعة البلقاء التطبيقية. اختار طلبك وابعته على واتساب.",
+  "shareText": "شاورما، زنجر، بوكسات، بيتزا ومناقيش. اختار طلبك وابعته على واتساب.",
+  "siteUrl": "https://faei-website.vercel.app",
+  "place": "جوا كلية تكنولوجيا المعلومات، جامعة البلقاء.",
+  "address": {
+    "street": "كلية الأمير عبدالله بن غازي لتكنولوجيا المعلومات، جامعة البلقاء التطبيقية",
+    "city": "السلط",
+    "country": "JO"
+  },
+  "whatsapp": "962797607843",
+  "instagram": "https://www.instagram.com/faei_cafe/",
+  "mapsUrl": "https://maps.app.goo.gl/5dB3uh3ELugdSyEWA",
+  "hours": {
+    "text": "من الأحد للخميس، 7:30 الصبح لـ 5:00 العصر",
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "open": "07:30",
+    "close": "17:00"
+  },
+  "delivery": {
+    "insideFils": 1000,
+    "inside": "جوا الجامعة",
+    "outside": "برا الجامعة"
+  },
+  "cliq": {
+    "alias": "0797607843",
+    "name": "QUSAI MARWAN MORSI ABUABDALLAH"
+  },
+  "sheetUrl": "https://script.google.com/macros/s/AKfycbz2zj4JEFhsCRhKHdzBCkgbHvB7geVle4i3grIsjgwWy9AT03spE9v3WJkQ-55z0U5q/exec",
+  "cuisine": [
+    "شاورما",
+    "برغر",
+    "بيتزا",
+    "مناقيش"
+  ],
+  "priceRange": "JOD 0.5 - 8",
+  "colors": {
+    "ink": "#182b3a",
+    "accent": "#1a73e8",
+    "gold": "#f4c542",
+    "bar": "#142736",
+    "accent2": "#4f9cf9"
+  },
+  "images": {
+    "logo": "/images/faei-logo.webp",
+    "logoPng": "/images/faei-logo.png",
+    "hero": "/images/faei-sign.webp",
+    "heroAlt": "قارمة FAEI على واجهة المطعم",
+    "heroPosition": "center 75%",
+    "share": "/og-image.jpg",
+    "heroJpg": "/images/faei-sign.jpeg",
+    "shareAlt": "قارمة FAEI"
+  },
+  "galleryTitle": "قعدة الفَيّ",
+  "gallery": [
+    {
+      "src": "/images/faei-seating.webp",
+      "alt": "القعدة في FAEI مع إطلالة على الشجر",
+      "caption": "قعدة بين الشجر",
+      "size": "big"
+    },
+    {
+      "src": "/images/faei-table.webp",
+      "alt": "طاولة في FAEI قدام رسمة فيروز على الحيط",
+      "caption": "فيروز والشلة والأكل",
+      "size": "tall",
+      "position": "center 60%"
+    },
+    {
+      "src": "/images/faei-sign.webp",
+      "alt": "قارمة FAEI على الخشب",
+      "caption": "أهلاً بالفَيّ",
+      "position": "center 75%"
+    },
+    {
+      "src": "/images/smash-classic.webp",
+      "alt": "سماش برغر طازة من FAEI",
+      "caption": "سماش طازة"
+    },
+    {
+      "src": "/images/smash-cheese.webp",
+      "alt": "تحضير السماش برغر على الصاج",
+      "caption": "بينعمل قدامك"
+    },
+    {
+      "src": "/images/pizza-zinger.webp",
+      "alt": "بيتزا زنجر من FAEI",
+      "caption": "بيتزا زنجر"
+    }
+  ],
+  "fridge": {
+    "title": "من ثلاجة فَيّ",
+    "drinks": [
+      {
+        "name": "مشروب غازي",
+        "emoji": "🥤"
+      },
+      {
+        "name": "عصير",
+        "emoji": "🧃"
+      },
+      {
+        "name": "مي",
+        "emoji": "💧"
+      }
+    ]
+  },
+  "extrasBanner": "عنا كمان عصاير وشيبس وسكاكر",
+  "wayfinder": true,
+  "innerShop": true
+}

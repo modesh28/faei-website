@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/react';
 import App, { PreviewPage } from './App';
 import './index.css';
 import { products, categories } from './menu';
+import { BRAND } from './brand';
 
 // Weak phones (few cores or little memory) and anyone asking for less motion get a lighter site:
 // no photo scaling, fades or blur, so scrolling stays smooth.
@@ -54,8 +55,8 @@ if (import.meta.env.PROD) {
 const menuData = {
   '@context': 'https://schema.org',
   '@type': 'Menu',
-  name: 'منيو FAEI',
-  url: 'https://faei-website.vercel.app/#menu',
+  name: `منيو ${BRAND.name}`,
+  url: `${BRAND.siteUrl}/#menu`,
   inLanguage: 'ar',
   hasMenuSection: categories.map((category) => ({
     '@type': 'MenuSection',

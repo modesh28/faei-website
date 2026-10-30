@@ -7,14 +7,15 @@ import { ArrowLeft, Citrus, Coffee, CupSoda, GlassWater, Leaf, Milk, Minus, Plus
 
 import data from '../public/v8.json';
 import type { Product } from './menu';
+import { BRAND } from './brand';
 
 type V8Menu = { launchAt?: string; whatsapp?: string; instagram?: string; categories: string[]; products: Product[] };
 const v8 = data as V8Menu;
 const CART_KEY = 'v8-cart-v1';
 const PREVIEW_KEY = 'faei-v8-preview';
-const FALLBACK_WHATSAPP = '962797607843';
-// Same as FAEI: delivery inside the university is one dinar.
-const DELIVERY_FILS = 1000;
+const FALLBACK_WHATSAPP = BRAND.whatsapp;
+// Same delivery price as the main shop.
+const DELIVERY_FILS = BRAND.delivery.insideFils;
 
 // V8's items can also ride along in FAEI's cart (one order, one delivery fee).
 export const v8Products: Product[] = v8.products;
@@ -42,7 +43,8 @@ function previewing(): boolean {
 }
 const launched = () => !v8.launchAt || Date.now() >= Date.parse(v8.launchAt);
 // FAEI's cart offers V8's drinks only once V8 shows on this phone.
-export const v8Visible = () => launched() || previewing();
+// Off for good when brand.json says there is no shop inside (innerShop: false).
+export const v8Visible = () => BRAND.innerShop && (launched() || previewing());
 
 // When the customer already has FAEI food in the cart, V8's drinks go straight into that cart.
 export type Joined = { quantity: (id: string) => number; change: (id: string, delta: number) => void; merge: (entries: Entry[]) => void; count: number; totalFils: number; openCart: () => void };
@@ -99,7 +101,7 @@ export default function V8Section({ phone, phoneNumber, onPhone, open, setOpen, 
           <img src="/images/v8/v8-logo.webp" alt="V8 Coffee To Go" width={58} height={58} />
           <span className="v8-script">Fuel your Uni Days</span>
           <b lang="en">V8 Coffee To Go</b>
-          <small>قهوة، سموذي، موهيتو وعصاير، جوا الفَيّ</small>
+          <small>قهوة، سموذي، موهيتو وعصاير، جوا {BRAND.nameAr}</small>
           <em>افتح منيو V8 <ArrowLeft size={15} aria-hidden="true" /></em>
         </span>
       </button>
@@ -252,7 +254,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
         })}
         <div className="v8-foot">
           <span className="v8-script">Study · Coffee · Repeat</span>
-          <span>الاستلام من V8 جوا الفَيّ</span>
+          <span>الاستلام من V8 جوا {BRAND.nameAr}</span>
           {v8.instagram && <a href={v8.instagram} target="_blank" rel="noreferrer" className="v8-insta" data-testid="v8-instagram">
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>
             تابع V8 على إنستغرام
@@ -260,10 +262,10 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
         </div>
       </div>
       {sent && !count && (
-        <div className="v8-sent" data-testid="v8-sent"><b>انبعت طلبك ✅</b><span>رقم {sent}. استلمه من V8 جوا الفَيّ.</span><button type="button" onClick={() => setSent('')} aria-label="سكّر"><X size={16} /></button></div>
+        <div className="v8-sent" data-testid="v8-sent"><b>انبعت طلبك ✅</b><span>رقم {sent}. استلمه من V8 جوا {BRAND.nameAr}.</span><button type="button" onClick={() => setSent('')} aria-label="سكّر"><X size={16} /></button></div>
       )}
       {joined && (
-        <button type="button" className="v8-bar" onClick={onOpenFaeiCart} data-testid="v8-open-faei-cart"><ShoppingBag size={18} /> سلتك مع فَيّ · {joined.count} <b>{money(joined.totalFils)}</b></button>
+        <button type="button" className="v8-bar" onClick={onOpenFaeiCart} data-testid="v8-open-faei-cart"><ShoppingBag size={18} /> سلتك مع {BRAND.nameAr} · {joined.count} <b>{money(joined.totalFils)}</b></button>
       )}
       {!joined && count > 0 && !checkout && (
         <button type="button" className="v8-bar" onClick={() => setCheckout(true)} data-testid="v8-open-cart"><ShoppingBag size={18} /> السلة · {count} <b>{money(total)}</b></button>
@@ -272,8 +274,8 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
         <section className="v8-cart" aria-label="سلة V8">
           <header><b>سلة V8</b><button type="button" onClick={() => setCheckout(false)} aria-label="رجوع للمنيو"><X size={18} /></button></header>
           <button type="button" className="v8-to-faei" onClick={() => { const entries = cart; setCart([]); onMoveToFaei(entries); }} data-testid="v8-to-faei">
-            <b>بدك كمان أكل من فَيّ؟</b>
-            <span>انقل سلة V8 لسلة فَيّ وكمّل طلبك هناك: طلب واحد وتوصيل واحد.</span>
+            <b>بدك كمان أكل من {BRAND.nameAr}؟</b>
+            <span>انقل سلة V8 لسلة {BRAND.nameAr} وكمّل طلبك هناك: طلب واحد وتوصيل واحد.</span>
           </button>
           <ul>
             {lines.map((line) => (
@@ -302,7 +304,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
             </div>
             {timeMode === 'later' && <input type="time" value={pickupTime} onChange={(event) => setPickupTime(event.target.value)} aria-label="الساعة" data-testid="v8-time" />}
           </div>
-          <p className="v8-pickup">{delivery ? 'التوصيل جوا الجامعة بس' : 'استلام من V8 جوا الفَيّ'} · الدفع عند الاستلام</p>
+          <p className="v8-pickup">{delivery ? `التوصيل ${BRAND.delivery.inside} بس` : `استلام من V8 جوا ${BRAND.nameAr}`} · الدفع عند الاستلام</p>
           {!phoneNumber ? <p className="v8-warn">اكتب رقم تلفونك عشان تبعت الطلب.</p> : missingAddress ? <p className="v8-warn">اكتب وين نوصلك.</p> : missingTime && <p className="v8-warn">اختار الساعة اللي بدك تستلم فيها.</p>}
           <button type="button" className="v8-send" disabled={!phoneNumber || missingTime || missingAddress} onClick={send} data-testid="v8-send">إرسال الطلب · {money(total)}</button>
         </section>

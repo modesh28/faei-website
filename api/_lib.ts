@@ -3,7 +3,10 @@
 
 declare const process: { env: Record<string, string | undefined> };
 
-export const REPO = 'modesh28/faei-website';
+// The GitHub repo the admin page commits menu/offer edits to. Vercel fills VERCEL_GIT_REPO_* by itself
+// for a project linked to GitHub; GITHUB_REPO ("owner/name") overrides it.
+const vercelRepo = process.env.VERCEL_GIT_REPO_OWNER && process.env.VERCEL_GIT_REPO_SLUG ? `${process.env.VERCEL_GIT_REPO_OWNER}/${process.env.VERCEL_GIT_REPO_SLUG}` : undefined;
+export const REPO = process.env.GITHUB_REPO || vercelRepo || 'modesh28/faei-website';
 
 const redisUrl = () => process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = () => process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;

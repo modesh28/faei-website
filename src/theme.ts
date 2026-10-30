@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BRAND } from './brand';
 
 // Light / dark for the site and the admin panel. The choice is saved on the phone; until someone
 // picks, it follows the phone's own setting. index.html sets it before the page draws, so no flash.
@@ -9,7 +10,7 @@ const system = (): Theme => (window.matchMedia?.('(prefers-color-scheme: dark)')
 
 function apply(theme: Theme) {
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0d1720' : '#182b3a');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0d1720' : BRAND.colors.ink);
 }
 
 export function useTheme(): [Theme, () => void] {

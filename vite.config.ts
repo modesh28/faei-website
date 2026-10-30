@@ -2,8 +2,10 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
+import brand from './brand.config';
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), brand()],
   // Older phones (iOS 13+, Android Chrome 80+) still get working JavaScript.
   build: {
     target: ['es2019', 'safari13', 'chrome80', 'firefox78'],

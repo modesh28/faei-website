@@ -4,6 +4,7 @@ import { categories, products, isAvailable, type Category, type Product } from '
 import Wayfinder from './Wayfinder';
 import V8Section, { v8Products, v8Visible } from './V8';
 import { useTheme } from './theme';
+import { BRAND, CLOSE_MINUTES, OPEN_MINUTES, timeInWords, type GalleryPhoto } from './brand';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
@@ -11,22 +12,17 @@ const CART_KEY = 'faei-cart-v2';
 // The last order sent on this phone, offered again as "طلبك المعتاد".
 const LAST_ORDER_KEY = 'faei-last-order-v1';
 type LastOrder = { cart: CartEntry[]; extras: string };
-const WHATSAPP_DESTINATION = '962797607843';
-const INSTAGRAM_URL = 'https://www.instagram.com/faei_cafe/';
-// FAEI's own pin on Google Maps.
-const MAPS_URL = 'https://maps.app.goo.gl/5dB3uh3ELugdSyEWA';
-const HOURS_TEXT = 'من الأحد للخميس، 7:30 الصبح لـ 5:00 العصر';
-// Delivery inside the university costs 1 JD; outside it is agreed on WhatsApp.
-const DELIVERY_INSIDE_FILS = 1000;
+const WHATSAPP_DESTINATION = BRAND.whatsapp;
+const INSTAGRAM_URL = BRAND.instagram;
+const MAPS_URL = BRAND.mapsUrl;
+const HOURS_TEXT = BRAND.hours.text;
+// Delivery inside the university (or whatever "inside" means in brand.json) has a set price; outside it is agreed on WhatsApp.
+const DELIVERY_INSIDE_FILS = BRAND.delivery.insideFils;
 
 // Edited on GitHub in public/settings.json: the Google Sheet that logs orders, and the CliQ alias for paying.
 type Settings = { sheetUrl: string; cliqAlias: string; cliqName: string };
 // Built-in values, so CliQ and order logging work even if settings.json fails to load.
-const DEFAULT_SETTINGS: Settings = {
-  sheetUrl: 'https://script.google.com/macros/s/AKfycbz2zj4JEFhsCRhKHdzBCkgbHvB7geVle4i3grIsjgwWy9AT03spE9v3WJkQ-55z0U5q/exec',
-  cliqAlias: '0797607843',
-  cliqName: 'QUSAI MARWAN MORSI ABUABDALLAH',
-};
+const DEFAULT_SETTINGS: Settings = { sheetUrl: BRAND.sheetUrl, cliqAlias: BRAND.cliq.alias, cliqName: BRAND.cliq.name };
 // Where the visitor came from, e.g. ?from=qr on the table cards.
 const VISIT_SOURCE = new URLSearchParams(window.location.search).get('from') ?? '';
 
@@ -39,23 +35,10 @@ type DeliveryZone = 'inside' | 'outside';
 // discountPercent takes that much off every menu item in website orders (not delivery or cafeteria extras).
 // endsAt (ISO time) switches the whole offer off by itself once it passes.
 type Offer = { show: boolean; title: string; text: string; productId?: string; optionIndex?: number; discountPercent?: number; endsAt?: string };
-const DEFAULT_OFFER: Offer = {
-  show: true,
-  title: 'عرض الإطلاق',
-  text: 'خصم 15% على كل المنيو لما تطلب من الموقع، لحد الخميس 29/10.',
-  discountPercent: 15,
-  endsAt: '2026-10-30T00:00:00+03:00',
-};
+const DEFAULT_OFFER: Offer = { show: false, title: '', text: '' };
 
-// Photos for the "قعدة الفَيّ" gallery (files in public/images). size: big = 2x2, tall = 1x2, normal = 1x1.
-const GALLERY: { src: string; alt: string; caption: string; size?: 'big' | 'tall'; position?: string }[] = [
-  { src: '/images/faei-seating.webp', alt: 'القعدة في FAEI مع إطلالة على الشجر', caption: 'قعدة بين الشجر', size: 'big' },
-  { src: '/images/faei-table.webp', alt: 'طاولة في FAEI قدام رسمة فيروز على الحيط', caption: 'فيروز والشلة والأكل', size: 'tall', position: 'center 60%' },
-  { src: '/images/faei-sign.webp', alt: 'قارمة FAEI على الخشب', caption: 'أهلاً بالفَيّ', position: 'center 75%' },
-  { src: '/images/smash-classic.webp', alt: 'سماش برغر طازة من FAEI', caption: 'سماش طازة' },
-  { src: '/images/smash-cheese.webp', alt: 'تحضير السماش برغر على الصاج', caption: 'بينعمل قدامك' },
-  { src: '/images/pizza-zinger.webp', alt: 'بيتزا زنجر من FAEI', caption: 'بيتزا زنجر' },
-];
+// Photos for the gallery (files in public/images, listed in brand.json). size: big = 2x2, tall = 1x2, normal = 1x1.
+const GALLERY: GalleryPhoto[] = BRAND.gallery;
 
 // "Add to home screen". One button for everyone: it installs directly where the browser
 // allows it (Chrome on Android), and otherwise opens short steps for this phone's browser.
@@ -72,7 +55,7 @@ function installSteps(): { title: string; steps: Step[]; copyLink?: boolean } {
     steps: [
       { icon: <Ellipsis size={18} />, text: <>اكبس <b>⋯</b> فوق عاليمين</> },
       { icon: <Compass size={18} />, text: <>اختار <b>{ios ? 'Open in Safari' : 'Open in Chrome'}</b> (افتح بالمتصفح)</> },
-      { icon: add, text: <>بالمتصفح، اكبس زر <b>نزّل FAEI</b> مرة ثانية</> },
+      { icon: add, text: <>بالمتصفح، اكبس زر <b>نزّل {BRAND.name}</b> مرة ثانية</> },
     ],
   };
   if (ios && /CriOS|FxiOS|EdgiOS/.test(ua)) return {
@@ -80,7 +63,7 @@ function installSteps(): { title: string; steps: Step[]; copyLink?: boolean } {
     steps: [
       { icon: <Share size={18} />, text: <>اكبس زر <b>المشاركة</b> فوق جنب الرابط</> },
       { icon: add, text: <>اختار <b>إضافة إلى الشاشة الرئيسية</b></> },
-      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة FAEI</> },
+      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة {BRAND.name}</> },
     ],
   };
   if (ios) return {
@@ -88,7 +71,7 @@ function installSteps(): { title: string; steps: Step[]; copyLink?: boolean } {
     steps: [
       { icon: <Share size={18} />, text: <>اكبس زر <b>المشاركة</b> تحت (أو <b>⋯</b> ثم مشاركة)</> },
       { icon: add, text: <>انزل لتحت واختار <b>إضافة إلى الشاشة الرئيسية</b></> },
-      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة FAEI</> },
+      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة {BRAND.name}</> },
     ],
   };
   if (/SamsungBrowser/.test(ua)) return {
@@ -96,7 +79,7 @@ function installSteps(): { title: string; steps: Step[]; copyLink?: boolean } {
     steps: [
       { icon: <Menu size={18} />, text: <>اكبس <b>☰</b> تحت</> },
       { icon: add, text: <>اختار <b>إضافة الصفحة إلى</b> ثم <b>الشاشة الرئيسية</b></> },
-      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة FAEI</> },
+      { icon: <Check size={18} />, text: <>اكبس <b>إضافة</b>، وبتطلع أيقونة {BRAND.name}</> },
     ],
   };
   return {
@@ -104,7 +87,7 @@ function installSteps(): { title: string; steps: Step[]; copyLink?: boolean } {
     steps: [
       { icon: <EllipsisVertical size={18} />, text: <>اكبس <b>⋮</b> فوق عاليمين</> },
       { icon: add, text: <>اختار <b>تثبيت التطبيق</b> أو <b>إضافة إلى الشاشة الرئيسية</b></> },
-      { icon: <Check size={18} />, text: <>اكبس <b>تثبيت</b>، وبتطلع أيقونة FAEI</> },
+      { icon: <Check size={18} />, text: <>اكبس <b>تثبيت</b>، وبتطلع أيقونة {BRAND.name}</> },
     ],
   };
 }
@@ -130,7 +113,7 @@ function InstallApp() {
   }
   return (
     <>
-      <button type="button" className="install-app" onClick={start} data-testid="button-install"><Smartphone size={16} /> نزّل FAEI على تلفونك</button>
+      <button type="button" className="install-app" onClick={start} data-testid="button-install"><Smartphone size={16} /> نزّل {BRAND.name} على تلفونك</button>
       {guide && <>
         <button type="button" className="sheet-backdrop" aria-label="إغلاق" onClick={() => setGuideOpen(false)} />
         <div className="install-sheet" role="dialog" aria-modal="true" aria-labelledby="install-title" data-testid="install-guide">
@@ -270,7 +253,7 @@ function GalleryCarousel() {
   }
   return (
     <div className="gallery-carousel">
-      <div className="carousel-track" ref={trackRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerLeave={endDrag} aria-label="صور من FAEI، اسحب لتشوف أكثر">
+      <div className="carousel-track" ref={trackRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerLeave={endDrag} aria-label={`صور من ${BRAND.name}، اسحب لتشوف أكثر`}>
         {[...GALLERY, ...GALLERY, ...GALLERY].map((photo, index) => {
           const copy = Math.floor(index / GALLERY.length);
           return (
@@ -422,7 +405,7 @@ function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       const text = { body: `طلبك رقم ${order.id} ${confirmed ? 'جاهز' : 'صار جاهز تقريباً'}، تفضّل استلمه 🙌`, icon: '/icon-192.png', tag: order.id };
       navigator.serviceWorker?.getRegistration()
-        .then((registration) => { if (registration) return registration.showNotification('FAEI', text); new Notification('FAEI', text); })
+        .then((registration) => { if (registration) return registration.showNotification(BRAND.name, text); new Notification(BRAND.name, text); })
         .catch(() => {});
     }
   }, [ready, now, order, confirmed]);
@@ -471,12 +454,13 @@ function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder
   );
 }
 
-// Open Sunday–Thursday, 7:30–17:00 Jordan time.
+// Open on brand.json's days and hours, Jordan time.
 function isOpenNow(date = new Date()): boolean {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
   const minutes = Number(get('hour')) * 60 + Number(get('minute'));
-  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'].includes(get('weekday')) && minutes >= 450 && minutes < 1020;
+  const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday'));
+  return BRAND.hours.days.includes(day) && minutes >= OPEN_MINUTES && minutes < CLOSE_MINUTES;
 }
 
 // When the shop opens next, in words, e.g. "بكرا الساعة 7:30 الصبح".
@@ -487,13 +471,14 @@ function nextOpenText(date = new Date()): string {
   const names = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   const today = days.indexOf(get('weekday'));
   const minutes = Number(get('hour')) * 60 + Number(get('minute'));
-  for (let ahead = 0; ahead < 7; ahead++) {
+  const at = `الساعة ${timeInWords(BRAND.hours.open)}`;
+  for (let ahead = 0; ahead < 8; ahead++) {
     const day = (today + ahead) % 7;
-    if (day > 4 || (ahead === 0 && minutes >= 450)) continue;
+    if (!BRAND.hours.days.includes(day) || (ahead === 0 && minutes >= OPEN_MINUTES)) continue;
     const when = ahead === 0 ? 'اليوم' : ahead === 1 ? 'بكرا' : `يوم ${names[day]}`;
-    return `${when} الساعة 7:30 الصبح`;
+    return `${when} ${at}`;
   }
-  return 'يوم الأحد الساعة 7:30 الصبح';
+  return at;
 }
 
 // Inline styles on purpose: older rules such as `.hero-foot span` would otherwise squash this badge.
@@ -551,11 +536,7 @@ function mealUpgrade(id: string): { id: string; extraFils: number } | undefined 
 // Quick add-ons offered in the cart when they aren't already in it.
 const SUGGESTED_IDS = ['salad-coleslaw::0'];
 // Drinks from the shop's own fridge. No fixed prices, so they go into the extras note.
-const SHOP_DRINKS = [
-  { name: 'مشروب غازي', emoji: '🥤' },
-  { name: 'عصير', emoji: '🧃' },
-  { name: 'مي', emoji: '💧' },
-];
+const SHOP_DRINKS = BRAND.fridge.drinks;
 
 function readCart(): CartEntry[] {
   try {
@@ -753,8 +734,8 @@ function App() {
   const [shareCopied, setShareCopied] = useState(false);
   function shareCart() {
     const link = `${window.location.origin}/?from=group&cart=${encodeURIComponent(encodeCart(cart))}`;
-    const text = `هاي سلة طلب الشلة من FAEI 🍔\nافتح الرابط، زيد أكلك، وابعت الطلب:\n${link}`;
-    if (navigator.share) { navigator.share({ title: 'طلب الشلة من FAEI', text }).catch(() => {}); return; }
+    const text = `هاي سلة طلب الشلة من ${BRAND.name} 🍔\nافتح الرابط، زيد أكلك، وابعت الطلب:\n${link}`;
+    if (navigator.share) { navigator.share({ title: `طلب الشلة من ${BRAND.name}`, text }).catch(() => {}); return; }
     navigator.clipboard?.writeText(text).then(() => { setShareCopied(true); window.setTimeout(() => setShareCopied(false), 1800); }).catch(() => {});
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
   }
@@ -916,7 +897,7 @@ function App() {
     if (!canCheckout) return;
     const lines = cartLines.map(({ name, option, quantity }) => `• ${name} × ${quantity}\n  سعر الوحدة: ${money(option.priceFils)} — المجموع: ${money(option.priceFils * quantity)}`).join('\n');
     const how = isDelivery
-      ? `طريقة الاستلام: توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}\nالعنوان: ${address.trim()}`
+      ? `طريقة الاستلام: توصيل ${zone === 'inside' ? BRAND.delivery.inside : BRAND.delivery.outside}\nالعنوان: ${address.trim()}`
       : 'طريقة الاستلام: استلام من الكافيه';
     const when = `الوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${orderTime}`}`;
     const discountText = discountFils ? `مجموع الأصناف: ${money(totalFils)}\n${offer.title} −${discountPercent}%: −${money(discountFils)}\n` : '';
@@ -933,7 +914,7 @@ function App() {
     const orderId = makeOrderId();
     const paid = isCliq ? `الدفع: كليك على ${settings.cliqAlias} (رح أبعت صورة التحويل)` : 'الدفع: كاش عند الاستلام';
     const closedNote = isOpenNow() ? '' : '\n(طلب مسبق، انبعت والمحل مسكّر)';
-    const message = `مرحباً FAEI، بدي أطلب الأوردر التالي (رقم ${orderId}):${closedNote}\n\n${itemsText}${extrasText}${how}\n${when}\n${paid}\nرقم تلفوني: ${phoneNumber}\n\n${totalsText}\n\nشكراً!`;
+    const message = `مرحباً ${BRAND.name}، بدي أطلب الأوردر التالي (رقم ${orderId}):${closedNote}\n\n${itemsText}${extrasText}${how}\n${when}\n${paid}\nرقم تلفوني: ${phoneNumber}\n\n${totalsText}\n\nشكراً!`;
     logOrder(settings.sheetUrl, {
       orderId,
       items: cartLines.map(({ name, option, quantity }) => `${name}${option.label ? ` (${option.label})` : ''} × ${quantity}`).join('، '),
@@ -942,7 +923,7 @@ function App() {
       discount: discountFils / 1000,
       delivery: isDelivery ? (zone === 'inside' ? deliveryFils / 1000 : 'بنتفق عليه') : 0,
       total: grandTotalFils / 1000,
-      fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}` : 'استلام',
+      fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? BRAND.delivery.inside : BRAND.delivery.outside}` : 'استلام',
       address: isDelivery ? address.trim() : '',
       time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
       payment: isCliq ? 'كليك' : 'كاش',
@@ -962,7 +943,7 @@ function App() {
           id: orderId,
           items: cartLines.map(({ name, option, quantity }) => ({ name, quantity, price: option.priceFils / 1000 })),
           extras: extras.trim(),
-          fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? 'جوا الجامعة' : 'برا الجامعة'}` : 'استلام',
+          fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? BRAND.delivery.inside : BRAND.delivery.outside}` : 'استلام',
           address: isDelivery ? address.trim() : '',
           phone: phoneNumber,
           replaces: replacing ? activeOrder?.ref : undefined,
@@ -989,12 +970,12 @@ function App() {
             id: `${orderId}-V8`,
             shop: 'v8',
             items: v8Lines.map(({ name, option, quantity }) => ({ name: name.replace(/^V8 · /, ''), quantity, price: option.priceFils / 1000 })),
-            extras: `مع طلب فَيّ رقم ${orderId}: سلّموه لفَيّ`,
-            fulfillment: isDelivery ? 'مع طلب فَيّ (فَيّ بتوصّل)' : 'مع طلب فَيّ (الزبون بيستلم من فَيّ)',
+            extras: `مع طلب ${BRAND.nameAr} رقم ${orderId}: سلّموه لـ ${BRAND.nameAr}`,
+            fulfillment: isDelivery ? `مع طلب ${BRAND.nameAr} (${BRAND.nameAr} بتوصّل)` : `مع طلب ${BRAND.nameAr} (الزبون بيستلم من ${BRAND.nameAr})`,
             address: '',
             phone: phoneNumber,
             time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
-            payment: 'مع فَيّ',
+            payment: `مع ${BRAND.nameAr}`,
             preorder: !isOpenNow(),
             discount: 0,
             delivery: 0,
@@ -1089,13 +1070,13 @@ function App() {
       <OpenInBrowser />
       <header className="topbar">
         <div className="faei-shell topbar-inner">
-          <a className="brand" href="#home" aria-label="FAEI — الرئيسية">
-            <img src="/images/faei-logo.webp" alt="شعار FAEI للمطعم والمقهى" />
+          <a className="brand" href="#home" aria-label={`${BRAND.name} — الرئيسية`}>
+            <img src={BRAND.images.logo} alt={`شعار ${BRAND.name}`} />
           </a>
           <nav className={`nav-links${mobileNavOpen ? ' is-open' : ''}`} aria-label="التنقل الرئيسي">
             <a href="#home" onClick={() => setMobileNavOpen(false)}>الرئيسية</a>
             <a href="#menu" onClick={() => setMobileNavOpen(false)}>المنيو</a>
-            <a href="#gallery" onClick={() => setMobileNavOpen(false)}>قعدة الفَيّ</a>
+            <a href="#gallery" onClick={() => setMobileNavOpen(false)}>{BRAND.galleryTitle}</a>
             <a href="#contact" onClick={() => { setMobileNavOpen(false); setWayOpen(true); }}>وين إحنا</a>
           </nav>
           <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'} title={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'} data-testid="button-theme">
@@ -1115,14 +1096,14 @@ function App() {
         <section id="home" className="hero" aria-labelledby="hero-title">
           <div className="hero-content">
             <div className="hero-copy">
-              <h1 id="hero-title">تعي نقعد <em>بالفَيّ</em></h1>
+              <h1 id="hero-title">{BRAND.slogan.start}<em>{BRAND.slogan.highlight}</em></h1>
               <div className="hero-actions">
                 <a className="button button-gold" href="#menu">تصفّح المنيو <ArrowLeft size={17} /></a>
               </div>
               <div className="hero-foot flex flex-wrap items-center gap-3"><OpenStatus dark /> <Clock size={15} aria-hidden="true" /> {HOURS_TEXT}</div>
             </div>
             <div className="hero-media">
-              <img src="/images/faei-sign.webp" alt="قارمة FAEI على واجهة المطعم" fetchPriority="high" style={{ objectPosition: 'center 75%' }} />
+              <img src={BRAND.images.hero} alt={BRAND.images.heroAlt} fetchPriority="high" style={{ objectPosition: BRAND.images.heroPosition }} />
             </div>
           </div>
         </section>
@@ -1140,7 +1121,7 @@ function App() {
           <div className="faei-shell">
             <div className="section-head">
               <h2 id="menu-title">المنيو</h2>
-              <button type="button" className="menu-extras" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner"><span aria-hidden="true">🥤</span> عنا كمان عصاير وشيبس وسكاكر</button>
+              <button type="button" className="menu-extras" onClick={() => { setExtrasOpen(true); openCart(); }} data-testid="button-extras-banner"><span aria-hidden="true">🥤</span> {BRAND.extrasBanner}</button>
             </div>
             {lastOrder && (
               <div className="reorder-row" data-testid="reorder-row">
@@ -1186,7 +1167,7 @@ function App() {
         <section className="section gallery-section" id="gallery" aria-labelledby="gallery-title">
           <div className="faei-shell">
             <div className="section-head">
-              <div><h2 id="gallery-title">قعدة الفَيّ</h2></div>
+              <div><h2 id="gallery-title">{BRAND.galleryTitle}</h2></div>
             </div>
           </div>
           <GalleryCarousel />
@@ -1197,27 +1178,27 @@ function App() {
             <div className="where-card">
               <div>
                 <h2 id="contact-title">وين إحنا؟</h2>
-                <p>جوا كلية تكنولوجيا المعلومات، جامعة البلقاء.</p>
+                <p>{BRAND.place}</p>
               </div>
               <div className="where-actions">
-                <button type="button" className={`where-toggle${wayOpen ? ' is-open' : ''}`} onClick={() => setWayOpen((open) => !open)} aria-expanded={wayOpen} data-testid="button-wayfinder">كيف توصل؟ <ChevronDown size={16} /></button>
+                {BRAND.wayfinder && <button type="button" className={`where-toggle${wayOpen ? ' is-open' : ''}`} onClick={() => setWayOpen((open) => !open)} aria-expanded={wayOpen} data-testid="button-wayfinder">كيف توصل؟ <ChevronDown size={16} /></button>}
                 <a className="where-map" href={MAPS_URL} target="_blank" rel="noreferrer"><MapPin size={16} /> الخريطة</a>
               </div>
             </div>
-            {wayOpen && <div className="wayfinder-reveal"><Wayfinder mapsUrl={MAPS_URL} /></div>}
+            {BRAND.wayfinder && wayOpen && <div className="wayfinder-reveal"><Wayfinder mapsUrl={MAPS_URL} /></div>}
           </div>
         </section>
       </main>
 
       <footer className="footer">
         <div className="faei-shell footer-inner">
-          <a href="#home" aria-label="FAEI — إلى الرئيسية"><img src="/images/faei-logo.webp" alt="FAEI" loading="lazy" /></a>
+          <a href="#home" aria-label={`${BRAND.name} — إلى الرئيسية`}><img src={BRAND.images.logo} alt={BRAND.name} loading="lazy" /></a>
           <p>{HOURS_TEXT}</p>
           <InstallApp />
           <div className="footer-actions">
-            <a className="button button-gold" href={`https://wa.me/${WHATSAPP_DESTINATION}`} target="_blank" rel="noreferrer" aria-label="تواصل مع FAEI عبر واتساب">واتساب</a>
-            <a className="button button-outline" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label="تابع FAEI على انستغرام"><InstagramIcon size={17} /> انستغرام</a>
-            <a className="button button-outline" href={MAPS_URL} target="_blank" rel="noreferrer" aria-label="موقع FAEI على الخريطة"><MapPin size={17} /> الخريطة</a>
+            <a className="button button-gold" href={`https://wa.me/${WHATSAPP_DESTINATION}`} target="_blank" rel="noreferrer" aria-label={`تواصل مع ${BRAND.name} عبر واتساب`}>واتساب</a>
+            <a className="button button-outline" href={INSTAGRAM_URL} target="_blank" rel="noreferrer" aria-label={`تابع ${BRAND.name} على انستغرام`}><InstagramIcon size={17} /> انستغرام</a>
+            <a className="button button-outline" href={MAPS_URL} target="_blank" rel="noreferrer" aria-label={`موقع ${BRAND.name} على الخريطة`}><MapPin size={17} /> الخريطة</a>
           </div>
         </div>
       </footer>
@@ -1246,7 +1227,7 @@ function App() {
               <section className="order-options foot-options compact-options" aria-label="طريقة الاستلام">
                 <h3><label htmlFor="input-phone">تلفونك</label></h3>
                 <input id="input-phone" className={`phone-input${phone && missingPhone ? ' is-wrong' : ''}`} type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="07XXXXXXXX" maxLength={20} data-testid="input-phone" />
-                <p className="phone-note">رقمك بنستخدمه للتواصل بخصوص طلبك وعروض فَيّ.</p>
+                <p className="phone-note">رقمك بنستخدمه للتواصل بخصوص طلبك وعروض {BRAND.nameAr}.</p>
                 <h3>الاستلام</h3>
                 <div className="segmented" role="radiogroup" aria-label="طريقة الاستلام">
                   <button type="button" role="radio" aria-checked={!isDelivery} className={!isDelivery ? 'is-active' : ''} onClick={() => setFulfillment('pickup')} data-testid="option-pickup">استلام</button>
@@ -1257,7 +1238,7 @@ function App() {
                     <button type="button" role="radio" aria-checked={zone === 'inside'} className={zone === 'inside' ? 'is-active' : ''} onClick={() => setZone('inside')} data-testid="option-inside">جوا الجامعة · 1 د.أ</button>
                     <button type="button" role="radio" aria-checked={zone === 'outside'} className={zone === 'outside' ? 'is-active' : ''} onClick={() => setZone('outside')} data-testid="option-outside">برا الجامعة</button>
                   </div>
-                  {zone === 'outside' && <p className="order-hint">سعر التوصيل برا الجامعة حسب المكان وحجم الطلب، وبنتفق عليه على واتساب.</p>}
+                  {zone === 'outside' && <p className="order-hint">سعر التوصيل {BRAND.delivery.outside} حسب المكان وحجم الطلب، وبنتفق عليه على واتساب.</p>}
                   <label className="order-field">
                     <span>وين نوصلك؟</span>
                     <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder={zone === 'inside' ? 'مثلاً: كلية الهندسة، الطابق الثاني، قاعة 204' : 'المنطقة والشارع وأقرب معلم'} data-testid="input-address" />
@@ -1317,7 +1298,7 @@ function App() {
                       return (
                         <button key={drink.name} type="button" className={`suggest-chip${added ? ' is-added' : ''}`} onClick={() => setExtras(added ? parts.filter((part) => part !== drink.name).join('، ') : [...parts, drink.name].join('، '))} aria-pressed={added} data-testid={`button-suggest-drink-${drink.name}`}>
                           <span className="suggest-emoji" aria-hidden="true">{drink.emoji}</span>
-                          <span><strong>{drink.name}</strong><small>{added ? 'انضاف ✓ · اكبس للإلغاء' : 'من ثلاجة فَيّ'}</small></span>
+                          <span><strong>{drink.name}</strong><small>{added ? 'انضاف ✓ · اكبس للإلغاء' : BRAND.fridge.title}</small></span>
                           {added ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
                         </button>
                       );
@@ -1338,7 +1319,7 @@ function App() {
               {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
-              {isPeakNow() && <p className="peak-note" data-testid="peak-note">🔥 هسه وقت ذروة بفَيّ والطلبات كثير، فممكن طلبك يتأخر شوي. شكراً على صبرك 🙏</p>}
+              {isPeakNow() && <p className="peak-note" data-testid="peak-note">🔥 هسه وقت ذروة عند {BRAND.nameAr} والطلبات كثير، فممكن طلبك يتأخر شوي. شكراً على صبرك 🙏</p>}
               {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هسه وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هسه، وبنرد عليك أول ما نفتح.</p>}
               {recentOrder && (
                 <div className="replace-box" data-testid="replace-box">
@@ -1351,7 +1332,7 @@ function App() {
               )}
               {(missingPhone || missingAddress || missingTime) && <p className="order-warning" data-testid="order-warning">{missingPhone ? (phone.trim() ? 'رقم التلفون مش صحيح. اكتبه هيك: 07XXXXXXXX' : 'اكتب رقم تلفونك فوق عشان تقدر تبعت الطلب.') : missingAddress ? 'اكتب وين نوصلك عشان تقدر تبعت الطلب.' : 'اختار الساعة عشان تقدر تبعت الطلب.'}</p>}
               <button className="button wa-button" type="button" onClick={checkout} disabled={!canCheckout} data-testid="button-whatsapp-checkout">إرسال الطلب</button>
-              <p className="checkout-note">رح يفتح واتساب برسالة طلب جاهزة. الطلب بيتأكد لما FAEI يرد عليك.</p>
+              <p className="checkout-note">رح يفتح واتساب برسالة طلب جاهزة. الطلب بيتأكد لما {BRAND.name} يرد عليك.</p>
             </div>
           </> : <div className="cart-empty"><ShoppingBag size={34} /><h3>السلة فاضية حالياً</h3><p>تصفّح المنيو وأضف الأصناف اللي بدك إياها.</p>{lastOrder && <button type="button" className="reorder-empty" onClick={() => { setCart(lastOrder.cart); setExtras(lastOrder.extras); if (lastOrder.extras) setExtrasOpen(true); }} data-testid="button-reorder-empty">اطلب طلبك المعتاد</button>}<button type="button" className="button button-gold" onClick={() => setCartOpen(false)}>تصفّح المنيو</button><button type="button" className="clear-button extras-only" onClick={() => setExtrasOpen(true)} data-testid="button-extras-only">بدي بس عصير أو سناك من الكافتيريا</button></div>}
         </aside>

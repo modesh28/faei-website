@@ -3,13 +3,14 @@ import { ArrowDown, ArrowUp, BarChart3, Coffee, Bell, Contact, Download, Gift, C
 
 import type { Menu, Product } from '../menu';
 import { useTheme } from '../theme';
+import { BRAND } from '../brand';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
 
 const SESSION_STORAGE = 'faei-admin-session';
 const MENU_PATH = 'public/menu.json';
 const OFFER_PATH = 'public/offer.json';
 const V8_PATH = 'public/v8.json';
-const NEW_KEY_URL = 'https://github.com/settings/tokens/new?scopes=public_repo&description=FAEI%20admin';
+const NEW_KEY_URL = 'https://github.com/settings/tokens/new?scopes=public_repo&description=' + encodeURIComponent(`${BRAND.name} admin`);
 
 type Offer = { show: boolean; title: string; text: string; productId?: string; optionIndex?: number; discountPercent?: number; endsAt?: string };
 
@@ -63,13 +64,13 @@ export default function Admin() {
 function ConnectStorage({ onRetry }: { onRetry: () => void }) {
   return (
     <main className="admin-login">
-      <img src="/images/faei-logo.webp" alt="FAEI" />
+      <img src={BRAND.images.logo} alt={BRAND.name} />
       <h1>خطوة وحدة قبل ما نبلّش</h1>
       <p>لوحة الإدارة بدها مخزن صغير (مجاني) للطلبات والحسابات. بتعمله مرة وحدة من Vercel:</p>
       <ol>
         <li>افتح <a href="https://vercel.com/dashboard/stores" target="_blank" rel="noreferrer">Vercel ← Storage <ExternalLink size={14} /></a>.</li>
         <li>اكبس <b>Create Database</b> ← اختار <b>Upstash</b> (Redis) ← الخطة المجانية <b>Free</b> ← <b>Create</b>.</li>
-        <li>بعدها اكبس <b>Connect Project</b> واختار <b>faei-website</b> ← <b>Connect</b>.</li>
+        <li>بعدها اكبس <b>Connect Project</b> واختار <b>مشروع الموقع</b> ← <b>Connect</b>.</li>
         <li>روح على المشروع ← <b>Deployments</b> ← على آخر واحد ⋯ ← <b>Redeploy</b>.</li>
       </ol>
       <button type="button" className="admin-primary" onClick={onRetry}>عملتها، جرّب</button>
@@ -103,8 +104,8 @@ function Login({ onDone }: { onDone: (session: Session) => void }) {
   }
   return (
     <main className="admin-login">
-      <img src="/images/faei-logo.webp" alt="FAEI" />
-      <h1>لوحة إدارة FAEI</h1>
+      <img src={BRAND.images.logo} alt={BRAND.name} />
+      <h1>لوحة إدارة {BRAND.name}</h1>
       <form className="admin-stack" onSubmit={submit}>
         <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="اليوزر" dir="ltr" autoComplete="username" autoCapitalize="none" data-testid="input-username" />
         <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="الباسوورد" type="password" dir="ltr" autoComplete="current-password" data-testid="input-password" />
@@ -133,7 +134,7 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
   }
   return (
     <main className="admin-login">
-      <img src="/images/faei-logo.webp" alt="FAEI" />
+      <img src={BRAND.images.logo} alt={BRAND.name} />
       <h1>أول مرة: جهّز اللوحة</h1>
       <p>هاد بتعمله مرة وحدة بس. بعدها الدخول بيصير باليوزر والباسوورد من أي جهاز.</p>
       <form className="admin-stack" onSubmit={submit}>
@@ -324,7 +325,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
   return (
     <div className="admin-app">
       <header className="admin-top">
-        {me.role === 'v8' ? <img src="/images/v8/v8-logo.webp" alt="V8" className="admin-v8-logo" /> : <img src="/images/faei-logo.webp" alt="FAEI" />}
+        {me.role === 'v8' ? <img src="/images/v8/v8-logo.webp" alt="V8" className="admin-v8-logo" /> : <img src={BRAND.images.logo} alt={BRAND.name} />}
         <strong>لوحة الإدارة <small>{me.username} · {ROLE_NAMES[me.role]}</small></strong>
         <ThemeButton />
         <InstallPanel />
@@ -338,17 +339,17 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
           {isDev && <button type="button" className={tab === 'offer' ? 'is-active' : ''} onClick={() => setTab('offer')} data-testid="tab-offer"><Tag size={16} /> العرض</button>}
           <button type="button" className={tab === 'sales' ? 'is-active' : ''} onClick={() => setTab('sales')} data-testid="tab-sales"><BarChart3 size={16} /> المبيعات</button>
           {isDev && <button type="button" className={tab === 'customers' ? 'is-active' : ''} onClick={() => setTab('customers')} data-testid="tab-customers"><Contact size={16} /> الزباين</button>}
-          {isDev && <button type="button" className={tab === 'v8' ? 'is-active' : ''} onClick={() => setTab('v8')} data-testid="tab-v8"><Coffee size={16} /> V8</button>}
+          {isDev && BRAND.innerShop && <button type="button" className={tab === 'v8' ? 'is-active' : ''} onClick={() => setTab('v8')} data-testid="tab-v8"><Coffee size={16} /> V8</button>}
         </>}
         <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
       <main className="admin-shell">
-        {tab === 'orders' && <Orders live={live} showSales={isAdmin} showV8={isDev} />}
+        {tab === 'orders' && <Orders live={live} showSales={isAdmin} showV8={isDev && BRAND.innerShop} />}
         {tab === 'items' && (menu ? (isDev
           ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} />
           : <Items menu={menu} photos={photos} onToggle={(id) => void quickToggle(id)} switching={switching} />) : menuState)}
         {tab === 'offer' && (offer ? <OfferForm offer={offer} onChange={setOffer} /> : menuState)}
-        {tab === 'sales' && <Sales session={token} showV8={isDev} products={menu?.products ?? []} />}
+        {tab === 'sales' && <Sales session={token} showV8={isDev && BRAND.innerShop} products={menu?.products ?? []} />}
         {tab === 'customers' && <Customers session={token} />}
         {isDev && v8Opened && <div hidden={tab !== 'v8'}><V8Editor session={token} onLogout={onLogout} /></div>}
         {tab === 'accounts' && <Accounts me={me} />}
@@ -743,7 +744,7 @@ function InstallPanel() {
       <div className="admin-sheet-back" onClick={() => setSteps(false)}>
         <div className="admin-install-sheet" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
           <img src="/admin-icon-192.png" alt="" />
-          <h3>نزّل لوحة FAEI كتطبيق</h3>
+          <h3>نزّل لوحة {BRAND.name} كتطبيق</h3>
           {ios ? <ol>
             <li>افتح اللوحة من <b>سفاري</b></li>
             <li>اكبس زر <b>المشاركة</b></li>
@@ -753,7 +754,7 @@ function InstallPanel() {
             <li>اكبس <b>⋮</b> فوق</li>
             <li>اختار <b>تثبيت التطبيق</b> أو <b>إضافة إلى الشاشة الرئيسية</b></li>
           </ol>}
-          <p>بتطلع أيقونة "لوحة FAEI" لحالها، غير أيقونة الموقع، وبتفتح عالطلبات مباشرة.</p>
+          <p>بتطلع أيقونة "لوحة {BRAND.name}" لحالها، غير أيقونة الموقع، وبتفتح عالطلبات مباشرة.</p>
           <button type="button" className="admin-primary" onClick={() => setSteps(false)}>تمام</button>
         </div>
       </div>
@@ -838,7 +839,7 @@ function useOrders(session: string, onLogout: () => void): Live {
   }, []);
 
   const waiting = (orders ?? []).filter((order) => order.status === 'جديد').length;
-  useEffect(() => { document.title = waiting ? `(${waiting}) طلب جديد · FAEI` : 'لوحة FAEI'; }, [waiting]);
+  useEffect(() => { document.title = waiting ? `(${waiting}) طلب جديد · ${BRAND.name}` : `لوحة ${BRAND.name}`; }, [waiting]);
 
   async function setStatus(ref: string, status: string) {
     setOrders((current) => current && current.map((order) => (order.ref === ref ? { ...order, status } : order)));
@@ -870,7 +871,7 @@ function ShopSwitch({ shop, onChange, counts }: { shop: Shop; onChange: (shop: S
     <div className="admin-shops" role="tablist">
       {(['faei', 'v8'] as const).map((name) => (
         <button key={name} type="button" role="tab" aria-selected={shop === name} className={shop === name ? 'is-active' : ''} onClick={() => onChange(name)} data-testid={`shop-${name}`}>
-          {name === 'faei' ? 'فَيّ' : 'V8'}{counts && counts[name] > 0 && <i className="admin-badge">{counts[name]}</i>}
+          {name === 'faei' ? BRAND.nameAr : 'V8'}{counts && counts[name] > 0 && <i className="admin-badge">{counts[name]}</i>}
         </button>
       ))}
     </div>
@@ -1005,7 +1006,7 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
         {order.extras && <li className="admin-order-extras">{order.shop === 'v8' ? 'ملاحظات' : 'من الكافتيريا'}: {order.extras}</li>}
       </ul>
       <dl>
-        {order.phone && <div><dt>التلفون</dt><dd><a href={`https://wa.me/962${order.phone.replace(/^0/, '')}?text=${encodeURIComponent(`مرحبا، بخصوص طلبك رقم ${order.id} من ${order.shop === 'v8' ? 'V8' : 'FAEI'}`)}`} target="_blank" rel="noreferrer" className="admin-phone" dir="ltr" data-testid="link-customer-whatsapp"><MessageCircle size={13} /> {order.phone} · واتساب</a></dd></div>}
+        {order.phone && <div><dt>التلفون</dt><dd><a href={`https://wa.me/962${order.phone.replace(/^0/, '')}?text=${encodeURIComponent(`مرحبا، بخصوص طلبك رقم ${order.id} من ${order.shop === 'v8' ? 'V8' : BRAND.name}`)}`} target="_blank" rel="noreferrer" className="admin-phone" dir="ltr" data-testid="link-customer-whatsapp"><MessageCircle size={13} /> {order.phone} · واتساب</a></dd></div>}
         <div><dt>الاستلام</dt><dd>{order.fulfillment}{order.address ? ` · ${order.address}` : ''}</dd></div>
         <div><dt>الوقت</dt><dd>{order.time}</dd></div>
         <div><dt>الدفع</dt><dd className={order.payment === 'كليك' ? 'is-cliq' : ''}>{order.payment === 'كليك' ? 'كليك (تأكد من التحويل)' : order.payment}</dd></div>
@@ -1223,7 +1224,7 @@ function Customers({ session }: { session: string }) {
             <small>الفائز 🎉</small>
             <b dir="ltr">{winner.phone}</b>
             <span>{winner.orders} {winner.orders === 1 ? "طلب" : "طلبات"} · آخر طلب {dateText(winner.last)}</span>
-            <a className="admin-primary" href={whatsappTo(winner.phone, 'مبروك! 🎉 ربحت بسحب فَيّ. تعال استلم جائزتك من الكافتيريا 🙌')} target="_blank" rel="noreferrer"><MessageCircle size={16} /> بشّره عالواتساب</a>
+            <a className="admin-primary" href={whatsappTo(winner.phone, `مبروك! 🎉 ربحت بسحب ${BRAND.nameAr}. تعال استلم جائزتك من الكافتيريا 🙌`)} target="_blank" rel="noreferrer"><MessageCircle size={16} /> بشّره عالواتساب</a>
           </div>
         )}
       </section>
@@ -1254,7 +1255,7 @@ function Customers({ session }: { session: string }) {
                   {customer.items && Object.keys(customer.items).length > 0 && (
                     <p><b>بيحب:</b> {Object.entries(customer.items).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, count]) => `${name} (${count})`).join('، ')}</p>
                   )}
-                  <a className="admin-primary" href={whatsappTo(customer.phone, 'مرحبا من FAEI 👋')} target="_blank" rel="noreferrer"><MessageCircle size={15} /> احكي معه عالواتساب</a>
+                  <a className="admin-primary" href={whatsappTo(customer.phone, `مرحبا من ${BRAND.name} 👋`)} target="_blank" rel="noreferrer"><MessageCircle size={15} /> احكي معه عالواتساب</a>
                 </div>
               )}
             </li>
@@ -1297,7 +1298,7 @@ function Accounts({ me }: { me: Session }) {
       {isDev && (
         <section className="admin-card">
           <h2>الحسابات</h2>
-          <p className="admin-hint"><b>موظف</b>: طلبات فَيّ بس. <b>موظف V8</b>: طلبات V8 بس. <b>إدارة</b>: الطلبات، وتسكير وفتح الأصناف، والمبيعات. <b>مطوّر</b>: كل إشي، ومعه تعديل وإضافة وحذف الأصناف والعرض والحسابات.</p>
+          <p className="admin-hint"><b>موظف</b>: طلبات {BRAND.nameAr} بس. <b>موظف V8</b>: طلبات V8 بس. <b>إدارة</b>: الطلبات، وتسكير وفتح الأصناف، والمبيعات. <b>مطوّر</b>: كل إشي، ومعه تعديل وإضافة وحذف الأصناف والعرض والحسابات.</p>
           <ul className="admin-users">
             {users.map((user) => (
               <li key={user.username}>
@@ -1419,12 +1420,12 @@ function V8Editor({ session, onLogout }: { session: string; onLogout: () => void
       <section className="admin-card admin-v8">
         <h2><img src="/images/v8/v8-logo.webp" alt="" /> V8 Coffee To Go</h2>
         <p className="admin-hint">{launchAt && Date.now() < launchAt
-          ? `مخفي عن الزباين لحد ${new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', weekday: 'long', day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(launchAt))}. إنت بتشوفه إذا فتحت الموقع مرة وحدة من هالرابط: faei-website.vercel.app/?v8`
+          ? `مخفي عن الزباين لحد ${new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', weekday: 'long', day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(launchAt))}. إنت بتشوفه إذا فتحت الموقع مرة وحدة من هالرابط: ${BRAND.siteUrl.replace(/^https?:\/\//, '')}/?v8`
           : 'ظاهر عالموقع للكل.'}</p>
         <label className="admin-field">رقم واتساب V8 (طلباتهم بتروح عليه)
           <input value={menu.whatsapp ?? ''} onChange={(event) => update((current) => ({ ...current, whatsapp: event.target.value.trim() }))} inputMode="tel" dir="ltr" placeholder="07XXXXXXXX" data-testid="v8-whatsapp" />
         </label>
-        {!menu.whatsapp && <p className="admin-note">لحد ما تحط رقم، طلبات V8 بتروح على واتساب فَيّ.</p>}
+        {!menu.whatsapp && <p className="admin-note">لحد ما تحط رقم، طلبات V8 بتروح على واتساب {BRAND.nameAr}.</p>}
       </section>
       <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={move} />
       {(dirty || state !== 'idle') && (
