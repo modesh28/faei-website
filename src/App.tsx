@@ -3,6 +3,7 @@ import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, E
 import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
 import V8Section, { v8Products, v8Visible } from './V8';
+import galleryData from '../public/gallery.json';
 import { useTheme } from './theme';
 import { BRAND, CLOSE_MINUTES, OPEN_MINUTES, timeInWords, type GalleryPhoto } from './brand';
 
@@ -38,7 +39,9 @@ type Offer = { show: boolean; title: string; text: string; productId?: string; o
 const DEFAULT_OFFER: Offer = { show: false, title: '', text: '' };
 
 // Photos for the gallery (files in public/images, listed in brand.json). size: big = 2x2, tall = 1x2, normal = 1x1.
-const GALLERY: GalleryPhoto[] = BRAND.gallery;
+// The carousel photos live in public/gallery.json so the developer can change them from /admin.
+const GALLERY: GalleryPhoto[] = galleryData.photos.length ? (galleryData.photos as GalleryPhoto[]) : BRAND.gallery;
+const GALLERY_TITLE = galleryData.title || BRAND.galleryTitle;
 
 // "Add to home screen". One button for everyone: it installs directly where the browser
 // allows it (Chrome on Android), and otherwise opens short steps for this phone's browser.
@@ -1076,7 +1079,7 @@ function App() {
           <nav className={`nav-links${mobileNavOpen ? ' is-open' : ''}`} aria-label="التنقل الرئيسي">
             <a href="#home" onClick={() => setMobileNavOpen(false)}>الرئيسية</a>
             <a href="#menu" onClick={() => setMobileNavOpen(false)}>المنيو</a>
-            <a href="#gallery" onClick={() => setMobileNavOpen(false)}>{BRAND.galleryTitle}</a>
+            <a href="#gallery" onClick={() => setMobileNavOpen(false)}>{GALLERY_TITLE}</a>
             <a href="#contact" onClick={() => { setMobileNavOpen(false); setWayOpen(true); }}>وين إحنا</a>
           </nav>
           <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'} title={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'} data-testid="button-theme">
@@ -1167,7 +1170,7 @@ function App() {
         <section className="section gallery-section" id="gallery" aria-labelledby="gallery-title">
           <div className="faei-shell">
             <div className="section-head">
-              <div><h2 id="gallery-title">{BRAND.galleryTitle}</h2></div>
+              <div><h2 id="gallery-title">{GALLERY_TITLE}</h2></div>
             </div>
           </div>
           <GalleryCarousel />

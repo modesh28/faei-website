@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Coffee, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Coffee, Images, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
 import { useTheme } from '../theme';
@@ -155,7 +155,7 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
   );
 }
 
-type Tab = 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'v8' | 'accounts';
+type Tab = 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'gallery' | 'v8' | 'accounts';
 
 function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void; onRole: (role: Role) => void }) {
   const token = me.session;
@@ -338,6 +338,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
           <button type="button" className={tab === 'items' ? 'is-active' : ''} onClick={() => setTab('items')} data-testid="tab-items"><UtensilsCrossed size={16} /> الأصناف</button>
           {isDev && <button type="button" className={tab === 'offer' ? 'is-active' : ''} onClick={() => setTab('offer')} data-testid="tab-offer"><Tag size={16} /> العرض</button>}
           <button type="button" className={tab === 'sales' ? 'is-active' : ''} onClick={() => setTab('sales')} data-testid="tab-sales"><BarChart3 size={16} /> المبيعات</button>
+          {isDev && <button type="button" className={tab === 'gallery' ? 'is-active' : ''} onClick={() => setTab('gallery')} data-testid="tab-gallery"><Images size={16} /> الصور</button>}
           {isDev && <button type="button" className={tab === 'customers' ? 'is-active' : ''} onClick={() => setTab('customers')} data-testid="tab-customers"><Contact size={16} /> الزباين</button>}
           {isDev && BRAND.innerShop && <button type="button" className={tab === 'v8' ? 'is-active' : ''} onClick={() => setTab('v8')} data-testid="tab-v8"><Coffee size={16} /> V8</button>}
         </>}
@@ -351,6 +352,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         {tab === 'offer' && (offer ? <OfferForm offer={offer} onChange={setOffer} /> : menuState)}
         {tab === 'sales' && <Sales session={token} showV8={isDev && BRAND.innerShop} products={menu?.products ?? []} />}
         {tab === 'customers' && <Customers session={token} />}
+        {isDev && tab === 'gallery' && <GalleryEditor session={token} onLogout={onLogout} />}
         {isDev && v8Opened && <div hidden={tab !== 'v8'}><V8Editor session={token} onLogout={onLogout} /></div>}
         {tab === 'accounts' && <Accounts me={me} />}
       </main>
@@ -1455,6 +1457,153 @@ function V8Editor({ session, onLogout }: { session: string; onLogout: () => void
           }}
           onDelete={editing.id && menu.products.some((item) => item.id === editing.id) ? () => { update((current) => ({ ...current, products: current.products.filter((item) => item.id !== editing.id) })); setEditing(null); } : undefined}
         />
+      )}
+    </>
+  );
+}
+
+// Developer only: the photos in the site's carousel (public/gallery.json). Add, replace, reorder,
+// caption or remove them; one save commits the list and any new photos together.
+const GALLERY_PATH = 'public/gallery.json';
+type GalleryPhoto = { src: string; alt: string; caption: string; position?: string; size?: 'big' | 'tall' };
+type Gallery = { title: string; photos: GalleryPhoto[] };
+
+// Keeps the photo's own shape, longest side at most 1400px, as webp.
+async function prepareGalleryPhoto(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = reject;
+      element.src = url;
+    });
+    const scale = Math.min(1, 1400 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(image.naturalWidth * scale);
+    canvas.height = Math.round(image.naturalHeight * scale);
+    canvas.getContext('2d')!.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const webp = canvas.toDataURL('image/webp', 0.82);
+    return webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', 0.85);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function GalleryEditor({ session, onLogout }: { session: string; onLogout: () => void }) {
+  const [gallery, setGallery] = useState<Gallery | null>(null);
+  const [saved, setSaved] = useState({ text: '', sha: '' });
+  // New photos waiting to be saved: site path → data URL.
+  const [uploads, setUploads] = useState<Record<string, string>>({});
+  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [error, setError] = useState('');
+  const pick = useRef<{ index: number | null }>({ index: null });
+  const fileRef = useRef<HTMLInputElement>(null);
+  async function load() {
+    setError('');
+    try {
+      const file = await readJson<Gallery>(session, GALLERY_PATH);
+      setGallery(file.data);
+      setSaved({ text: stringify(file.data), sha: file.sha });
+      setUploads({});
+    } catch (problem) {
+      if (problem instanceof GitHubError && problem.status === 401) onLogout();
+      else setError('ما قدرنا نجيب الصور. تأكد من النت وجرّب كمان مرة.');
+    }
+  }
+  useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const dirty = !!gallery && stringify(gallery) !== saved.text;
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+  if (!gallery) return error ? <><p className="admin-error">{error}</p><button type="button" className="admin-primary" onClick={() => void load()}>جرّب كمان مرة</button></> : <p className="admin-loading">لحظة، عم نجيب الصور…</p>;
+
+  const update = (patch: (current: Gallery) => Gallery) => { setGallery((current) => current && patch(current)); setState('idle'); };
+  const setPhoto = (index: number, patch: Partial<GalleryPhoto>) => update((current) => ({ ...current, photos: current.photos.map((photo, at) => (at === index ? { ...photo, ...patch } : photo)) }));
+  function move(index: number, direction: -1 | 1) {
+    update((current) => {
+      const photos = [...current.photos];
+      const to = index + direction;
+      if (to < 0 || to >= photos.length) return current;
+      [photos[index], photos[to]] = [photos[to], photos[index]];
+      return { ...current, photos };
+    });
+  }
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    const data = await prepareGalleryPhoto(file);
+    const path = `/images/gallery/photo-${Date.now().toString(36)}.${data.startsWith('data:image/webp') ? 'webp' : 'jpg'}`;
+    setUploads((current) => ({ ...current, [path]: data }));
+    const index = pick.current.index;
+    if (index === null) update((current) => ({ ...current, photos: [...current.photos, { src: path, alt: `صورة من ${BRAND.name}`, caption: '' }] }));
+    else setPhoto(index, { src: path, position: undefined });
+  }
+  function choose(index: number | null) {
+    pick.current.index = index;
+    if (fileRef.current) { fileRef.current.value = ''; fileRef.current.click(); }
+  }
+  async function save() {
+    if (!gallery || state === 'saving') return;
+    if (gallery.photos.length < 3) { setState('error'); setError('خلّي 3 صور على الأقل عشان الشريط يطلع حلو.'); return; }
+    setState('saving');
+    try {
+      if (await fileSha(session, GALLERY_PATH) !== saved.sha) { setState('error'); setError('في حدا ثاني عدّل الصور من جهاز ثاني. حدّث الصفحة وأعد تعديلك.'); return; }
+      const clean: Gallery = { ...gallery, photos: gallery.photos.map((photo) => { const next = { ...photo }; if (!next.position) delete next.position; return next; }) };
+      const text = stringify(clean);
+      const files: NewFile[] = [{ path: GALLERY_PATH, text }];
+      Object.entries(uploads).forEach(([path, data]) => {
+        if (clean.photos.some((photo) => photo.src === path)) files.push({ path: `public${path}`, base64: data.split(',')[1] });
+      });
+      await commitFiles(session, files, 'تعديل صور الموقع من لوحة الإدارة');
+      setGallery(clean);
+      setSaved({ text, sha: await fileSha(session, GALLERY_PATH) });
+      setUploads({});
+      setState('saved');
+    } catch (problem) {
+      if (problem instanceof GitHubError && problem.status === 401) { onLogout(); return; }
+      setState('error');
+      setError('ما انحفظ. تأكد من النت وجرّب كمان مرة.');
+    }
+  }
+  return (
+    <>
+      <section className="admin-card">
+        <h2><Images size={18} /> صور الموقع</h2>
+        <p className="admin-hint">هدول الصور اللي بتلف بالشريط تحت المنيو. رتّبهم بالأسهم، غيّر الصورة أو الكلام اللي عليها، أو ضيف صور جديدة.</p>
+        <label className="admin-field">عنوان القسم
+          <input value={gallery.title} onChange={(event) => update((current) => ({ ...current, title: event.target.value }))} data-testid="gallery-title" />
+        </label>
+      </section>
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={(event) => void onFile(event.target.files?.[0])} data-testid="gallery-file" />
+      <div className="admin-gallery">
+        {gallery.photos.map((photo, index) => (
+          <article key={`${photo.src}-${index}`} className="admin-gallery-item" data-testid={`gallery-item-${index}`}>
+            <img src={uploads[photo.src] ?? photo.src} alt="" style={{ objectPosition: photo.position ?? 'center' }} />
+            <div className="admin-gallery-body">
+              <label className="admin-field">الكلام اللي على الصورة
+                <input value={photo.caption} onChange={(event) => setPhoto(index, { caption: event.target.value })} maxLength={60} data-testid={`gallery-caption-${index}`} />
+              </label>
+              <div className="admin-gallery-actions">
+                <button type="button" className="admin-ghost-dark" onClick={() => move(index, -1)} disabled={index === 0} aria-label="لقدّام"><ArrowUp size={16} /></button>
+                <button type="button" className="admin-ghost-dark" onClick={() => move(index, 1)} disabled={index === gallery.photos.length - 1} aria-label="لورا"><ArrowDown size={16} /></button>
+                <button type="button" className="admin-ghost-dark" onClick={() => choose(index)} data-testid={`gallery-replace-${index}`}><Camera size={16} /> غيّر الصورة</button>
+                <button type="button" className="admin-ghost-dark is-danger" onClick={() => { if (confirm('تشيل هاي الصورة؟')) update((current) => ({ ...current, photos: current.photos.filter((_, at) => at !== index) })); }} aria-label="شيل الصورة" data-testid={`gallery-remove-${index}`}><Trash2 size={16} /></button>
+              </div>
+            </div>
+          </article>
+        ))}
+        <button type="button" className="admin-gallery-add" onClick={() => choose(null)} data-testid="gallery-add"><Plus size={22} /> ضيف صورة</button>
+      </div>
+      {(dirty || state !== 'idle') && (
+        <div className={`admin-savebar is-${state === 'saved' ? 'live-wait' : state}`} data-testid="gallery-savebar">
+          {state === 'saving' ? <span>عم نحفظ…</span>
+            : state === 'saved' && !dirty ? <><span>انحفظ ✅ بيظهر عالموقع خلال دقيقة تقريباً</span><button type="button" onClick={() => setState('idle')} aria-label="سكّر"><X size={16} /></button></>
+            : state === 'error' ? <><span>{error}</span><button type="button" className="admin-primary" onClick={() => void save()}>جرّب كمان مرة</button></>
+            : <><span>عندك تعديلات على الصور ما انحفظت</span><button type="button" className="admin-primary" onClick={() => void save()} data-testid="gallery-save">نزّل عالموقع</button></>}
+        </div>
       )}
     </>
   );

@@ -310,3 +310,15 @@ a { color: inherit; }
 .admin-chips-list li { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--soft); font-size: 13.5px; font-weight: 700; }
 .admin-chips-list small { font-weight: 400; color: var(--muted); font-size: 11.5px; }
 .admin-card[data-testid="rush-hours"] .admin-days li { grid-template-columns: 70px 1fr 40px; }
+
+/* Gallery editor (dev): one card per carousel photo. */
+.admin-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 12px; }
+.admin-gallery-item { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.admin-gallery-item > img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; background: var(--soft); }
+.admin-gallery-body { padding: 10px 12px 12px; display: grid; gap: 8px; }
+.admin-gallery-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.admin-gallery-actions button { padding: 7px 10px; font-size: 13px; }
+.admin-gallery-actions button:disabled { opacity: .35; }
+.admin-gallery-actions .is-danger { color: var(--red); margin-inline-start: auto; }
+.admin-gallery-add { min-height: 220px; display: grid; place-content: center; justify-items: center; gap: 8px; border: 2px dashed var(--line); border-radius: 14px; background: transparent; color: var(--muted); font-weight: 700; font-size: 15px; cursor: pointer; }
+.admin-gallery-add:hover { border-color: var(--ink); color: var(--ink); }
