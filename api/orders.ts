@@ -9,6 +9,7 @@
 //   GET   /api/orders?ref=…    a customer's phone asks for its order's status (public, status only)
 //   GET   /api/orders?version  a number that changes with every order or status change (public),
 //                              so the admin page only downloads the list when something changed
+//   GET   /api/orders?busy     whether FAEI is swamped right now (public), so the site shows "rush hour" outside 11–1 too
 //   GET   /api/orders?popular  the most ordered FAEI items of the last 14 days (public), for the "الأكثر طلباً" badge
 //   GET   /api/orders          the admin page lists recent orders (needs a signed-in account)
 //   PATCH /api/orders          the admin page changes an order's status (needs a signed-in admin)
@@ -21,6 +22,10 @@ let lastVersion = { value: 0, at: 0 };
 // The most ordered items change slowly, so one count serves everyone for ten minutes.
 let lastPopular = { names: [] as string[], at: 0 };
 const POPULAR_TOP = 4;
+// "Busy" = this many FAEI orders still open (new or being made), or arrived in the last 20 minutes.
+const BUSY_OPEN = 6;
+const BUSY_RECENT = 6;
+let lastBusy = { busy: false, at: 0 };
 const POPULAR_MIN = 3;
 
 // Kept 35 days, so the sales page can show the last few weeks.
@@ -122,6 +127,30 @@ async function popular(): Promise<Response> {
   return new Response(JSON.stringify({ names: lastPopular.names }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' } });
 }
 
+async function busy(): Promise<Response> {
+  if (Date.now() - lastBusy.at > 30_000) {
+    const [refs] = await redis([['LRANGE', 'orders', 0, 59]]) as [string[]];
+    let open = 0;
+    let recent = 0;
+    if (refs.length) {
+      const [values] = await redis([['MGET', ...refs.map((item) => `order:${item}`)]]) as [(string | null)[]];
+      const since = Date.now() - 20 * 60_000;
+      const stale = Date.now() - 90 * 60_000;
+      for (const value of values) {
+        if (!value) continue;
+        const order = JSON.parse(value) as { shop?: string; status?: string; createdAt?: number };
+        if (order.shop === 'v8' || order.status === 'ملغي') continue;
+        const created = order.createdAt ?? 0;
+        // Orders nobody closed for hours don't count, so a forgotten card doesn't keep the site "busy".
+        if ((order.status === 'جديد' || order.status === 'عم يتحضّر') && created > stale) open += 1;
+        if (created > since) recent += 1;
+      }
+    }
+    lastBusy = { busy: open >= BUSY_OPEN || recent >= BUSY_RECENT, at: Date.now() };
+  }
+  return new Response(JSON.stringify({ busy: lastBusy.busy }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
+}
+
 export async function GET(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
   const params = new URL(request.url).searchParams;
@@ -132,6 +161,7 @@ export async function GET(request: Request): Promise<Response> {
     return json({ version: lastVersion.value });
   }
   if (params.has('popular')) return popular();
+  if (params.has('busy')) return busy();
   const ref = params.get('ref');
   if (ref !== null) {
     if (!validRef(ref)) return json({ error: 'bad-ref' }, 400);

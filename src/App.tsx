@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Tag, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Moon, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Sun, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
 import V8Section, { v8Products, v8Visible } from './V8';
+import { useTheme } from './theme';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
@@ -322,13 +323,30 @@ function readActiveOrder(): ActiveOrder | null {
     return Date.now() < expires ? order : null;
   } catch { return null; }
 }
-// Rush hour at FAEI: 11:00–13:00 Jordan time, Sunday–Thursday. Orders take longer then.
+// Rush hour at FAEI: whenever the server sees a pile of orders (useLiveBusy below), at any time of day.
+// Orders take a little longer then.
 const PEAK_EXTRA_MINUTES = 5;
+let liveBusy = false;
 function isPeakNow(date = new Date()): boolean {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
-  const minutes = Number(get('hour')) * 60 + Number(get('minute'));
-  return isOpenNow(date) && minutes >= 660 && minutes < 780;
+  return liveBusy && isOpenNow(date);
+}
+// Asks the server every minute (while the page is on screen) whether FAEI is swamped right now.
+function useLiveBusy() {
+  const [, setBusy] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState !== 'visible' || !isOpenNow()) return;
+      fetch('/api/orders?busy').then((response) => (response.ok ? response.json() : null)).then((data: { busy?: boolean } | null) => {
+        if (typeof data?.busy !== 'boolean') return;
+        liveBusy = data.busy;
+        setBusy(data.busy);
+      }).catch(() => {});
+    };
+    check();
+    const timer = window.setInterval(check, 60_000);
+    document.addEventListener('visibilitychange', check);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', check); };
+  }, []);
 }
 // 15 minutes, a minute more for each piece after the second, at most 25; delivery adds 10; rush hour adds 5.
 function estimateReadyAt(pieces: number, delivery: boolean, time: string | null): number {
@@ -703,6 +721,8 @@ function usePopularNames(): Set<string> {
 function App() {
   const [cart, setCart] = useState<CartEntry[]>(readCart);
   const popularNames = usePopularNames();
+  const [theme, toggleTheme] = useTheme();
+  useLiveBusy();
   // Opening a shared group-order link adds its items to this phone's cart once.
   useEffect(() => {
     const shared = readSharedCart();
@@ -1078,6 +1098,9 @@ function App() {
             <a href="#gallery" onClick={() => setMobileNavOpen(false)}>قعدة الفَيّ</a>
             <a href="#contact" onClick={() => { setMobileNavOpen(false); setWayOpen(true); }}>وين إحنا</a>
           </nav>
+          <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'} title={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'} data-testid="button-theme">
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <button className="cart-trigger" type="button" onClick={openCart} aria-label={`افتح السلة، ${itemCount} صنف`} data-testid="button-open-cart">
             <ShoppingBag size={18} aria-hidden="true" /><span className="cart-label">السلة</span><span className="cart-count" data-testid="text-cart-count">{itemCount}</span>
           </button>
@@ -1315,7 +1338,7 @@ function App() {
               {isDelivery && <div className="subtotal-row"><span>التوصيل</span><span data-testid="text-delivery-fee">{!isDelivery ? 'بدون (استلام)' : zone === 'inside' ? money(deliveryFils) : 'بنتفق عليه'}</span></div>}
               {hasExtras && <div className="subtotal-row"><span>من الكافتيريا</span><span>بيتأكد على واتساب</span></div>}
               <div className="total-row"><span>الإجمالي</span><strong data-testid="text-cart-total">{money(grandTotalFils)}</strong></div>
-              {isPeakNow() && <p className="peak-note" data-testid="peak-note">🔥 هسه وقت الذروة بفَيّ (11 لـ 1). الطلبات كثير، فممكن طلبك يتأخر شوي. شكراً على صبرك 🙏</p>}
+              {isPeakNow() && <p className="peak-note" data-testid="peak-note">🔥 هسه وقت ذروة بفَيّ والطلبات كثير، فممكن طلبك يتأخر شوي. شكراً على صبرك 🙏</p>}
               {!isOpenNow() && <p className="closed-note" data-testid="closed-note">إحنا مسكّرين هسه وبنفتح {nextOpenText()}. بتقدر تبعت طلبك هسه، وبنرد عليك أول ما نفتح.</p>}
               {recentOrder && (
                 <div className="replace-box" data-testid="replace-box">

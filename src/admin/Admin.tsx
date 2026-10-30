@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Coffee, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, LogOut, MessageCircle, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Coffee, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
+import { useTheme } from '../theme';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
 
 const SESSION_STORAGE = 'faei-admin-session';
@@ -325,6 +326,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
       <header className="admin-top">
         {me.role === 'v8' ? <img src="/images/v8/v8-logo.webp" alt="V8" className="admin-v8-logo" /> : <img src="/images/faei-logo.webp" alt="FAEI" />}
         <strong>لوحة الإدارة <small>{me.username} · {ROLE_NAMES[me.role]}</small></strong>
+        <ThemeButton />
         <InstallPanel />
         <a href="/" target="_blank" rel="noreferrer" className="admin-ghost" aria-label="الموقع"><span>الموقع</span> <ExternalLink size={14} /></a>
         <button type="button" className="admin-ghost" onClick={() => { if (!dirty || confirm('في تعديلات ما انحفظت. أكيد بدك تطلع؟')) onLogout(); }} aria-label="تسجيل خروج"><LogOut size={16} /></button>
@@ -346,7 +348,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
           ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} />
           : <Items menu={menu} photos={photos} onToggle={(id) => void quickToggle(id)} switching={switching} />) : menuState)}
         {tab === 'offer' && (offer ? <OfferForm offer={offer} onChange={setOffer} /> : menuState)}
-        {tab === 'sales' && <Sales session={token} showV8={isDev} />}
+        {tab === 'sales' && <Sales session={token} showV8={isDev} products={menu?.products ?? []} />}
         {tab === 'customers' && <Customers session={token} />}
         {isDev && v8Opened && <div hidden={tab !== 'v8'}><V8Editor session={token} onLogout={onLogout} /></div>}
         {tab === 'accounts' && <Accounts me={me} />}
@@ -710,6 +712,11 @@ function ring() {
   navigator.vibrate?.([300, 120, 300]);
 }
 
+function ThemeButton() {
+  const [theme, toggle] = useTheme();
+  return <button type="button" className="admin-ghost admin-theme" onClick={toggle} aria-label={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'} title={theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'} data-testid="button-theme">{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}</button>;
+}
+
 // "Install the panel": its own icon on the phone or computer, opening straight on the orders.
 // Chrome / Edge / Samsung install directly; iPhone needs Share → Add to Home Screen.
 type InstallEvent = Event & { prompt: () => Promise<void> };
@@ -875,6 +882,8 @@ function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; s
   const [, tick] = useState(0);
   const [showDone, setShowDone] = useState(false);
   const [shop, setShop] = useState<Shop>('faei');
+  const [view, setViewState] = useState<'list' | 'board'>(() => (read(VIEW_KEY) === 'board' ? 'board' : 'list'));
+  const setView = (next: 'list' | 'board') => { write(VIEW_KEY, next); setViewState(next); };
   useEffect(() => { const timer = window.setInterval(() => tick((n) => n + 1), 30_000); return () => window.clearInterval(timer); }, []);
   if (live.orders === null) return <>{live.error ? <p className="admin-error">{live.error}</p> : <p className="admin-loading">لحظة، عم نجيب الطلبات…</p>}</>;
   const all = live.orders;
@@ -895,10 +904,19 @@ function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; s
         <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هسه</em></div>
         {showSales && <div><small>مبيعات اليوم</small><b>{todays.reduce((sum, order) => sum + order.total, 0).toFixed(2)} د.أ</b><em>بدون الملغي</em></div>}
       </div>
-      {!active.length && <p className="admin-empty">ما في طلبات مفتوحة هسه. أول ما يوصل طلب بيطلع هون. 👌</p>}
-      <div className="admin-orders-grid">
-        {active.map((order) => <OrderCard key={order.ref} order={order} fresh={live.fresh.has(order.ref)} onStatus={(status) => void live.setStatus(order.ref, status)} />)}
+      <div className="admin-view" role="tablist">
+        <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'is-active' : ''} onClick={() => setView('list')} data-testid="view-list"><List size={15} /> قائمة</button>
+        <button type="button" role="tab" aria-selected={view === 'board'} className={view === 'board' ? 'is-active' : ''} onClick={() => setView('board')} data-testid="view-board"><Columns3 size={15} /> شاشة المطبخ</button>
+        {view === 'board' && document.fullscreenEnabled && <button type="button" className="admin-view-full" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen().catch(() => {}); }} aria-label="ملء الشاشة"><Maximize size={15} /></button>}
       </div>
+      {view === 'board'
+        ? <Board orders={active} fresh={live.fresh} onStatus={(ref, status) => void live.setStatus(ref, status)} />
+        : <>
+          {!active.length && <p className="admin-empty">ما في طلبات مفتوحة هسه. أول ما يوصل طلب بيطلع هون. 👌</p>}
+          <div className="admin-orders-grid">
+            {active.map((order) => <OrderCard key={order.ref} order={order} fresh={live.fresh.has(order.ref)} onStatus={(status) => void live.setStatus(order.ref, status)} />)}
+          </div>
+        </>}
       {done.length > 0 && (
         <section className="admin-card">
           <button type="button" className="admin-link" onClick={() => setShowDone(!showDone)}>{showDone ? 'خبّي' : 'شوف'} اللي خلصوا اليوم ({done.length})</button>
@@ -906,6 +924,67 @@ function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; s
         </section>
       )}
     </>
+  );
+}
+
+// Kitchen screen: three columns (new, preparing, ready). A card moves with its button, or by dragging
+// it by its top bar into another column (works with a finger on a tablet and with a mouse).
+const VIEW_KEY = 'faei-admin-view';
+const COLUMNS = [
+  { status: 'جديد', title: 'جديد', next: 'عم يتحضّر', action: 'بلّش تحضير' },
+  { status: 'عم يتحضّر', title: 'عم يتحضّر', next: 'جاهز', action: 'جاهز ✅' },
+  { status: 'جاهز', title: 'جاهز', next: 'تم', action: 'استلمه 👍' },
+];
+type Drag = { ref: string; from: string; x: number; y: number; dx: number; dy: number; width: number; moved: boolean; over: string | null };
+function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<string>; onStatus: (ref: string, status: string) => void }) {
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const columnAt = (x: number, y: number) => (document.elementFromPoint(x, y)?.closest('[data-column]') as HTMLElement | null)?.dataset.column ?? null;
+  function down(event: React.PointerEvent<HTMLElement>, order: LiveOrder) {
+    if (event.button !== 0) return;
+    const card = (event.currentTarget.closest('.admin-kcard') as HTMLElement).getBoundingClientRect();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDrag({ ref: order.ref, from: order.status, x: event.clientX, y: event.clientY, dx: event.clientX - card.left, dy: event.clientY - card.top, width: card.width, moved: false, over: null });
+  }
+  function move(event: React.PointerEvent<HTMLElement>) {
+    if (!drag) return;
+    const moved = drag.moved || Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 8;
+    setDrag({ ...drag, x: event.clientX, y: event.clientY, moved, over: moved ? columnAt(event.clientX, event.clientY) : null });
+  }
+  function up() {
+    if (drag?.moved && drag.over && drag.over !== drag.from) onStatus(drag.ref, drag.over);
+    setDrag(null);
+  }
+  return (
+    <div className="admin-board" data-testid="kitchen-board">
+      {COLUMNS.map((column) => {
+        const list = orders.filter((order) => order.status === column.status).sort((a, b) => a.createdAt - b.createdAt);
+        return (
+          <section key={column.status} className={`admin-col is-${COLUMNS.indexOf(column)}${drag?.moved && drag.over === column.status && drag.from !== column.status ? ' is-over' : ''}`} data-column={column.status}>
+            <h2>{column.title} <i>{list.length}</i></h2>
+            {!list.length && <p className="admin-col-empty">{column.status === 'جديد' ? 'ما في طلبات جديدة' : 'فاضي'}</p>}
+            {list.map((order) => {
+              const dragging = drag?.ref === order.ref && drag.moved;
+              const late = order.status !== 'جاهز' && Date.now() - order.createdAt > 20 * 60_000;
+              return (
+                <article key={order.ref} className={`admin-kcard${fresh.has(order.ref) ? ' is-fresh' : ''}${late ? ' is-late' : ''}${dragging ? ' is-dragging' : ''}`} data-testid={`kcard-${order.ref}`}
+                  style={dragging ? { position: 'fixed', zIndex: 80, width: drag.width, left: drag.x - drag.dx, top: drag.y - drag.dy } : undefined}>
+                  <header onPointerDown={(event) => down(event, order)} onPointerMove={move} onPointerUp={up} onPointerCancel={() => setDrag(null)}>
+                    <GripVertical size={16} aria-hidden="true" />
+                    <b dir="ltr">#{order.id}</b>
+                    {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
+                    <span className="admin-order-time">{ago(order.createdAt)}</span>
+                  </header>
+                  <ul>{order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}</ul>
+                  {order.extras && <p className="admin-kcard-extras">{order.extras}</p>}
+                  <p className="admin-kcard-meta">{order.fulfillment}{order.address ? ` · ${order.address}` : ''}{order.time && order.time !== 'بأسرع وقت' ? ` · ${order.time}` : ''}{order.payment === 'كليك' ? ' · كليك' : ''}</p>
+                  <button type="button" className={column.next === 'جاهز' ? 'admin-green' : 'admin-primary'} onClick={() => onStatus(order.ref, column.next)} data-testid={`kcard-next-${order.ref}`}>{column.action}</button>
+                </article>
+              );
+            })}
+          </section>
+        );
+      })}
+    </div>
   );
 }
 
@@ -942,9 +1021,42 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
   );
 }
 
-function Sales({ session, showV8 }: { session: string; showV8: boolean }) {
+// Rush hours (orders per hour and per weekday, last 14 days) and "sleeping" items: on the menu and
+// switched on, but nobody ordered them from the site in the last 7 days.
+const WEEKDAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const hourText = (hour: number) => `${hour > 12 ? hour - 12 : hour}${hour < 12 ? 'ص' : 'م'}`;
+function rushAndSleepers(valid: LiveOrder[], products: Product[], weekCounts: Map<string, number>, weekOrders: number) {
+  const since = Date.now() - 14 * 86_400_000;
+  const parts = (time: number) => {
+    const values = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', weekday: 'short', hour: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(time));
+    const get = (type: string) => values.find((part) => part.type === type)?.value ?? '';
+    return { hour: Number(get('hour')), day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday')) };
+  };
+  const byHour = new Map<number, number>();
+  const byDay = new Map<number, number>();
+  let hoursCount = 0;
+  for (const order of valid) {
+    if (order.createdAt < since) continue;
+    const { hour, day } = parts(order.createdAt);
+    byHour.set(hour, (byHour.get(hour) ?? 0) + 1);
+    byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    hoursCount += 1;
+  }
+  // Opening hours 7:30–17:00, plus any hour that actually had orders.
+  const first = Math.min(7, ...byHour.keys());
+  const last = Math.max(16, ...byHour.keys());
+  const hours: [number, number][] = [];
+  for (let hour = first; hour <= last; hour += 1) hours.push([hour, byHour.get(hour) ?? 0]);
+  const best = hours.reduce((top, entry) => (entry[1] > top[1] ? entry : top), [-1, 0] as [number, number]);
+  const weekdays = [0, 1, 2, 3, 4, 5, 6].filter((day) => day <= 4 || byDay.has(day)).map((day) => [WEEKDAYS[day], byDay.get(day) ?? 0] as [string, number]);
+  const sleepers = products.filter((product) => product.available !== false && !weekCounts.has(product.name));
+  return { hours, hoursCount, topHour: best[1] > 0 ? best[0] : null, weekdays, sleepers, fewOrders: weekOrders < 30 };
+}
+
+function Sales({ session, showV8, products }: { session: string; showV8: boolean; products: Product[] }) {
   const [all, setOrders] = useState<LiveOrder[] | null>(null);
   const [shop, setShop] = useState<Shop>('faei');
+  const [showAllSleepers, setShowAllSleepers] = useState(false);
   const orders = useMemo(() => all && (showV8 ? all.filter((order) => shopOf(order) === shop) : all), [all, shop, showV8]);
   useEffect(() => {
     fetch('/api/orders?limit=1000', { cache: 'no-store', headers: { Authorization: `Bearer ${session}` } })
@@ -969,8 +1081,9 @@ function Sales({ session, showV8 }: { session: string; showV8: boolean }) {
       cliq: sum(week.filter((order) => order.payment === 'كليك')),
       top: [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8),
       days: [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])),
+      ...rushAndSleepers(valid, shop === 'v8' ? [] : products, counts, week.length),
     };
-  }, [orders]);
+  }, [orders, products, shop]);
   if (orders === null) return <p className="admin-loading">لحظة…</p>;
   const most = Math.max(1, ...stats.days.map(([, total]) => total));
   return (
@@ -990,6 +1103,25 @@ function Sales({ session, showV8 }: { session: string; showV8: boolean }) {
         <section className="admin-card">
           <h2>الأكثر طلباً هالأسبوع</h2>
           <ol className="admin-top-list">{stats.top.map(([item, count]) => <li key={item}><span>{item}</span><b>{count}</b></li>)}</ol>
+        </section>
+      )}
+      {stats.hoursCount > 0 && (
+        <section className="admin-card" data-testid="rush-hours">
+          <h2>ساعات الضغط</h2>
+          <p className="admin-hint">كم طلب بيوصل بكل ساعة (آخر 14 يوم). {stats.topHour !== null && <>أكثر ساعة ضغط: <b>{hourText(stats.topHour)} – {hourText(stats.topHour + 1)}</b>.</>}</p>
+          <div className="admin-hours">{stats.hours.map(([hour, count]) => <div key={hour} className={hour === stats.topHour ? 'is-top' : ''}><b>{count || ''}</b><i style={{ height: `${(count / Math.max(1, ...stats.hours.map(([, c]) => c))) * 100}%` }} /><span>{hourText(hour)}</span></div>)}</div>
+          {stats.weekdays.some(([, count]) => count > 0) && <>
+            <h3>حسب اليوم</h3>
+            <ul className="admin-days">{stats.weekdays.map(([day, count]) => <li key={day}><span>{day}</span><i style={{ width: `${(count / Math.max(1, ...stats.weekdays.map(([, c]) => c))) * 100}%` }} /><b>{count}</b></li>)}</ul>
+          </>}
+        </section>
+      )}
+      {stats.sleepers.length > 0 && (
+        <section className="admin-card admin-sleepers" data-testid="sleeping-items">
+          <h2>أصناف نايمة 😴</h2>
+          <p className="admin-hint">{stats.sleepers.length} صنف ما انطلبوا من الموقع ولا مرة آخر 7 أيام. جرّب عليهم عرض، أو صورة أحلى، أو شيلهم من المنيو.{stats.fewOrders ? ' (لسا الطلبات قليلة، فالقائمة رح تصير أدق مع الوقت.)' : ''}</p>
+          <ul className="admin-chips-list">{stats.sleepers.slice(0, showAllSleepers ? undefined : 12).map((product) => <li key={product.id}>{product.name}<small>{product.category}</small></li>)}</ul>
+          {stats.sleepers.length > 12 && <button type="button" className="admin-link" onClick={() => setShowAllSleepers(!showAllSleepers)}>{showAllSleepers ? 'خبّي' : `شوف الكل (${stats.sleepers.length})`}</button>}
         </section>
       )}
       <p className="admin-hint">المبيعات من طلبات الموقع (بدون الملغي). كل طلب كمان بينسجل بشيت الطلبات زي قبل.</p>

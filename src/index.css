@@ -488,42 +488,40 @@
 .wayfinder-reveal { margin-top: 18px; animation: fade-in .3s ease; }
 
 /* 19. Dark mode: follows the phone's setting. Gold and blue stay as accents. */
-@media (prefers-color-scheme: dark) {
-  :root { color-scheme: dark; }
-  body { background: #0f1b25; color: #e8eef3; }
-  .faei-app { --paper: #0f1b25; color: #e8eef3; }
-  .faei-app h1, .faei-app h2, .faei-app h3 { color: #f1f5f8; }
-  .menu-section, .gallery-section, .contact-section, .about-section { background: #0f1b25 !important; }
-  .section-head p, .wayfinder-head p, .where-card p, .option-label, .reorder-row p span { color: #9fb0bf !important; }
-  .product-card, .reorder-row, .where-card, .wayfinder-steps li, .install-sheet, .cart-drawer, .drawer-foot, .location-card { background: #172633 !important; border-color: #2a3f52 !important; color: #e8eef3; }
-  .product-image { background: #1e3142; }
-  .option-list li + li, .option-row { border-color: #2a3f52 !important; }
-  .price, .reorder-row p strong, .cart-empty h3, .qty-control button, .install-sheet { color: #f1f5f8 !important; }
-  .search-input, .category-button, .segmented button, .order-field input, .extras-input, .sticky-cats button, .faei-app .where-map, .install-step-icon, .qty-control { background: #1e3142 !important; border-color: #2f4659 !important; color: #e8eef3 !important; }
-  .search-input::placeholder, .extras-input::placeholder, .order-field input::placeholder { color: #7f93a4; }
-  .category-button.is-active, .sticky-cats button.is-active, .segmented button.is-active, .segmented button[aria-pressed="true"] { background: #f4c542 !important; color: #182b3a !important; border-color: #f4c542 !important; }
-  .sticky-cats { background: #0f1b25; }
-  .menu-extras, .order-hint, .upgrade-button, .extras-banner { background: #2b2614 !important; border-color: #5a4a17 !important; color: #f4d77a !important; }
-  .closed-note, .install-sheet li, .cliq-box, .group-notice, .share-cart { background: #1e3142 !important; border-color: #2f4659 !important; color: #c9d6e1 !important; }
-  .share-cart, .install-copy { color: #6fb8ea !important; }
-  .suggest-chip { background: #1e3142 !important; border-color: #2f4659 !important; color: #e8eef3; }
-  .suggest-chip.is-added { background: #173226 !important; border-color: #2f9e5b !important; }
-  .where-toggle, .card-stepper { background: #f4c542; color: #182b3a; }
-  .card-stepper button { color: #182b3a; }
-  .card-stepper button:active { background: rgba(24,43,58,.12); }
-  .cart-bar { background: #f4c542; color: #182b3a; }
-  .cart-bar-count { background: #182b3a; color: #f4c542; }
-  .wayfinder-map-wrap { filter: brightness(.88); }
-  .carousel-item { box-shadow: 0 14px 34px rgba(0,0,0,.45); }
-  .product-card:hover { box-shadow: 0 16px 34px rgba(0,0,0,.4); }
-  .toast-message { background: #e8eef3; color: #182b3a; }
-  .icon-button, .wayfinder-steps strong, .about-facts strong, .extras-banner strong { color: #f1f5f8 !important; border-color: #2f4659 !important; }
-  .wayfinder-steps p { color: #9fb0bf !important; }
-  .carousel-arrow { background: #1e3142 !important; color: #f1f5f8 !important; }
-}
+  :root[data-theme="dark"] { color-scheme: dark; }
+  :root[data-theme="dark"] body { background: #0f1b25; color: #e8eef3; }
+  :root[data-theme="dark"] .faei-app { --paper: #0f1b25; color: #e8eef3; }
+  :root[data-theme="dark"] .faei-app h1, :root[data-theme="dark"] .faei-app h2, :root[data-theme="dark"] .faei-app h3 { color: #f1f5f8; }
+  :root[data-theme="dark"] .menu-section, :root[data-theme="dark"] .gallery-section, :root[data-theme="dark"] .contact-section, :root[data-theme="dark"] .about-section { background: #0f1b25 !important; }
+  :root[data-theme="dark"] .section-head p, :root[data-theme="dark"] .wayfinder-head p, :root[data-theme="dark"] .where-card p, :root[data-theme="dark"] .option-label, :root[data-theme="dark"] .reorder-row p span { color: #9fb0bf !important; }
+  :root[data-theme="dark"] .product-card, :root[data-theme="dark"] .reorder-row, :root[data-theme="dark"] .where-card, :root[data-theme="dark"] .wayfinder-steps li, :root[data-theme="dark"] .install-sheet, :root[data-theme="dark"] .cart-drawer, :root[data-theme="dark"] .drawer-foot, :root[data-theme="dark"] .location-card { background: #172633 !important; border-color: #2a3f52 !important; color: #e8eef3; }
+  :root[data-theme="dark"] .product-image { background: #1e3142; }
+  :root[data-theme="dark"] .option-list li + li, :root[data-theme="dark"] .option-row { border-color: #2a3f52 !important; }
+  :root[data-theme="dark"] .price, :root[data-theme="dark"] .reorder-row p strong, :root[data-theme="dark"] .cart-empty h3, :root[data-theme="dark"] .qty-control button, :root[data-theme="dark"] .install-sheet { color: #f1f5f8 !important; }
+  :root[data-theme="dark"] .search-input, :root[data-theme="dark"] .category-button, :root[data-theme="dark"] .segmented button, :root[data-theme="dark"] .order-field input, :root[data-theme="dark"] .extras-input, :root[data-theme="dark"] .sticky-cats button, :root[data-theme="dark"] .faei-app .where-map, :root[data-theme="dark"] .install-step-icon, :root[data-theme="dark"] .qty-control { background: #1e3142 !important; border-color: #2f4659 !important; color: #e8eef3 !important; }
+  :root[data-theme="dark"] .search-input::placeholder, :root[data-theme="dark"] .extras-input::placeholder, :root[data-theme="dark"] .order-field input::placeholder { color: #7f93a4; }
+  :root[data-theme="dark"] .category-button.is-active, :root[data-theme="dark"] .sticky-cats button.is-active, :root[data-theme="dark"] .segmented button.is-active, :root[data-theme="dark"] .segmented button[aria-pressed="true"] { background: #f4c542 !important; color: #182b3a !important; border-color: #f4c542 !important; }
+  :root[data-theme="dark"] .sticky-cats { background: #0f1b25; }
+  :root[data-theme="dark"] .menu-extras, :root[data-theme="dark"] .order-hint, :root[data-theme="dark"] .upgrade-button, :root[data-theme="dark"] .extras-banner { background: #2b2614 !important; border-color: #5a4a17 !important; color: #f4d77a !important; }
+  :root[data-theme="dark"] .closed-note, :root[data-theme="dark"] .install-sheet li, :root[data-theme="dark"] .cliq-box, :root[data-theme="dark"] .group-notice, :root[data-theme="dark"] .share-cart { background: #1e3142 !important; border-color: #2f4659 !important; color: #c9d6e1 !important; }
+  :root[data-theme="dark"] .share-cart, :root[data-theme="dark"] .install-copy { color: #6fb8ea !important; }
+  :root[data-theme="dark"] .suggest-chip { background: #1e3142 !important; border-color: #2f4659 !important; color: #e8eef3; }
+  :root[data-theme="dark"] .suggest-chip.is-added { background: #173226 !important; border-color: #2f9e5b !important; }
+  :root[data-theme="dark"] .where-toggle, :root[data-theme="dark"] .card-stepper { background: #f4c542; color: #182b3a; }
+  :root[data-theme="dark"] .card-stepper button { color: #182b3a; }
+  :root[data-theme="dark"] .card-stepper button:active { background: rgba(24,43,58,.12); }
+  :root[data-theme="dark"] .cart-bar { background: #f4c542; color: #182b3a; }
+  :root[data-theme="dark"] .cart-bar-count { background: #182b3a; color: #f4c542; }
+  :root[data-theme="dark"] .wayfinder-map-wrap { filter: brightness(.88); }
+  :root[data-theme="dark"] .carousel-item { box-shadow: 0 14px 34px rgba(0,0,0,.45); }
+  :root[data-theme="dark"] .product-card:hover { box-shadow: 0 16px 34px rgba(0,0,0,.4); }
+  :root[data-theme="dark"] .toast-message { background: #e8eef3; color: #182b3a; }
+  :root[data-theme="dark"] .icon-button, :root[data-theme="dark"] .wayfinder-steps strong, :root[data-theme="dark"] .about-facts strong, :root[data-theme="dark"] .extras-banner strong { color: #f1f5f8 !important; border-color: #2f4659 !important; }
+  :root[data-theme="dark"] .wayfinder-steps p { color: #9fb0bf !important; }
+  :root[data-theme="dark"] .carousel-arrow { background: #1e3142 !important; color: #f1f5f8 !important; }
 .reorder-empty { display: block; margin: 0 auto 10px; border: 1px solid rgba(24,43,58,.18); border-radius: 999px; background: #fff; color: #182b3a; font-weight: 800; font-size: 14px; padding: 10px 20px; }
 .sticky-cats:not(.is-shown) { visibility: hidden; }
-@media (prefers-color-scheme: dark) { .reorder-empty { background: #1e3142; color: #f1f5f8; border-color: #2f4659; } }
+:root[data-theme="dark"] .reorder-empty { background: #1e3142; color: #f1f5f8; border-color: #2f4659; }
 
 /* 20. Cart: order choices sit right under the items, one compact row each */
 .cart-content .compact-options { display: grid; grid-template-columns: 62px 1fr; align-items: center; column-gap: 10px; row-gap: 8px; margin: 12px 0 4px; padding: 12px; border: 1px solid #e3e0d7; border-radius: 14px; background: #fff; }
@@ -535,13 +533,13 @@
 .drawer-foot { padding-top: 12px !important; }
 .drawer-foot .drawer-actions { margin-bottom: 6px; }
 .closed-note { font-size: 12px; padding: 6px 10px; }
-@media (prefers-color-scheme: dark) { .cart-content .compact-options { background: #172633; border-color: #2a3f52; } .compact-options h3 { color: #9fb0bf; } }
+:root[data-theme="dark"] .cart-content .compact-options { background: #172633; border-color: #2a3f52; } :root[data-theme="dark"] .compact-options h3 { color: #9fb0bf; }
 .cart-line h3 { margin-bottom: 2px; }
 .line-controls { margin-top: 6px !important; }
 .line-controls .qty-control button { width: 30px; height: 30px; }
 @media (max-height: 720px) { .checkout-note { display: none; } }
 .discount-row { color: #1f8a4c !important; font-weight: 800; }
-@media (prefers-color-scheme: dark) { .discount-row { color: #5fd18f !important; } }
+:root[data-theme="dark"] .discount-row { color: #5fd18f !important; }
 
 /* 21. Lite mode for weak phones: no fades, scaling or press animations */
 .lite .product-image img { opacity: 1 !important; transform: none !important; transition: none !important; }
@@ -574,12 +572,12 @@
 .order-tracker-bar span { display: block; height: 100%; background: #f4c542; border-radius: inherit; transition: width 1s linear; }
 .order-tracker.is-ready .order-tracker-bar span { background: #2e9e5b; }
 .order-tracker-notify { margin-top: 10px; width: 100%; border: 0; border-radius: 10px; padding: 8px; background: #182b3a; color: #fff; font-weight: 700; font-size: 13px; }
-@media (prefers-color-scheme: dark) { .order-tracker { background: #16263a; color: #f2f2f2; border-color: rgba(255,255,255,.12); } .order-tracker.is-ready { background: #123222; } .order-tracker-bar { background: rgba(255,255,255,.12); } .order-tracker-notify { background: #f4c542; color: #182b3a; } }
+:root[data-theme="dark"] .order-tracker { background: #16263a; color: #f2f2f2; border-color: rgba(255,255,255,.12); } :root[data-theme="dark"] .order-tracker.is-ready { background: #123222; } :root[data-theme="dark"] .order-tracker-bar { background: rgba(255,255,255,.12); } :root[data-theme="dark"] .order-tracker-notify { background: #f4c542; color: #182b3a; }
 
 /* 24. Items switched off from the admin page */
 .product-card.is-unavailable .product-image, .product-card.is-unavailable h3, .product-card.is-unavailable .price { opacity: .45; filter: grayscale(1); }
 .unavailable-tag { margin-inline-start: auto; font-size: 12.5px; font-weight: 800; color: #9a3b2e; background: #fbe9e6; border-radius: 999px; padding: 5px 10px; white-space: nowrap; }
-@media (prefers-color-scheme: dark) { .unavailable-tag { background: #3a2220; color: #f2b8ad; } }
+:root[data-theme="dark"] .unavailable-tag { background: #3a2220; color: #f2b8ad; }
 
 /* 25. Admin preview frame draws the cards on a clear background */
 .preview-page { background: transparent; padding: 2px; overflow: visible; }
@@ -590,14 +588,14 @@
 .compact-options .phone-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(22,118,184,.12); }
 .compact-options .phone-input.is-wrong { border-color: #c0513f; }
 .compact-options h3 label { font: inherit; color: inherit; }
-@media (prefers-color-scheme: dark) { .compact-options .phone-input { background: #1e3142; border-color: #2f4659; color: #e8eef3; } }
+:root[data-theme="dark"] .compact-options .phone-input { background: #1e3142; border-color: #2f4659; color: #e8eef3; }
 
 /* 27. Send button: the site's gold, like the other main buttons */
 .faei-app .wa-button { min-height: 52px; justify-content: center; border-radius: 14px !important; background: var(--gold); color: var(--ink); font-size: 16px; font-weight: 800; box-shadow: 0 8px 18px rgba(244,197,66,.3); }
 .faei-app .wa-button:hover { background: #ecb92c; }
 .faei-app .wa-button:active { transform: scale(.98); }
 .faei-app .wa-button:disabled { background: #e4e1d8; color: #8a949a; box-shadow: none; opacity: 1; }
-@media (prefers-color-scheme: dark) { .faei-app .wa-button:disabled { background: #26394a; color: #7f93a4; } }
+:root[data-theme="dark"] .faei-app .wa-button:disabled { background: #26394a; color: #7f93a4; }
 
 /* 28. Categories: photo pills; on phones one row you swipe instead of a tall grid */
 .category-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
@@ -610,21 +608,21 @@
   .faei-app .category-button.is-all { padding: 4px 16px; }
   .faei-app .category-button.is-active { background: var(--ink); color: #fff; border-color: var(--ink); }
 }
-@media (prefers-color-scheme: dark) { .category-button img { box-shadow: 0 0 0 2px #1e3142; } }
+:root[data-theme="dark"] .category-button img { box-shadow: 0 0 0 2px #1e3142; }
 
 /* 29. Change or cancel a new order: small links at the top of the order card, away from thumbs */
 .order-tracker-change { display: flex; gap: 14px; justify-content: flex-start; margin: -2px 0 8px; padding-bottom: 8px; border-bottom: 1px dashed rgba(24,43,58,.15); }
 .order-tracker-change button { border: 0; background: none; padding: 2px 0; color: #1676b8; font-size: 12.5px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .order-tracker-change button.is-no { color: #b23b2a; }
 .order-tracker-error { margin: 0 0 8px; color: #b23b2a; font-size: 12.5px; }
-@media (prefers-color-scheme: dark) { .order-tracker-change button { color: #7cc2f0; } .order-tracker-change button.is-no { color: #f2a596; } }
+:root[data-theme="dark"] .order-tracker-change button { color: #7cc2f0; } :root[data-theme="dark"] .order-tracker-change button.is-no { color: #f2a596; }
 
 /* 30. Sending again soon after an order: replace it or add to it */
 .replace-box { margin: 0 0 10px; padding: 10px; border-radius: 12px; background: #fff7dc; border: 1px solid #efd98f; }
 .replace-box p { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #6b5a1d; }
 .replace-box .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0; }
 .replace-box .segmented button { min-height: 38px; font-size: 13px; }
-@media (prefers-color-scheme: dark) { .replace-box { background: #2a2617; border-color: #5c4d1d; } .replace-box p { color: #f0d98a; } }
+:root[data-theme="dark"] .replace-box { background: #2a2617; border-color: #5c4d1d; } :root[data-theme="dark"] .replace-box p { color: #f0d98a; }
 .compact-options .phone-note { grid-column: 2; margin: -4px 0 2px; font-size: 11px; color: #7b878e; }
 
 /* 31. Sub-section headings and small photo-less items (معجنات كبير / شامية) */
@@ -768,22 +766,25 @@ html.lite .v8-window { animation: none; }
 .faei-app .product-card.is-mini:hover { transform: none; }
 .faei-app .category-button.is-active img { box-shadow: 0 0 0 2px var(--accent-2); }
 
-@media (prefers-color-scheme: dark) {
-  .faei-app { --paper: #0d1720; }
-  body { background: #0d1720; }
-  .faei-app .product-card { background: #15222e !important; box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 10px 28px -10px rgba(0,0,0,.6); }
-  .faei-app .product-image { background: #1c2b39; }
-  .faei-app .add-button { background: #eef3f8; color: #0d1720; }
-  .faei-app .add-button:hover { background: var(--accent-2); color: #fff; }
-  .popular-badge { background: rgba(79,156,249,.16); color: #8cbcff; }
-  .faei-app .menu-extras { background: #15222e !important; border-color: #263a4c !important; color: #cfe0f1 !important; }
-  .category-button.is-active, .sticky-cats button.is-active, .segmented button.is-active, .segmented button[aria-pressed="true"] { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
-  .where-toggle, .card-stepper { background: var(--accent); color: #fff; }
-  .card-stepper button { color: #fff; }
-  .cart-bar { background: var(--accent); color: #fff; }
-  .cart-bar-count { background: #fff; color: var(--accent); }
-}
+  :root[data-theme="dark"] .faei-app { --paper: #0d1720; }
+  :root[data-theme="dark"] body { background: #0d1720; }
+  :root[data-theme="dark"] .faei-app .product-card { background: #15222e !important; box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 10px 28px -10px rgba(0,0,0,.6); }
+  :root[data-theme="dark"] .faei-app .product-image { background: #1c2b39; }
+  :root[data-theme="dark"] .faei-app .add-button { background: #eef3f8; color: #0d1720; }
+  :root[data-theme="dark"] .faei-app .add-button:hover { background: var(--accent-2); color: #fff; }
+  :root[data-theme="dark"] .popular-badge { background: rgba(79,156,249,.16); color: #8cbcff; }
+  :root[data-theme="dark"] .faei-app .menu-extras { background: #15222e !important; border-color: #263a4c !important; color: #cfe0f1 !important; }
+  :root[data-theme="dark"] .category-button.is-active, :root[data-theme="dark"] .sticky-cats button.is-active, :root[data-theme="dark"] .segmented button.is-active, :root[data-theme="dark"] .segmented button[aria-pressed="true"] { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
+  :root[data-theme="dark"] .where-toggle, :root[data-theme="dark"] .card-stepper { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .card-stepper button { color: #fff; }
+  :root[data-theme="dark"] .cart-bar { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .cart-bar-count { background: #fff; color: var(--accent); }
 
 /* 34. Rush hour (11–1): a note in the cart so customers expect a longer wait */
 .peak-note { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: #fff4e6; border: 1px solid #fed7aa; color: #9a3412; font-size: 12.5px; font-weight: 600; line-height: 1.6; }
-@media (prefers-color-scheme: dark) { .peak-note { background: #2a1d10; border-color: #5c3a17; color: #fdba74; } }
+:root[data-theme="dark"] .peak-note { background: #2a1d10; border-color: #5c3a17; color: #fdba74; }
+
+/* 35. Light / dark switch in the top bar */
+.theme-toggle { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border: 1px solid rgba(255,255,255,.22); border-radius: 12px; background: transparent; color: #fff; }
+.theme-toggle:hover { background: rgba(255,255,255,.08); }
+@media (min-width: 821px) { .theme-toggle { margin-inline-start: auto; } .theme-toggle + .cart-trigger { margin-inline-start: -20px !important; } }
