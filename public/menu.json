@@ -1,1456 +1,1432 @@
 {
-  "categories": [
-    "شاورما",
-    "برغر سماش",
-    "تشكن برغر",
-    "السناك",
-    "أجنحة",
-    "بوكس فَيّ",
-    "كساديا",
-    "بيتزا",
-    "كالزوني",
-    "مناقيش",
-    "ساندويش بارد",
-    "وجبات صحية",
-    "معجنات"
-  ],
-  "products": [
-    {
-      "id": "shawarma-sandwich",
-      "name": "ساندويش شاورما عادي",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 750
-        }
-      ],
-      "image": "/images/menu/shawarma-sandwich.webp"
-    },
-    {
-      "id": "shawarma-sandwich-super",
-      "name": "ساندويش شاورما سوبر",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1300
-        }
-      ],
-      "image": "/images/menu/shawarma-sandwich.webp"
-    },
-    {
-      "id": "shawarma-meal",
-      "name": "وجبة شاورما عادي",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/shawarma-meal.webp",
-      "popular": true
-    },
-    {
-      "id": "shawarma-meal-super",
-      "name": "وجبة شاورما سوبر",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/shawarma-meal.webp"
-    },
-    {
-      "id": "shawarma-meal-double",
-      "name": "وجبة شاورما دبل",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3450
-        }
-      ],
-      "image": "/images/menu/shawarma-meal.webp"
-    },
-    {
-      "id": "shawarma-shilla",
-      "name": "وجبة شلة",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 8000
-        }
-      ],
-      "image": "/images/menu/shawarma-meal.webp",
-      "popular": true
-    },
-    {
-      "id": "shawarma-toast",
-      "name": "وجبة شاورما توست",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/toast2.webp"
-    },
-    {
-      "id": "shawarma-italian",
-      "name": "وجبة شاورما إيطالي",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3500
-        }
-      ],
-      "image": "/images/menu/shawarma-italian.webp"
-    },
-    {
-      "id": "shawarma-halabi",
-      "name": "وجبة شاورما حلبي",
-      "category": "شاورما",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3500
-        }
-      ],
-      "image": "/images/menu/shawarma-halabi.webp"
-    },
-    {
-      "id": "smash-classic",
-      "name": "كلاسيك برغر",
-      "category": "برغر سماش",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2500
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/smash2.webp"
-    },
-    {
-      "id": "smash-cheese",
-      "name": "تشيز برغر",
-      "category": "برغر سماش",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2500
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/smash2.webp"
-    },
-    {
-      "id": "smash-hot-beef",
-      "name": "هوت بيف",
-      "category": "برغر سماش",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2500
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/smash2.webp"
-    },
-    {
-      "id": "smash-mushroom",
-      "name": "ماشروم برغر",
-      "category": "برغر سماش",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 3250
-        }
-      ],
-      "image": "/images/menu/smash2.webp"
-    },
-    {
-      "id": "smash-egg",
-      "name": "برغر بيض",
-      "category": "برغر سماش",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2500
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 3250
-        }
-      ],
-      "image": "/images/menu/smash2.webp"
-    },
-    {
-      "id": "chicken-grill",
-      "name": "جريل تشكن",
-      "category": "تشكن برغر",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2250
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/chicken2.webp"
-    },
-    {
-      "id": "chicken-honey-mayo",
-      "name": "هاني مايو",
-      "category": "تشكن برغر",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/chicken2.webp"
-    },
-    {
-      "id": "chicken-hot",
-      "name": "هوت تشيكن",
-      "category": "تشكن برغر",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/chicken2.webp"
-    },
-    {
-      "id": "hotdog-classic",
-      "name": "هوت دوغ كلاسيك",
-      "category": "تشكن برغر",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/hotdog.webp"
-    },
-    {
-      "id": "hotdog-faei",
-      "name": "هوت دوغ فَيّ",
-      "category": "تشكن برغر",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2250
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/hotdog.webp"
-    },
-    {
-      "id": "snack-fajita",
-      "name": "فاهيتا",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1250
-        },
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "تورتيلا",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة تورتيلا",
-          "priceFils": 2250
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "snack-alfredo",
-      "name": "ألفريدو",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1250
-        },
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "تورتيلا",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة تورتيلا",
-          "priceFils": 2250
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "snack-zinger",
-      "name": "زنجر",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1250
-        },
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "تورتيلا",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة تورتيلا",
-          "priceFils": 2250
-        }
-      ],
-      "image": "/images/menu/bbq2.webp",
-      "popular": true
-    },
-    {
-      "id": "snack-zinger-plus",
-      "name": "زنجر بلس +",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "تورتيلا",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة تورتيلا",
-          "priceFils": 2250
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "snack-zinger-bbq",
-      "name": "زنجر باربيكيو",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1250
-        },
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "تورتيلا",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة تورتيلا",
-          "priceFils": 2250
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "snack-escalope",
-      "name": "سكالوب",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "سوبر",
-          "priceFils": 1250
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/chicken2.webp"
-    },
-    {
-      "id": "snack-bbq",
-      "name": "باربيكيو",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1250
-        },
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "تورتيلا",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة تورتيلا",
-          "priceFils": 2250
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "snack-curry",
-      "name": "دجاج بالكاري",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1250
-        },
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "تورتيلا",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة تورتيلا",
-          "priceFils": 2250
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "snack-twister",
-      "name": "تويستر",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "سوبر",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "snack-shish",
-      "name": "شيش",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "تورتيلا",
-          "priceFils": 1750
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة تورتيلا",
-          "priceFils": 2250
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "snack-cordon-bleu",
-      "name": "كوردن بلو",
-      "category": "السناك",
-      "options": [
-        {
-          "label": "سوبر",
-          "priceFils": 1500
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/bbq2.webp"
-    },
-    {
-      "id": "box-zinger",
-      "name": "بوكس زنجر",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2000
-        },
-        {
-          "label": "كبير",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/boxes2.webp",
-      "popular": true
-    },
-    {
-      "id": "box-alfredo",
-      "name": "بوكس ألفريدو",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2250
-        },
-        {
-          "label": "كبير",
-          "priceFils": 3250
-        }
-      ],
-      "image": "/images/menu/boxes2.webp"
-    },
-    {
-      "id": "box-curry",
-      "name": "بوكس كاري",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2250
-        },
-        {
-          "label": "كبير",
-          "priceFils": 3250
-        }
-      ],
-      "image": "/images/menu/boxes2.webp"
-    },
-    {
-      "id": "box-shawarma",
-      "name": "بوكس شاورما",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2250
-        },
-        {
-          "label": "كبير",
-          "priceFils": 3250
-        }
-      ],
-      "image": "/images/menu/boxes2.webp"
-    },
-    {
-      "id": "box-mexican",
-      "name": "بوكس مكسيكي",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2250
-        },
-        {
-          "label": "كبير",
-          "priceFils": 3250
-        }
-      ],
-      "image": "/images/menu/boxes2.webp"
-    },
-    {
-      "id": "box-edman",
-      "name": "بوكس إدمان",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2000
-        },
-        {
-          "label": "كبير",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/boxes2.webp"
-    },
-    {
-      "id": "box-buffalo",
-      "name": "بوكس بافلو",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2250
-        },
-        {
-          "label": "كبير",
-          "priceFils": 3250
-        }
-      ],
-      "image": "/images/menu/boxes2.webp"
-    },
-    {
-      "id": "box-honey-mustard",
-      "name": "بوكس هاني ماسترد",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2250
-        },
-        {
-          "label": "كبير",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/boxes2.webp"
-    },
-    {
-      "id": "box-bbq",
-      "name": "بوكس باربكيو",
-      "category": "بوكس فَيّ",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 2250
-        },
-        {
-          "label": "كبير",
-          "priceFils": 3250
-        }
-      ],
-      "image": "/images/menu/boxes2.webp"
-    },
-    {
-      "id": "quesadilla-veggie",
-      "name": "كساديا خضار",
-      "category": "كساديا",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 1500
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2500
-        }
-      ],
-      "image": "/images/menu/quesadilla2.webp"
-    },
-    {
-      "id": "quesadilla-alfredo",
-      "name": "كساديا ألفريدو",
-      "category": "كساديا",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2500
-        }
-      ],
-      "image": "/images/menu/quesadilla2.webp"
-    },
-    {
-      "id": "quesadilla-bbq",
-      "name": "كساديا باربيكيو",
-      "category": "كساديا",
-      "options": [
-        {
-          "label": "ساندويش",
-          "priceFils": 2000
-        },
-        {
-          "label": "وجبة",
-          "priceFils": 2500
-        }
-      ],
-      "image": "/images/menu/quesadilla2.webp"
-    },
-    {
-      "id": "pizza-veggie",
-      "name": "بيتزا خضار",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-pepperoni",
-      "name": "بيتزا بيروني",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-salami",
-      "name": "بيتزا سلامي",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-turkey",
-      "name": "بيتزا تيركي",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-margherita",
-      "name": "بيتزا مارغاريتا",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-cheese-mix",
-      "name": "بيتزا مكس أجبان",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-shawarma",
-      "name": "بيتزا شاورما",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-four-seasons",
-      "name": "بيتزا الفصول الأربعة",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-alfredo",
-      "name": "بيتزا ألفريدو",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-fajita",
-      "name": "بيتزا فاهيتا",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-zinger",
-      "name": "بيتزا زنجر",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "pizza-faei",
-      "name": "بيتزا فَيّ",
-      "category": "بيتزا",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/pizza2.webp"
-    },
-    {
-      "id": "calzone-alfredo",
-      "name": "كالزوني ألفريدو",
-      "category": "كالزوني",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/calzone.webp"
-    },
-    {
-      "id": "calzone-fajita",
-      "name": "كالزوني فاهيتا",
-      "category": "كالزوني",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/calzone.webp"
-    },
-    {
-      "id": "calzone-mexican",
-      "name": "كالزوني مكسيكي",
-      "category": "كالزوني",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/calzone.webp"
-    },
-    {
-      "id": "calzone-zinger",
-      "name": "كالزوني زنجر",
-      "category": "كالزوني",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 3000
-        }
-      ],
-      "image": "/images/menu/calzone.webp"
-    },
-    {
-      "id": "manakish-cheese-mix",
-      "name": "مكس أجبان",
-      "category": "مناقيش",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1500
-        }
-      ],
-      "image": "/images/menu/cheese-mix.webp"
-    },
-    {
-      "id": "manakish-white-cheese",
-      "name": "جبنة بيضاء",
-      "category": "مناقيش",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1500
-        }
-      ],
-      "image": "/images/menu/cheese-mix.webp"
-    },
-    {
-      "id": "manakish-muhammara",
-      "name": "محمرة وموزريلا",
-      "category": "مناقيش",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1500
-        }
-      ],
-      "image": "/images/menu/manakeesh.webp"
-    },
-    {
-      "id": "manakish-salami",
-      "name": "سلامي",
-      "category": "مناقيش",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1500
-        }
-      ],
-      "image": "/images/menu/salami.webp"
-    },
-    {
-      "id": "manakish-zaatar",
-      "name": "زعتر",
-      "category": "مناقيش",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 750
-        }
-      ],
-      "image": "/images/menu/manakeesh.webp"
-    },
-    {
-      "id": "manakish-zaatar-cheese",
-      "name": "زعتر وجبنة",
-      "category": "مناقيش",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1500
-        }
-      ],
-      "image": "/images/menu/zaatar-cheese.webp"
-    },
-    {
-      "id": "manakish-turkey",
-      "name": "تيركي",
-      "category": "مناقيش",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1500
-        }
-      ],
-      "image": "/images/menu/manakish-turkey.webp"
-    },
-    {
-      "id": "cold-cheese-mix",
-      "name": "مكس أجبان",
-      "category": "ساندويش بارد",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1000
-        },
-        {
-          "label": "كبير",
-          "priceFils": 1250
-        }
-      ],
-      "image": "/images/menu/halloumi.webp"
-    },
-    {
-      "id": "cold-turkey",
-      "name": "تيركي",
-      "category": "ساندويش بارد",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 750
-        },
-        {
-          "label": "كبير",
-          "priceFils": 1000
-        }
-      ],
-      "image": "/images/menu/turkey.webp"
-    },
-    {
-      "id": "cold-turkey-cheese",
-      "name": "تيركي وجبنة",
-      "category": "ساندويش بارد",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1000
-        },
-        {
-          "label": "كبير",
-          "priceFils": 1250
-        }
-      ],
-      "image": "/images/menu/turkey.webp"
-    },
-    {
-      "id": "cold-halloumi",
-      "name": "حلوم",
-      "category": "ساندويش بارد",
-      "options": [
-        {
-          "label": "صغير",
-          "priceFils": 1000
-        },
-        {
-          "label": "كبير",
-          "priceFils": 1250
-        }
-      ],
-      "image": "/images/menu/halloumi.webp"
-    },
-    {
-      "id": "cold-zaatar",
-      "name": "ساندويش زعتر",
-      "category": "ساندويش بارد",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1500
-        }
-      ],
-      "image": "/images/menu/zaatar-sandwich.webp"
-    },
-    {
-      "id": "cold-white-cheese",
-      "name": "ساندويش جبنة بيضاء",
-      "category": "ساندويش بارد",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 1500
-        }
-      ],
-      "image": "/images/menu/halloumi.webp"
-    },
-    {
-      "id": "salad-caesar",
-      "name": "سيزر",
-      "category": "وجبات صحية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/salad-caesar.webp"
-    },
-    {
-      "id": "salad-rocket",
-      "name": "جرجير",
-      "category": "وجبات صحية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/salads2.webp"
-    },
-    {
-      "id": "salad-greek",
-      "name": "يونانية",
-      "category": "وجبات صحية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/salad-greek.webp"
-    },
-    {
-      "id": "salad-coleslaw",
-      "name": "كولسلو",
-      "category": "وجبات صحية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/salad-coleslaw.webp"
-    },
-    {
-      "id": "salad-nachos",
-      "name": "ناتشوز",
-      "category": "وجبات صحية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 2750
-        }
-      ],
-      "image": "/images/menu/nachos.webp"
-    },
-    {
-      "id": "wings-bbq",
-      "name": "أجنحة باربيكيو",
-      "category": "أجنحة",
-      "options": [
-        {
-          "label": "6 حبات",
-          "priceFils": 1500
-        },
-        {
-          "label": "10 حبات",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/wings-bbq.webp",
-      "alt": "أجنحة باربيكيو"
-    },
-    {
-      "id": "wings-buffalo",
-      "name": "أجنحة بافلو",
-      "category": "أجنحة",
-      "options": [
-        {
-          "label": "6 حبات",
-          "priceFils": 1500
-        },
-        {
-          "label": "10 حبات",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/wings-buffalo.webp",
-      "alt": "أجنحة بافلو"
-    },
-    {
-      "id": "wings-honey-mustard",
-      "name": "أجنحة عسل وخردل",
-      "category": "أجنحة",
-      "options": [
-        {
-          "label": "6 حبات",
-          "priceFils": 1500
-        },
-        {
-          "label": "10 حبات",
-          "priceFils": 2000
-        }
-      ],
-      "image": "/images/menu/wings-honey-mustard.webp",
-      "alt": "أجنحة عسل وخردل"
-    },
-    {
-      "id": "toast-turkey",
-      "name": "ساندويش توست تيركي",
-      "category": "وجبات صحية",
-      "options": [
-        {
-          "label": "توست أبيض",
-          "priceFils": 1750
-        },
-        {
-          "label": "توست أسمر",
-          "priceFils": 1750
-        }
-      ]
-    },
-    {
-      "id": "toast-halloumi",
-      "name": "ساندويش توست حلوم",
-      "category": "وجبات صحية",
-      "options": [
-        {
-          "label": "توست أبيض",
-          "priceFils": 1750
-        },
-        {
-          "label": "توست أسمر",
-          "priceFils": 1750
-        }
-      ]
-    },
-    {
-      "id": "pastry-faei",
-      "name": "بيتزا فَيّ",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 500
-        }
-      ]
-    },
-    {
-      "id": "pastry-shawarma",
-      "name": "بيتزا شاورما",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 500
-        }
-      ]
-    },
-    {
-      "id": "pastry-veg",
-      "name": "بيتزا خضار",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 500
-        }
-      ]
-    },
-    {
-      "id": "pastry-turkey",
-      "name": "بيتزا تركي",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 500
-        }
-      ]
-    },
-    {
-      "id": "pastry-salami",
-      "name": "بيتزا سلامي",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 500
-        }
-      ]
-    },
-    {
-      "id": "pastry-mix-cheese",
-      "name": "بيتزا ميكس أجبان",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 500
-        }
-      ]
-    },
-    {
-      "id": "pastry-margherita",
-      "name": "بيتزا مارغريتا",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 500
-        }
-      ]
-    },
-    {
-      "id": "pastry-mutabbaq-zaatar",
-      "name": "مطبق زعتر بلدي",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 500
-        }
-      ]
-    },
-    {
-      "id": "pastry-mutabbaq-escalope",
-      "name": "مطبق إسكالوب",
-      "category": "معجنات",
-      "section": "معجنات كبير",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 900
-        }
-      ]
-    },
-    {
-      "id": "sham-white-cheese",
-      "name": "جبنة بيضاء",
-      "category": "معجنات",
-      "section": "معجنات شامية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 350
-        }
-      ]
-    },
-    {
-      "id": "sham-oregano-cheese",
-      "name": "جبنة أوريجانو",
-      "category": "معجنات",
-      "section": "معجنات شامية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 350
-        }
-      ]
-    },
-    {
-      "id": "sham-halloumi",
-      "name": "جبنة حلوم",
-      "category": "معجنات",
-      "section": "معجنات شامية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 350
-        }
-      ]
-    },
-    {
-      "id": "sham-yellow-cheese",
-      "name": "جبنة صفراء",
-      "category": "معجنات",
-      "section": "معجنات شامية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 350
-        }
-      ]
-    },
-    {
-      "id": "sham-cheese-senyora",
-      "name": "جبنة صفراء وسنيورة",
-      "category": "معجنات",
-      "section": "معجنات شامية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 350
-        }
-      ]
-    },
-    {
-      "id": "sham-spinach",
-      "name": "سبانخ",
-      "category": "معجنات",
-      "section": "معجنات شامية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 350
-        }
-      ]
-    },
-    {
-      "id": "sham-potato",
-      "name": "بطاطا",
-      "category": "معجنات",
-      "section": "معجنات شامية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 350
-        }
-      ]
-    },
-    {
-      "id": "sham-sausage",
-      "name": "نقانق",
-      "category": "معجنات",
-      "section": "معجنات شامية",
-      "options": [
-        {
-          "label": "",
-          "priceFils": 350
-        }
-      ]
+ "categories": [
+  "شاورما",
+  "برغر سماش",
+  "تشكن برغر",
+  "السناك",
+  "أجنحة",
+  "بوكس فَيّ",
+  "كساديا",
+  "بيتزا",
+  "كالزوني",
+  "مناقيش",
+  "ساندويش بارد",
+  "وجبات صحية",
+  "معجنات"
+ ],
+ "products": [
+  {
+   "id": "shawarma-sandwich",
+   "name": "ساندويش شاورما عادي",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 750
     }
-  ]
+   ],
+   "image": "/images/menu/shawarma-sandwich.webp"
+  },
+  {
+   "id": "shawarma-sandwich-super",
+   "name": "ساندويش شاورما سوبر",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1300
+    }
+   ],
+   "image": "/images/menu/shawarma-sandwich.webp"
+  },
+  {
+   "id": "shawarma-meal",
+   "name": "وجبة شاورما عادي",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/shawarma-meal.webp",
+   "popular": true
+  },
+  {
+   "id": "shawarma-meal-super",
+   "name": "وجبة شاورما سوبر",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/shawarma-meal.webp"
+  },
+  {
+   "id": "shawarma-meal-double",
+   "name": "وجبة شاورما دبل",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3450
+    }
+   ],
+   "image": "/images/menu/shawarma-meal.webp"
+  },
+  {
+   "id": "shawarma-shilla",
+   "name": "وجبة شلة",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 8000
+    }
+   ],
+   "image": "/images/menu/shawarma-meal.webp",
+   "popular": true
+  },
+  {
+   "id": "shawarma-toast",
+   "name": "وجبة شاورما توست",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/toast2.webp"
+  },
+  {
+   "id": "shawarma-italian",
+   "name": "وجبة شاورما إيطالي",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3500
+    }
+   ],
+   "image": "/images/menu/shawarma-italian.webp"
+  },
+  {
+   "id": "shawarma-halabi",
+   "name": "وجبة شاورما حلبي",
+   "category": "شاورما",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3500
+    }
+   ],
+   "image": "/images/menu/shawarma-halabi.webp"
+  },
+  {
+   "id": "smash-classic",
+   "name": "كلاسيك برغر",
+   "category": "برغر سماش",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2500
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/smash2.webp"
+  },
+  {
+   "id": "smash-cheese",
+   "name": "تشيز برغر",
+   "category": "برغر سماش",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2500
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/smash2.webp"
+  },
+  {
+   "id": "smash-hot-beef",
+   "name": "هوت بيف",
+   "category": "برغر سماش",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2500
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/smash2.webp"
+  },
+  {
+   "id": "smash-mushroom",
+   "name": "ماشروم برغر",
+   "category": "برغر سماش",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 3250
+    }
+   ],
+   "image": "/images/menu/smash2.webp"
+  },
+  {
+   "id": "smash-egg",
+   "name": "برغر بيض",
+   "category": "برغر سماش",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2500
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 3250
+    }
+   ],
+   "image": "/images/menu/smash2.webp"
+  },
+  {
+   "id": "chicken-grill",
+   "name": "جريل تشكن",
+   "category": "تشكن برغر",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2250
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/chicken2.webp"
+  },
+  {
+   "id": "chicken-honey-mayo",
+   "name": "هاني مايو",
+   "category": "تشكن برغر",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/chicken2.webp"
+  },
+  {
+   "id": "chicken-hot",
+   "name": "هوت تشيكن",
+   "category": "تشكن برغر",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/chicken2.webp"
+  },
+  {
+   "id": "hotdog-classic",
+   "name": "هوت دوغ كلاسيك",
+   "category": "تشكن برغر",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/hotdog.webp"
+  },
+  {
+   "id": "hotdog-faei",
+   "name": "هوت دوغ فَيّ",
+   "category": "تشكن برغر",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2250
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/hotdog.webp"
+  },
+  {
+   "id": "snack-fajita",
+   "name": "فاهيتا",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1250
+    },
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "تورتيلا",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "snack-alfredo",
+   "name": "ألفريدو",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1250
+    },
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "تورتيلا",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "snack-zinger",
+   "name": "زنجر",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1250
+    },
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "تورتيلا",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
+    }
+   ],
+   "image": "/images/menu/bbq2.webp",
+   "popular": true
+  },
+  {
+   "id": "snack-zinger-plus",
+   "name": "زنجر بلس +",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "تورتيلا",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "snack-zinger-bbq",
+   "name": "زنجر باربيكيو",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1250
+    },
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "تورتيلا",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "snack-escalope",
+   "name": "سكالوب",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "سوبر",
+     "priceFils": 1250
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/chicken2.webp"
+  },
+  {
+   "id": "snack-bbq",
+   "name": "باربيكيو",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1250
+    },
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "تورتيلا",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "snack-curry",
+   "name": "دجاج بالكاري",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1250
+    },
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "تورتيلا",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "snack-twister",
+   "name": "تويستر",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "سوبر",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "snack-shish",
+   "name": "شيش",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "تورتيلا",
+     "priceFils": 1750
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة تورتيلا",
+     "priceFils": 2250
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "snack-cordon-bleu",
+   "name": "كوردن بلو",
+   "category": "السناك",
+   "options": [
+    {
+     "label": "سوبر",
+     "priceFils": 1500
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/bbq2.webp"
+  },
+  {
+   "id": "box-zinger",
+   "name": "بوكس زنجر",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2000
+    },
+    {
+     "label": "كبير",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/boxes2.webp",
+   "popular": true
+  },
+  {
+   "id": "box-alfredo",
+   "name": "بوكس ألفريدو",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2250
+    },
+    {
+     "label": "كبير",
+     "priceFils": 3250
+    }
+   ],
+   "image": "/images/menu/boxes2.webp"
+  },
+  {
+   "id": "box-curry",
+   "name": "بوكس كاري",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2250
+    },
+    {
+     "label": "كبير",
+     "priceFils": 3250
+    }
+   ],
+   "image": "/images/menu/boxes2.webp"
+  },
+  {
+   "id": "box-shawarma",
+   "name": "بوكس شاورما",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2250
+    },
+    {
+     "label": "كبير",
+     "priceFils": 3250
+    }
+   ],
+   "image": "/images/menu/boxes2.webp"
+  },
+  {
+   "id": "box-mexican",
+   "name": "بوكس مكسيكي",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2250
+    },
+    {
+     "label": "كبير",
+     "priceFils": 3250
+    }
+   ],
+   "image": "/images/menu/boxes2.webp"
+  },
+  {
+   "id": "box-edman",
+   "name": "بوكس إدمان",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2000
+    },
+    {
+     "label": "كبير",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/boxes2.webp"
+  },
+  {
+   "id": "box-buffalo",
+   "name": "بوكس بافلو",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2250
+    },
+    {
+     "label": "كبير",
+     "priceFils": 3250
+    }
+   ],
+   "image": "/images/menu/boxes2.webp"
+  },
+  {
+   "id": "box-honey-mustard",
+   "name": "بوكس هاني ماسترد",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2250
+    },
+    {
+     "label": "كبير",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/boxes2.webp"
+  },
+  {
+   "id": "box-bbq",
+   "name": "بوكس باربكيو",
+   "category": "بوكس فَيّ",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 2250
+    },
+    {
+     "label": "كبير",
+     "priceFils": 3250
+    }
+   ],
+   "image": "/images/menu/boxes2.webp"
+  },
+  {
+   "id": "quesadilla-veggie",
+   "name": "كساديا خضار",
+   "category": "كساديا",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 1500
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2500
+    }
+   ],
+   "image": "/images/menu/quesadilla2.webp"
+  },
+  {
+   "id": "quesadilla-alfredo",
+   "name": "كساديا ألفريدو",
+   "category": "كساديا",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2500
+    }
+   ],
+   "image": "/images/menu/quesadilla2.webp"
+  },
+  {
+   "id": "quesadilla-bbq",
+   "name": "كساديا باربيكيو",
+   "category": "كساديا",
+   "options": [
+    {
+     "label": "ساندويش",
+     "priceFils": 2000
+    },
+    {
+     "label": "وجبة",
+     "priceFils": 2500
+    }
+   ],
+   "image": "/images/menu/quesadilla2.webp"
+  },
+  {
+   "id": "pizza-veggie",
+   "name": "بيتزا خضار",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-pepperoni",
+   "name": "بيتزا بيروني",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-salami",
+   "name": "بيتزا سلامي",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-turkey",
+   "name": "بيتزا تيركي",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-margherita",
+   "name": "بيتزا مارغاريتا",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-cheese-mix",
+   "name": "بيتزا مكس أجبان",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-shawarma",
+   "name": "بيتزا شاورما",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-four-seasons",
+   "name": "بيتزا الفصول الأربعة",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-alfredo",
+   "name": "بيتزا ألفريدو",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-fajita",
+   "name": "بيتزا فاهيتا",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-zinger",
+   "name": "بيتزا زنجر",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "pizza-faei",
+   "name": "بيتزا فَيّ",
+   "category": "بيتزا",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/pizza2.webp"
+  },
+  {
+   "id": "calzone-alfredo",
+   "name": "كالزوني ألفريدو",
+   "category": "كالزوني",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/calzone.webp"
+  },
+  {
+   "id": "calzone-fajita",
+   "name": "كالزوني فاهيتا",
+   "category": "كالزوني",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/calzone.webp"
+  },
+  {
+   "id": "calzone-mexican",
+   "name": "كالزوني مكسيكي",
+   "category": "كالزوني",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/calzone.webp"
+  },
+  {
+   "id": "calzone-zinger",
+   "name": "كالزوني زنجر",
+   "category": "كالزوني",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 3000
+    }
+   ],
+   "image": "/images/menu/calzone.webp"
+  },
+  {
+   "id": "manakish-cheese-mix",
+   "name": "مكس أجبان",
+   "category": "مناقيش",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ],
+   "image": "/images/menu/cheese-mix.webp"
+  },
+  {
+   "id": "manakish-white-cheese",
+   "name": "جبنة بيضاء",
+   "category": "مناقيش",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ],
+   "image": "/images/menu/cheese-mix.webp"
+  },
+  {
+   "id": "manakish-muhammara",
+   "name": "محمرة وموزريلا",
+   "category": "مناقيش",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ],
+   "image": "/images/menu/manakeesh.webp"
+  },
+  {
+   "id": "manakish-salami",
+   "name": "سلامي",
+   "category": "مناقيش",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ],
+   "image": "/images/menu/salami.webp"
+  },
+  {
+   "id": "manakish-zaatar",
+   "name": "زعتر",
+   "category": "مناقيش",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 750
+    }
+   ],
+   "image": "/images/menu/manakeesh.webp"
+  },
+  {
+   "id": "manakish-zaatar-cheese",
+   "name": "زعتر وجبنة",
+   "category": "مناقيش",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ],
+   "image": "/images/menu/zaatar-cheese.webp"
+  },
+  {
+   "id": "manakish-turkey",
+   "name": "تيركي",
+   "category": "مناقيش",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ],
+   "image": "/images/menu/manakish-turkey.webp"
+  },
+  {
+   "id": "cold-cheese-mix",
+   "name": "مكس أجبان",
+   "category": "ساندويش بارد",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1000
+    },
+    {
+     "label": "كبير",
+     "priceFils": 1250
+    }
+   ],
+   "image": "/images/menu/halloumi.webp"
+  },
+  {
+   "id": "cold-turkey",
+   "name": "تيركي",
+   "category": "ساندويش بارد",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 750
+    },
+    {
+     "label": "كبير",
+     "priceFils": 1000
+    }
+   ],
+   "image": "/images/menu/turkey.webp"
+  },
+  {
+   "id": "cold-turkey-cheese",
+   "name": "تيركي وجبنة",
+   "category": "ساندويش بارد",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1000
+    },
+    {
+     "label": "كبير",
+     "priceFils": 1250
+    }
+   ],
+   "image": "/images/menu/turkey.webp"
+  },
+  {
+   "id": "cold-halloumi",
+   "name": "حلوم",
+   "category": "ساندويش بارد",
+   "options": [
+    {
+     "label": "صغير",
+     "priceFils": 1000
+    },
+    {
+     "label": "كبير",
+     "priceFils": 1250
+    }
+   ],
+   "image": "/images/menu/halloumi.webp"
+  },
+  {
+   "id": "cold-white-cheese",
+   "name": "ساندويش جبنة بيضاء",
+   "category": "ساندويش بارد",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 1500
+    }
+   ],
+   "image": "/images/menu/halloumi.webp"
+  },
+  {
+   "id": "salad-caesar",
+   "name": "سيزر",
+   "category": "وجبات صحية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/salad-caesar.webp"
+  },
+  {
+   "id": "salad-rocket",
+   "name": "جرجير",
+   "category": "وجبات صحية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/salads2.webp"
+  },
+  {
+   "id": "salad-greek",
+   "name": "يونانية",
+   "category": "وجبات صحية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/salad-greek.webp"
+  },
+  {
+   "id": "salad-coleslaw",
+   "name": "كولسلو",
+   "category": "وجبات صحية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/salad-coleslaw.webp"
+  },
+  {
+   "id": "salad-nachos",
+   "name": "ناتشوز",
+   "category": "وجبات صحية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 2750
+    }
+   ],
+   "image": "/images/menu/nachos.webp"
+  },
+  {
+   "id": "wings-bbq",
+   "name": "أجنحة باربيكيو",
+   "category": "أجنحة",
+   "options": [
+    {
+     "label": "6 حبات",
+     "priceFils": 1500
+    },
+    {
+     "label": "10 حبات",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/wings-bbq.webp",
+   "alt": "أجنحة باربيكيو"
+  },
+  {
+   "id": "wings-buffalo",
+   "name": "أجنحة بافلو",
+   "category": "أجنحة",
+   "options": [
+    {
+     "label": "6 حبات",
+     "priceFils": 1500
+    },
+    {
+     "label": "10 حبات",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/wings-buffalo.webp",
+   "alt": "أجنحة بافلو"
+  },
+  {
+   "id": "wings-honey-mustard",
+   "name": "أجنحة عسل وخردل",
+   "category": "أجنحة",
+   "options": [
+    {
+     "label": "6 حبات",
+     "priceFils": 1500
+    },
+    {
+     "label": "10 حبات",
+     "priceFils": 2000
+    }
+   ],
+   "image": "/images/menu/wings-honey-mustard.webp",
+   "alt": "أجنحة عسل وخردل"
+  },
+  {
+   "id": "toast-turkey",
+   "name": "ساندويش توست تيركي",
+   "category": "وجبات صحية",
+   "options": [
+    {
+     "label": "توست أبيض",
+     "priceFils": 1750
+    },
+    {
+     "label": "توست أسمر",
+     "priceFils": 1750
+    }
+   ]
+  },
+  {
+   "id": "toast-halloumi",
+   "name": "ساندويش توست حلوم",
+   "category": "وجبات صحية",
+   "options": [
+    {
+     "label": "توست أبيض",
+     "priceFils": 1750
+    },
+    {
+     "label": "توست أسمر",
+     "priceFils": 1750
+    }
+   ]
+  },
+  {
+   "id": "pastry-shawarma",
+   "name": "بيتزا شاورما",
+   "category": "معجنات",
+   "section": "معجنات كبير",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "pastry-veg",
+   "name": "بيتزا خضار",
+   "category": "معجنات",
+   "section": "معجنات كبير",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "pastry-turkey",
+   "name": "بيتزا تركي",
+   "category": "معجنات",
+   "section": "معجنات كبير",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "pastry-salami",
+   "name": "بيتزا سلامي",
+   "category": "معجنات",
+   "section": "معجنات كبير",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "pastry-mix-cheese",
+   "name": "بيتزا ميكس أجبان",
+   "category": "معجنات",
+   "section": "معجنات كبير",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "pastry-margherita",
+   "name": "بيتزا مارغريتا",
+   "category": "معجنات",
+   "section": "معجنات كبير",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "pastry-mutabbaq-zaatar",
+   "name": "مطبق زعتر بلدي",
+   "category": "معجنات",
+   "section": "معجنات كبير",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 500
+    }
+   ]
+  },
+  {
+   "id": "pastry-mutabbaq-escalope",
+   "name": "مطبق إسكالوب",
+   "category": "معجنات",
+   "section": "معجنات كبير",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 900
+    }
+   ]
+  },
+  {
+   "id": "sham-white-cheese",
+   "name": "جبنة بيضاء",
+   "category": "معجنات",
+   "section": "معجنات شامية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 350
+    }
+   ]
+  },
+  {
+   "id": "sham-oregano-cheese",
+   "name": "جبنة أوريجانو",
+   "category": "معجنات",
+   "section": "معجنات شامية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 350
+    }
+   ]
+  },
+  {
+   "id": "sham-halloumi",
+   "name": "جبنة حلوم",
+   "category": "معجنات",
+   "section": "معجنات شامية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 350
+    }
+   ]
+  },
+  {
+   "id": "sham-yellow-cheese",
+   "name": "جبنة صفراء",
+   "category": "معجنات",
+   "section": "معجنات شامية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 350
+    }
+   ]
+  },
+  {
+   "id": "sham-cheese-senyora",
+   "name": "جبنة صفراء وسنيورة",
+   "category": "معجنات",
+   "section": "معجنات شامية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 350
+    }
+   ]
+  },
+  {
+   "id": "sham-spinach",
+   "name": "سبانخ",
+   "category": "معجنات",
+   "section": "معجنات شامية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 350
+    }
+   ]
+  },
+  {
+   "id": "sham-potato",
+   "name": "بطاطا",
+   "category": "معجنات",
+   "section": "معجنات شامية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 350
+    }
+   ]
+  },
+  {
+   "id": "sham-sausage",
+   "name": "نقانق",
+   "category": "معجنات",
+   "section": "معجنات شامية",
+   "options": [
+    {
+     "label": "",
+     "priceFils": 350
+    }
+   ]
+  }
+ ]
 }
