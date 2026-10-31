@@ -541,6 +541,8 @@ function mealUpgrade(id: string): { id: string; extraFils: number } | undefined 
 const SUGGESTED_IDS = ['salad-coleslaw::0'];
 // With V8 drinks only, the FAEI food suggested is turkey: one toast, one regular sandwich.
 const V8_FOOD_IDS = ['toast-turkey::0', 'cold-turkey::0'];
+// Short names so the suggestion chips stay small.
+const SUGGEST_NAMES: Record<string, string> = { 'toast-turkey::0': 'ساندويش توست', 'cold-turkey::0': 'تيركي' };
 // Drinks from the shop's own fridge. No fixed prices, so they go into the extras note.
 const SHOP_DRINKS = BRAND.fridge.drinks;
 
@@ -1290,7 +1292,7 @@ function App() {
                     {suggestions.map((line) => (
                       <button key={line.id} type="button" className="suggest-chip" onClick={() => addProduct(line.product, Number(line.id.split('::')[1]))} data-testid={`button-suggest-${line.id}`}>
                         {line.product.image && <img src={line.product.image} alt="" loading="lazy" />}
-                        <span><strong>{line.name}</strong><small>{money(line.option.priceFils)}</small></span>
+                        <span><strong>{SUGGEST_NAMES[line.id] ?? line.name}</strong><small>{money(line.option.priceFils)}</small></span>
                         <Plus size={16} aria-hidden="true" />
                       </button>
                     ))}

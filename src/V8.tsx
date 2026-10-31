@@ -291,7 +291,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
           <div className="v8-extras" aria-label="بتكمّل طلبك؟">
             <span>بتكمّل طلبك؟</span>
             <div>
-              {turkeyToast && <button type="button" onClick={() => { const entries = cart; setCart([]); onMoveToFaei(entries); }} data-testid="v8-extra-toast">🥪 ساندويش تيركي من {BRAND.nameAr}</button>}
+              {turkeyToast && <button type="button" onClick={() => { const entries = cart; setCart([]); onMoveToFaei(entries); }} data-testid="v8-extra-toast">🥪 تيركي من {BRAND.nameAr}</button>}
               {V8_EXTRAS.map((extra) => {
                 const parts = notes.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
                 const added = parts.includes(extra.name);
