@@ -20,6 +20,8 @@ const DELIVERY_FILS = BRAND.delivery.insideFils;
 
 // V8's items can also ride along in FAEI's cart (one order, one delivery fee).
 export const v8Products: Product[] = v8.products;
+// "بتكمّل طلبك؟" inside V8 suggests only V8's own small extras (never FAEI food). No fixed price: they go in the notes.
+export const V8_EXTRAS = [{ name: 'كوكيز', emoji: '🍪' }, { name: 'مي', emoji: '💧' }];
 
 type Entry = { id: string; quantity: number };
 
@@ -274,10 +276,6 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
       {!joined && checkout && count > 0 && (
         <section className="v8-cart" aria-label="سلة V8">
           <header><b>سلة V8</b><button type="button" onClick={() => setCheckout(false)} aria-label="رجوع للمنيو"><X size={18} /></button></header>
-          <button type="button" className="v8-to-faei" onClick={() => { const entries = cart; setCart([]); onMoveToFaei(entries); }} data-testid="v8-to-faei">
-            <b>بدك كمان أكل من {BRAND.nameAr}؟</b>
-            <span>انقل سلة V8 لسلة {BRAND.nameAr} وكمّل طلبك هناك: طلب واحد وتوصيل واحد.</span>
-          </button>
           <ul>
             {lines.map((line) => (
               <li key={line.id}>
@@ -288,6 +286,16 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
             ))}
           </ul>
           <label>رقم تلفونك<input type="tel" inputMode="tel" dir="ltr" value={phone} onChange={(event) => onPhone(event.target.value)} placeholder="07XXXXXXXX" className={phone && !phoneNumber ? 'is-wrong' : ''} data-testid="v8-phone" /></label>
+          <div className="v8-extras" aria-label="بتكمّل طلبك؟">
+            <span>بتكمّل طلبك؟</span>
+            <div>
+              {V8_EXTRAS.map((extra) => {
+                const parts = notes.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
+                const added = parts.includes(extra.name);
+                return <button key={extra.name} type="button" className={added ? 'is-active' : ''} aria-pressed={added} onClick={() => setNotes(added ? parts.filter((part) => part !== extra.name).join('، ') : [...parts, extra.name].join('، '))} data-testid={`v8-extra-${extra.name}`}>{extra.emoji} {extra.name}{added ? ' ✓' : ''}</button>;
+              })}
+            </div>
+          </div>
           <label>ملاحظات (اختياري)<input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="مثلاً: بدون سكر" maxLength={200} /></label>
           <div className="v8-time">
             <span>الاستلام</span>

@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Moon, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Sun, Tag, Trash2, X } from 'lucide-react';
 import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
-import V8Section, { v8Products, v8Visible } from './V8';
+import V8Section, { V8_EXTRAS, v8Products, v8Visible } from './V8';
 import TimePick from './TimePick';
 import galleryData from '../public/gallery.json';
 import { useTheme } from './theme';
@@ -819,7 +819,9 @@ function App() {
     const line = resolveLine(entry.id);
     return line && entry.quantity > 0 && entry.quantity <= 99 ? [{ ...line, id: entry.id, quantity: entry.quantity }] : [];
   });
-  const suggestions = cartLines.length
+  // A cart of only V8 drinks gets V8's extras, not FAEI food.
+  const onlyV8 = cartLines.length > 0 && cartLines.every((line) => isV8Id(line.product.id));
+  const suggestions = cartLines.length && !onlyV8
     ? SUGGESTED_IDS.filter((id) => !cartLines.some((line) => line.id === id)).flatMap((id) => { const line = resolveLine(id); return line ? [{ ...line, id }] : []; }).slice(0, 3)
     : [];
   const totalFils = cartLines.reduce((sum, line) => sum + line.option.priceFils * line.quantity, 0);
@@ -1289,20 +1291,20 @@ function App() {
                         <Plus size={16} aria-hidden="true" />
                       </button>
                     ))}
-                    {v8Visible() && (
+                    {!onlyV8 && v8Visible() && (
                       <button type="button" className="suggest-chip suggest-v8" onClick={() => { setCartOpen(false); setV8Open(true); }} data-testid="button-suggest-v8">
                         <img src="/images/v8/v8-logo.webp" alt="" loading="lazy" />
                         <span><strong>قهوة أو مشروب من V8</strong><small>بنفس السلة ونفس التوصيل</small></span>
                         <Plus size={16} aria-hidden="true" />
                       </button>
                     )}
-                    {SHOP_DRINKS.map((drink) => {
+                    {(onlyV8 ? V8_EXTRAS.map((extra) => ({ ...extra, from: 'من V8' })) : SHOP_DRINKS.map((drink) => ({ ...drink, from: BRAND.fridge.title }))).map((drink) => {
                       const parts = extras.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
                       const added = parts.includes(drink.name);
                       return (
                         <button key={drink.name} type="button" className={`suggest-chip${added ? ' is-added' : ''}`} onClick={() => setExtras(added ? parts.filter((part) => part !== drink.name).join('، ') : [...parts, drink.name].join('، '))} aria-pressed={added} data-testid={`button-suggest-drink-${drink.name}`}>
                           <span className="suggest-emoji" aria-hidden="true">{drink.emoji}</span>
-                          <span><strong>{drink.name}</strong><small>{added ? 'انضاف ✓ · اكبس للإلغاء' : BRAND.fridge.title}</small></span>
+                          <span><strong>{drink.name}</strong><small>{added ? 'انضاف ✓ · اكبس للإلغاء' : drink.from}</small></span>
                           {added ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
                         </button>
                       );
