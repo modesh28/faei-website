@@ -299,7 +299,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
               })}
             </div>
           </div>
-          <label>ملاحظات (اختياري)<input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="مثلاً: بدون سكر" maxLength={200} /></label>
+          <label>ملاحظات على طلبك (اختياري)<input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="مثلاً: زيادة ثلج، بدون سكر، حليب شوفان" maxLength={200} /></label>
           <div className="v8-time">
             <span>الاستلام</span>
             <div role="group" aria-label="طريقة الاستلام">
