@@ -885,7 +885,8 @@ function App() {
   const missingAddress = isDelivery && !address.trim();
   const missingTime = timeMode === 'later' && !orderTime;
   const hasExtras = extras.trim().length > 0;
-  const isCliq = payment === 'cliq' && !!settings.cliqAlias;
+  // V8's drinks are paid in cash only, so a V8-only cart has no CliQ.
+  const isCliq = payment === 'cliq' && !!settings.cliqAlias && !onlyV8;
   // The amount the customer can transfer now; outside delivery and extras are settled on WhatsApp.
   const cliqAmountKnown = cartLines.length > 0 && !hasExtras && !(isDelivery && zone === 'outside');
   function copyCliq() {
@@ -1261,7 +1262,7 @@ function App() {
                     <TimePick value={orderTime} onChange={setOrderTime} testId="input-time" />
                   </label>
                 )}
-                {settings.cliqAlias && <>
+                {settings.cliqAlias && !onlyV8 && <>
                   <h3 className="foot-time-title">الدفع</h3>
                   <div className="segmented" role="radiogroup" aria-label="طريقة الدفع">
                     <button type="button" role="radio" aria-checked={payment === 'cash'} className={payment === 'cash' ? 'is-active' : ''} onClick={() => setPayment('cash')} data-testid="option-cash">كاش</button>
