@@ -118,8 +118,8 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
   const [cart, setCart] = useState<Entry[]>(readCart);
   const [checkout, setCheckout] = useState(false);
   const [notes, setNotes] = useState('');
-  // The turkey toast moves this cart into FAEI's, where it's offered in white or brown bread.
-  const turkeyToast = faeiProducts.some((product) => product.id === 'toast-turkey' && isAvailable(product));
+  // Turkey from FAEI moves this cart into FAEI's, where a turkey toast and a regular turkey sandwich are offered.
+  const turkeyToast = faeiProducts.some((product) => (product.id === 'toast-turkey' || product.id === 'cold-turkey') && isAvailable(product));
   const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
   const [delivery, setDelivery] = useState(false);
   const [address, setAddress] = useState('');
@@ -291,7 +291,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
           <div className="v8-extras" aria-label="بتكمّل طلبك؟">
             <span>بتكمّل طلبك؟</span>
             <div>
-              {turkeyToast && <button type="button" onClick={() => { const entries = cart; setCart([]); onMoveToFaei(entries); }} data-testid="v8-extra-toast">🥪 توست تيركي من {BRAND.nameAr}</button>}
+              {turkeyToast && <button type="button" onClick={() => { const entries = cart; setCart([]); onMoveToFaei(entries); }} data-testid="v8-extra-toast">🥪 ساندويش تيركي من {BRAND.nameAr}</button>}
               {V8_EXTRAS.map((extra) => {
                 const parts = notes.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
                 const added = parts.includes(extra.name);

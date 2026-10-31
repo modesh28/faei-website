@@ -539,8 +539,8 @@ function mealUpgrade(id: string): { id: string; extraFils: number } | undefined 
 
 // Quick add-ons offered in the cart when they aren't already in it.
 const SUGGESTED_IDS = ['salad-coleslaw::0'];
-// With V8 drinks only, the one FAEI food suggested is the turkey toast (both breads).
-const V8_FOOD_IDS = ['toast-turkey::0', 'toast-turkey::1'];
+// With V8 drinks only, the FAEI food suggested is turkey: one toast, one regular sandwich.
+const V8_FOOD_IDS = ['toast-turkey::0', 'cold-turkey::0'];
 // Drinks from the shop's own fridge. No fixed prices, so they go into the extras note.
 const SHOP_DRINKS = BRAND.fridge.drinks;
 
