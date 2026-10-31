@@ -5,7 +5,7 @@ import Wayfinder from './Wayfinder';
 import V8Section, { v8Products, v8Visible } from './V8';
 import galleryData from '../public/gallery.json';
 import { useTheme } from './theme';
-import { BRAND, CLOSE_MINUTES, OPEN_MINUTES, timeInWords, type GalleryPhoto } from './brand';
+import { BRAND, CLOSE_MINUTES, OPEN_MINUTES, TIME_SLOTS, clock12, timeInWords, type GalleryPhoto } from './brand';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
@@ -902,7 +902,7 @@ function App() {
     const how = isDelivery
       ? `طريقة الاستلام: توصيل ${zone === 'inside' ? BRAND.delivery.inside : BRAND.delivery.outside}\nالعنوان: ${address.trim()}`
       : 'طريقة الاستلام: استلام من الكافيه';
-    const when = `الوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${orderTime}`}`;
+    const when = `الوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${clock12(orderTime)}`}`;
     const discountText = discountFils ? `مجموع الأصناف: ${money(totalFils)}\n${offer.title} −${discountPercent}%: −${money(discountFils)}\n` : '';
     const totals = isDelivery
       ? zone === 'inside'
@@ -928,7 +928,7 @@ function App() {
       total: grandTotalFils / 1000,
       fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? BRAND.delivery.inside : BRAND.delivery.outside}` : 'استلام',
       address: isDelivery ? address.trim() : '',
-      time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
+      time: timeMode === 'asap' ? 'بأسرع وقت' : clock12(orderTime),
       payment: isCliq ? 'كليك' : 'كاش',
       extras: extras.trim(),
       phone: phoneNumber,
@@ -950,7 +950,7 @@ function App() {
           address: isDelivery ? address.trim() : '',
           phone: phoneNumber,
           replaces: replacing ? activeOrder?.ref : undefined,
-          time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
+          time: timeMode === 'asap' ? 'بأسرع وقت' : clock12(orderTime),
           payment: isCliq ? 'كليك' : 'كاش',
           preorder: !isOpenNow(),
           discount: discountFils / 1000,
@@ -977,7 +977,7 @@ function App() {
             fulfillment: isDelivery ? `مع طلب ${BRAND.nameAr} (${BRAND.nameAr} بتوصّل)` : `مع طلب ${BRAND.nameAr} (الزبون بيستلم من ${BRAND.nameAr})`,
             address: '',
             phone: phoneNumber,
-            time: timeMode === 'asap' ? 'بأسرع وقت' : orderTime,
+            time: timeMode === 'asap' ? 'بأسرع وقت' : clock12(orderTime),
             payment: `مع ${BRAND.nameAr}`,
             preorder: !isOpenNow(),
             discount: 0,
@@ -1255,7 +1255,7 @@ function App() {
                 {timeMode === 'later' && (
                   <label className="order-field">
                     <span>الساعة</span>
-                    <input type="time" min="07:30" max="17:00" step={900} value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time" />
+                    <select value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time"><option value="">اختار الساعة</option>{TIME_SLOTS.map((slot) => <option key={slot} value={slot}>{clock12(slot)}</option>)}</select>
                   </label>
                 )}
                 {settings.cliqAlias && <>

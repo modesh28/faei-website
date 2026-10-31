@@ -788,3 +788,9 @@ html.lite .v8-window { animation: none; }
 .theme-toggle { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border: 1px solid rgba(255,255,255,.22); border-radius: 12px; background: transparent; color: #fff; }
 .theme-toggle:hover { background: rgba(255,255,255,.08); }
 @media (min-width: 821px) { .theme-toggle { margin-inline-start: auto; } .theme-toggle + .cart-trigger { margin-inline-start: -20px !important; } }
+
+/* 12-hour pickup time picker (a list instead of the phone's 24-hour clock) */
+.order-field select { height: 44px; border: 1px solid #d8d5cc; border-radius: var(--radius); padding: 0 12px; background: #fff; color: var(--ink); font: inherit; outline: 0; }
+.foot-options .order-field select { height: 40px; }
+:root[data-theme="dark"] .order-field select { background: #1e3142; border-color: #2f4659; color: #e8eef3; }
+.v8-cart select { height: 46px; padding: 0 12px; border: 1px solid #333; border-radius: 10px; font: inherit; font-size: 15px; background: #0b0b0b; color: var(--v8-cream); outline: 0; }

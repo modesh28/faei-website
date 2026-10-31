@@ -7,7 +7,7 @@ import { ArrowLeft, Citrus, Coffee, CupSoda, GlassWater, Leaf, Milk, Minus, Plus
 
 import data from '../public/v8.json';
 import type { Product } from './menu';
-import { BRAND } from './brand';
+import { BRAND, TIME_SLOTS, clock12 } from './brand';
 
 type V8Menu = { launchAt?: string; whatsapp?: string; instagram?: string; categories: string[]; products: Product[] };
 const v8 = data as V8Menu;
@@ -119,7 +119,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
   const [delivery, setDelivery] = useState(false);
   const [address, setAddress] = useState('');
   const [pickupTime, setPickupTime] = useState('');
-  const when = timeMode === 'asap' ? 'بأسرع وقت' : pickupTime;
+  const when = timeMode === 'asap' ? 'بأسرع وقت' : pickupTime && clock12(pickupTime);
   const missingTime = timeMode === 'later' && !pickupTime;
   const missingAddress = delivery && !address.trim();
   const [sent, setSent] = useState('');
@@ -153,7 +153,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
     const orderId = `V${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}-${Math.floor(Math.random() * 90 + 10)}`;
     const ref = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => 'abcdefghijklmnopqrstuvwxyz0123456789'[byte % 36]).join('');
     const itemsText = lines.map((line) => `• ${line.name} × ${line.quantity}: ${money(line.option.priceFils * line.quantity)}`).join('\n');
-    const message = `مرحباً V8، بدي أطلب (رقم ${orderId}):\n\n${itemsText}\n${notes.trim() ? `\nملاحظات: ${notes.trim()}\n` : ''}\n${delivery ? `توصيل جوا الجامعة\nالعنوان: ${address.trim()}` : 'الاستلام من V8 جوا الفَيّ'}\nالوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${pickupTime}`}\nرقم تلفوني: ${phoneNumber}\n\n${delivery ? `الأصناف: ${money(itemsFils)}\nالتوصيل: ${money(DELIVERY_FILS)}\n` : ''}الإجمالي: ${money(total)}\n\nشكراً!`;
+    const message = `مرحباً V8، بدي أطلب (رقم ${orderId}):\n\n${itemsText}\n${notes.trim() ? `\nملاحظات: ${notes.trim()}\n` : ''}\n${delivery ? `توصيل جوا الجامعة\nالعنوان: ${address.trim()}` : 'الاستلام من V8 جوا الفَيّ'}\nالوقت: ${timeMode === 'asap' ? 'بأسرع وقت' : `الساعة ${clock12(pickupTime)}`}\nرقم تلفوني: ${phoneNumber}\n\n${delivery ? `الأصناف: ${money(itemsFils)}\nالتوصيل: ${money(DELIVERY_FILS)}\n` : ''}الإجمالي: ${money(total)}\n\nشكراً!`;
     try {
       fetch('/api/orders', {
         method: 'POST',
@@ -302,7 +302,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
               <button type="button" className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="v8-asap">بأسرع وقت</button>
               <button type="button" className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="v8-later">بوقت معيّن</button>
             </div>
-            {timeMode === 'later' && <input type="time" value={pickupTime} onChange={(event) => setPickupTime(event.target.value)} aria-label="الساعة" data-testid="v8-time" />}
+            {timeMode === 'later' && <select value={pickupTime} onChange={(event) => setPickupTime(event.target.value)} aria-label="الساعة" data-testid="v8-time"><option value="">اختار الساعة</option>{TIME_SLOTS.map((slot) => <option key={slot} value={slot}>{clock12(slot)}</option>)}</select>}
           </div>
           <p className="v8-pickup">{delivery ? `التوصيل ${BRAND.delivery.inside} بس` : `استلام من V8 جوا ${BRAND.nameAr}`} · الدفع عند الاستلام</p>
           {!phoneNumber ? <p className="v8-warn">اكتب رقم تلفونك عشان تبعت الطلب.</p> : missingAddress ? <p className="v8-warn">اكتب وين نوصلك.</p> : missingTime && <p className="v8-warn">اختار الساعة اللي بدك تستلم فيها.</p>}

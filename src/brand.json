@@ -31,7 +31,7 @@
     "close": "17:00"
   },
   "delivery": {
-    "insideFils": 1000,
+    "insideFils": 500,
     "inside": "جوا الجامعة",
     "outside": "برا الجامعة"
   },
