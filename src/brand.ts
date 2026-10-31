@@ -56,8 +56,3 @@ export function clock12(time: string): string {
   const hour = Math.floor(minutes / 60) % 24;
   return `${hour % 12 || 12}:${String(minutes % 60).padStart(2, '0')} ${hour < 12 ? 'ص' : 'م'}`;
 }
-// Pickup times customers can choose, every quarter hour while the shop is open.
-export const TIME_SLOTS: string[] = Array.from({ length: Math.floor((CLOSE_MINUTES - OPEN_MINUTES) / 15) + 1 }, (_, index) => {
-  const minutes = OPEN_MINUTES + index * 15;
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-});

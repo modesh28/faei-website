@@ -3,9 +3,10 @@ import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, E
 import { categories, products, isAvailable, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
 import V8Section, { v8Products, v8Visible } from './V8';
+import TimePick from './TimePick';
 import galleryData from '../public/gallery.json';
 import { useTheme } from './theme';
-import { BRAND, CLOSE_MINUTES, OPEN_MINUTES, TIME_SLOTS, clock12, timeInWords, type GalleryPhoto } from './brand';
+import { BRAND, CLOSE_MINUTES, OPEN_MINUTES, clock12, timeInWords, type GalleryPhoto } from './brand';
 
 // A cart entry id is "<productId>::<optionIndex>", so each size of a product is its own line.
 type CartEntry = { id: string; quantity: number };
@@ -1238,7 +1239,7 @@ function App() {
                 </div>
                 {isDelivery && <>
                   <div className="segmented" role="radiogroup" aria-label="مكان التوصيل">
-                    <button type="button" role="radio" aria-checked={zone === 'inside'} className={zone === 'inside' ? 'is-active' : ''} onClick={() => setZone('inside')} data-testid="option-inside">جوا الجامعة · 1 د.أ</button>
+                    <button type="button" role="radio" aria-checked={zone === 'inside'} className={zone === 'inside' ? 'is-active' : ''} onClick={() => setZone('inside')} data-testid="option-inside">{BRAND.delivery.inside} · {DELIVERY_INSIDE_FILS === 500 ? "نص دينار" : `${DELIVERY_INSIDE_FILS / 1000} د.أ`}</button>
                     <button type="button" role="radio" aria-checked={zone === 'outside'} className={zone === 'outside' ? 'is-active' : ''} onClick={() => setZone('outside')} data-testid="option-outside">برا الجامعة</button>
                   </div>
                   {zone === 'outside' && <p className="order-hint">سعر التوصيل {BRAND.delivery.outside} حسب المكان وحجم الطلب، وبنتفق عليه على واتساب.</p>}
@@ -1255,7 +1256,7 @@ function App() {
                 {timeMode === 'later' && (
                   <label className="order-field">
                     <span>الساعة</span>
-                    <select value={orderTime} onChange={(event) => setOrderTime(event.target.value)} data-testid="input-time"><option value="">اختار الساعة</option>{TIME_SLOTS.map((slot) => <option key={slot} value={slot}>{clock12(slot)}</option>)}</select>
+                    <TimePick value={orderTime} onChange={setOrderTime} testId="input-time" />
                   </label>
                 )}
                 {settings.cliqAlias && <>

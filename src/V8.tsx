@@ -7,7 +7,8 @@ import { ArrowLeft, Citrus, Coffee, CupSoda, GlassWater, Leaf, Milk, Minus, Plus
 
 import data from '../public/v8.json';
 import type { Product } from './menu';
-import { BRAND, TIME_SLOTS, clock12 } from './brand';
+import { BRAND, clock12 } from './brand';
+import TimePick from './TimePick';
 
 type V8Menu = { launchAt?: string; whatsapp?: string; instagram?: string; categories: string[]; products: Product[] };
 const v8 = data as V8Menu;
@@ -302,7 +303,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
               <button type="button" className={timeMode === 'asap' ? 'is-active' : ''} onClick={() => setTimeMode('asap')} data-testid="v8-asap">بأسرع وقت</button>
               <button type="button" className={timeMode === 'later' ? 'is-active' : ''} onClick={() => setTimeMode('later')} data-testid="v8-later">بوقت معيّن</button>
             </div>
-            {timeMode === 'later' && <select value={pickupTime} onChange={(event) => setPickupTime(event.target.value)} aria-label="الساعة" data-testid="v8-time"><option value="">اختار الساعة</option>{TIME_SLOTS.map((slot) => <option key={slot} value={slot}>{clock12(slot)}</option>)}</select>}
+            {timeMode === 'later' && <TimePick value={pickupTime} onChange={setPickupTime} testId="v8-time" />}
           </div>
           <p className="v8-pickup">{delivery ? `التوصيل ${BRAND.delivery.inside} بس` : `استلام من V8 جوا ${BRAND.nameAr}`} · الدفع عند الاستلام</p>
           {!phoneNumber ? <p className="v8-warn">اكتب رقم تلفونك عشان تبعت الطلب.</p> : missingAddress ? <p className="v8-warn">اكتب وين نوصلك.</p> : missingTime && <p className="v8-warn">اختار الساعة اللي بدك تستلم فيها.</p>}
