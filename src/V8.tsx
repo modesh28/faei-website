@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Citrus, Coffee, CupSoda, GlassWater, Leaf, Milk, Minus, Plus, ShoppingBag, X, type LucideIcon } from 'lucide-react';
 
 import data from '../public/v8.json';
-import type { Product } from './menu';
+import { isAvailable, products as faeiProducts, type Product } from './menu';
 import { BRAND, clock12 } from './brand';
 import TimePick from './TimePick';
 
@@ -118,6 +118,8 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
   const [cart, setCart] = useState<Entry[]>(readCart);
   const [checkout, setCheckout] = useState(false);
   const [notes, setNotes] = useState('');
+  // The turkey toast moves this cart into FAEI's, where it's offered in white or brown bread.
+  const turkeyToast = faeiProducts.some((product) => product.id === 'toast-turkey' && isAvailable(product));
   const [timeMode, setTimeMode] = useState<'asap' | 'later'>('asap');
   const [delivery, setDelivery] = useState(false);
   const [address, setAddress] = useState('');
@@ -289,6 +291,7 @@ function V8Window({ phone, phoneNumber, onPhone, onClose, onMoveToFaei, onOpenFa
           <div className="v8-extras" aria-label="بتكمّل طلبك؟">
             <span>بتكمّل طلبك؟</span>
             <div>
+              {turkeyToast && <button type="button" onClick={() => { const entries = cart; setCart([]); onMoveToFaei(entries); }} data-testid="v8-extra-toast">🥪 توست تيركي من {BRAND.nameAr}</button>}
               {V8_EXTRAS.map((extra) => {
                 const parts = notes.split(/[،,]/).map((part) => part.trim()).filter(Boolean);
                 const added = parts.includes(extra.name);

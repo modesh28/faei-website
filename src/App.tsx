@@ -539,6 +539,8 @@ function mealUpgrade(id: string): { id: string; extraFils: number } | undefined 
 
 // Quick add-ons offered in the cart when they aren't already in it.
 const SUGGESTED_IDS = ['salad-coleslaw::0'];
+// With V8 drinks only, the one FAEI food suggested is the turkey toast (both breads).
+const V8_FOOD_IDS = ['toast-turkey::0', 'toast-turkey::1'];
 // Drinks from the shop's own fridge. No fixed prices, so they go into the extras note.
 const SHOP_DRINKS = BRAND.fridge.drinks;
 
@@ -819,10 +821,10 @@ function App() {
     const line = resolveLine(entry.id);
     return line && entry.quantity > 0 && entry.quantity <= 99 ? [{ ...line, id: entry.id, quantity: entry.quantity }] : [];
   });
-  // A cart of only V8 drinks gets V8's extras, not FAEI food.
+  // A cart of only V8 drinks gets the turkey toast plus V8's extras, not the usual FAEI suggestions.
   const onlyV8 = cartLines.length > 0 && cartLines.every((line) => isV8Id(line.product.id));
-  const suggestions = cartLines.length && !onlyV8
-    ? SUGGESTED_IDS.filter((id) => !cartLines.some((line) => line.id === id)).flatMap((id) => { const line = resolveLine(id); return line ? [{ ...line, id }] : []; }).slice(0, 3)
+  const suggestions = cartLines.length
+    ? (onlyV8 ? V8_FOOD_IDS : SUGGESTED_IDS).filter((id) => !cartLines.some((line) => line.id === id)).flatMap((id) => { const line = resolveLine(id); return line ? [{ ...line, id }] : []; }).slice(0, 3)
     : [];
   const totalFils = cartLines.reduce((sum, line) => sum + line.option.priceFils * line.quantity, 0);
   const itemCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);

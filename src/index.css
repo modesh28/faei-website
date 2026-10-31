@@ -798,6 +798,7 @@ html.lite .v8-window { animation: none; }
 .v8-cart .time-pick b { color: var(--v8-cream); }
 .segmented [data-testid="option-inside"] { white-space: nowrap; font-size: 13px; padding-inline: 6px; }
 .v8-extras { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--v8-muted); }
-.v8-extras div { display: flex; gap: 8px; }
+.v8-extras div { display: flex; flex-wrap: wrap; gap: 8px; }
+.v8-extras [data-testid="v8-extra-toast"] { flex-basis: 100%; }
 .v8-extras button { flex: 1; height: 42px; border: 1px solid #333; border-radius: 10px; background: #0b0b0b; color: var(--v8-cream); font: inherit; font-weight: 700; }
 .v8-extras button.is-active { border-color: var(--v8-gold); color: var(--v8-gold); }
