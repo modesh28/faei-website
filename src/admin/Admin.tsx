@@ -857,12 +857,13 @@ td { padding: 3px 0; vertical-align: top; border-bottom: 1px dashed #000; font-s
 td.q { width: 30px; font-weight: 700; } td.p { text-align: left; white-space: nowrap; direction: ltr; }
 p { margin: 3px 0; }
 .total { display: flex; justify-content: space-between; font-size: 17px; font-weight: 700; border-top: 2px solid #000; margin-top: 6px; padding-top: 6px; }
+.big { border: 3px solid #000; padding: 6px; margin: 6px 0; font-size: 18px; font-weight: 700; text-align: center; }
 .note { border: 1px solid #000; padding: 4px 6px; margin: 6px 0; font-weight: 700; }
 .foot { text-align: center; margin-top: 10px; font-size: 11px; }
 </style></head><body>
 <h1>${escapeHtml(BRAND.name)}</h1><div class="sub">${order.source === 'pos' ? 'طلب كاش' : 'طلب من الموقع'} · ${time}</div>
 <div class="id">#${escapeHtml(orderNo(order))}</div>
-${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}${order.editedAt ? '<p class="note">طلب معدّل</p>' : ''}
+${scheduledAt(order) ? `<p class="big">⏰ للساعة ${escapeHtml(order.time)}</p>` : ''}${order.fulfillment.startsWith('توصيل') ? `<p class="big">توصيل${order.address ? `: ${escapeHtml(order.address)}` : ''}</p>` : ''}${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}${order.editedAt ? '<p class="note">طلب معدّل</p>' : ''}
 <table>${rows}</table>
 ${order.extras ? `<p class="note">ملاحظات: ${escapeHtml(order.extras)}</p>` : ''}
 ${line('الاستلام', `${order.fulfillment}${order.address ? ` · ${order.address}` : ''}`)}
@@ -1207,7 +1208,8 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
   return (
     <div className="admin-board" data-testid="kitchen-board">
       {COLUMNS.map((column) => {
-        const list = orders.filter((order) => order.status === column.status).sort((a, b) => a.createdAt - b.createdAt);
+        // Orders for a set time line up by that time, the rest by when they came in.
+        const list = orders.filter((order) => order.status === column.status).sort((a, b) => (scheduledAt(a) ?? a.createdAt) - (scheduledAt(b) ?? b.createdAt));
         return (
           <section key={column.status} className={`admin-col is-${COLUMNS.indexOf(column)}${drag?.moved && drag.over === column.status && drag.from !== column.status ? ' is-over' : ''}`} data-column={column.status}>
             <h2>{column.title} <i>{list.length}</i></h2>
@@ -1226,6 +1228,7 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
                     {order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
                     <span className="admin-order-time">{ago(order.createdAt)}</span>
                   </header>
+                  <OrderBanners order={order} />
                   <ul>{order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}</ul>
                   {order.extras && <p className="admin-kcard-extras">{order.extras}</p>}
                   <p className="admin-kcard-meta">{order.fulfillment}{order.address ? ` · ${order.address}` : ''}{order.time && order.time !== 'بأسرع وقت' ? ` · ${order.time}` : ''}{order.payment === 'كليك' ? ' · كليك' : ''}</p>
@@ -1236,6 +1239,20 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
           </section>
         );
       })}
+    </div>
+  );
+}
+
+// Big, hard-to-miss strips for the kitchen: a delivery (with where to) and an order for a set time.
+function OrderBanners({ order }: { order: LiveOrder }) {
+  const at = scheduledAt(order);
+  const delivery = order.fulfillment.startsWith('توصيل');
+  if (!at && !delivery) return null;
+  const soon = at !== null && at - Date.now() < 30 * 60_000;
+  return (
+    <div className="admin-banners">
+      {at !== null && <p className={`admin-banner is-time${soon ? ' is-soon' : ''}`} data-testid="banner-time">⏰ للساعة {order.time}{ACTIVE.includes(order.status) && order.status !== 'جاهز' ? ` · ${dueText(at)}` : ''}</p>}
+      {delivery && <p className="admin-banner is-delivery" data-testid="banner-delivery">🛵 توصيل{order.address ? `: ${order.address}` : ''}{typeof order.delivery === 'number' && order.delivery > 0 ? '' : ''}</p>}
     </div>
   );
 }
@@ -1252,6 +1269,7 @@ function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh
         <span className="admin-order-status">{order.status}</span>
         <span className="admin-order-time">{ago(order.createdAt)}</span>
       </header>
+      <OrderBanners order={order} />
       {order.preorder && <p className="admin-order-flag">طلب مسبق (انبعت والمحل مسكّر)</p>}
       {order.editedAt && <p className="admin-order-flag is-edited">انعدّل{order.edits && order.edits > 1 ? ` ${order.edits} مرات` : ''} · {ago(order.editedAt)}</p>}
       {order.status === 'ملغي' && order.cancelledBy && <p className="admin-order-flag">{order.cancelledBy === 'edit' ? 'الزبون رجع عدّله (بيوصل الطلب الجديد لحاله)' : 'الزبون لغاه'}</p>}

@@ -598,3 +598,9 @@ a { color: inherit; }
 .pos-ring:disabled { justify-content: center; }
 .pos .admin-sound { padding: 8px; font-size: 14px; margin-bottom: 8px; }
 .pos-site-hint { padding: 8px 12px; }
+.admin-banners { display: grid; gap: 6px; margin: 6px 0; }
+.admin-banner { margin: 0; padding: 8px 10px; border-radius: 10px; font-weight: 800; font-size: 16px; line-height: 1.4; }
+.admin-banner.is-delivery { background: #e8590c; color: #fff; }
+.admin-banner.is-time { background: #fff1d6; color: #8a4b00; border: 2px solid #f0a020; }
+.admin-banner.is-time.is-soon { background: #c2412f; color: #fff; border-color: #c2412f; animation: pos-blink 1.6s infinite; }
+:root[data-theme="dark"] .admin-banner.is-time:not(.is-soon) { background: #2f2312; color: #f6c36b; }
