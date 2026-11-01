@@ -2,9 +2,12 @@
 // the admin page sends the GitHub API call here and the server adds the key it keeps.
 // Only the calls the admin page needs are allowed.
 
-import { githubToken, json, connected, notConnected, REPO, sessionAccount } from './_lib.js';
+import { CORS, preflight, githubToken, json, connected, notConnected, REPO, sessionAccount } from './_lib.js';
 
 const ALLOWED = /^(|\/contents\/public\/[\w\-./%]+(\?[\w=&%.-]*)?|\/git\/ref\/heads\/main|\/git\/commits(\/[a-f0-9]{40})?|\/git\/blobs|\/git\/trees|\/git\/refs\/heads\/main)$/;
+
+// The backup copy on GitHub Pages calls this server from another address.
+export function OPTIONS(): Response { return preflight(); }
 
 export async function POST(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
@@ -23,5 +26,5 @@ export async function POST(request: Request): Promise<Response> {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'faei-admin', ...(call.body ? { 'Content-Type': 'application/json' } : {}) },
     body: call.body ? JSON.stringify(call.body) : undefined,
   });
-  return new Response(await response.text(), { status: response.status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+  return new Response(await response.text(), { status: response.status, headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

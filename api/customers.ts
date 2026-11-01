@@ -3,7 +3,7 @@
 //
 //   GET /api/customers   → { customers: Customer[] }
 
-import { connected, countCustomerOrder, json, notConnected, redis, sessionAccount, type Customer } from './_lib.js';
+import { preflight, connected, countCustomerOrder, json, notConnected, redis, sessionAccount, type Customer } from './_lib.js';
 
 // The first time, count the orders that were already in the database before customers were kept.
 async function backfill() {
@@ -19,6 +19,9 @@ async function backfill() {
     if (order.status !== 'ملغي') await countCustomerOrder(order, 1);
   }
 }
+
+// The backup copy on GitHub Pages calls this server from another address.
+export function OPTIONS(): Response { return preflight(); }
 
 export async function GET(request: Request): Promise<Response> {
   if (!connected()) return notConnected();

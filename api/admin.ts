@@ -5,7 +5,7 @@
 //
 //   POST /api/admin  { action: 'state' | 'setup' | 'login' | 'logout' | 'me' | 'users' | 'add-user' | 'remove-user' | 'password' | 'availability', … }
 
-import { connected, githubCanPush, githubFile, githubToken, githubWrite, hashPassword, json, notConnected, randomId, redis, type Role, ROLES, SESSION_SECONDS, sessionUser, upgradeRoles } from './_lib.js';
+import { preflight, connected, githubCanPush, githubFile, githubToken, githubWrite, hashPassword, json, notConnected, randomId, redis, type Role, ROLES, SESSION_SECONDS, sessionUser, upgradeRoles } from './_lib.js';
 
 type Account = { salt: string; hash: string; role: Role };
 const validName = (name: unknown): name is string => typeof name === 'string' && /^[a-z0-9_.-]{3,30}$/.test(name);
@@ -25,6 +25,9 @@ async function startSession(name: string) {
   await redis([['SET', `session:${session}`, name, 'EX', SESSION_SECONDS]]);
   return session;
 }
+
+// The backup copy on GitHub Pages calls this server from another address.
+export function OPTIONS(): Response { return preflight(); }
 
 export async function POST(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
