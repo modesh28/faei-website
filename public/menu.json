@@ -25,7 +25,8 @@
      "priceFils": 750
     }
    ],
-   "image": "/images/menu/shawarma-sandwich.webp"
+   "image": "/images/menu/shawarma-sandwich.webp",
+   "available": false
   },
   {
    "id": "shawarma-sandwich-super",
@@ -37,7 +38,8 @@
      "priceFils": 1300
     }
    ],
-   "image": "/images/menu/shawarma-sandwich.webp"
+   "image": "/images/menu/shawarma-sandwich.webp",
+   "available": false
   },
   {
    "id": "shawarma-meal",
@@ -50,7 +52,8 @@
     }
    ],
    "image": "/images/menu/shawarma-meal.webp",
-   "popular": true
+   "popular": true,
+   "available": false
   },
   {
    "id": "shawarma-meal-super",
@@ -62,7 +65,8 @@
      "priceFils": 2750
     }
    ],
-   "image": "/images/menu/shawarma-meal.webp"
+   "image": "/images/menu/shawarma-meal.webp",
+   "available": false
   },
   {
    "id": "shawarma-meal-double",
@@ -74,7 +78,8 @@
      "priceFils": 3450
     }
    ],
-   "image": "/images/menu/shawarma-meal.webp"
+   "image": "/images/menu/shawarma-meal.webp",
+   "available": false
   },
   {
    "id": "shawarma-shilla",
@@ -87,7 +92,8 @@
     }
    ],
    "image": "/images/menu/shawarma-meal.webp",
-   "popular": true
+   "popular": true,
+   "available": false
   },
   {
    "id": "shawarma-toast",
@@ -99,7 +105,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/toast2.webp"
+   "image": "/images/menu/toast2.webp",
+   "available": false
   },
   {
    "id": "shawarma-italian",
@@ -111,7 +118,8 @@
      "priceFils": 3500
     }
    ],
-   "image": "/images/menu/shawarma-italian.webp"
+   "image": "/images/menu/shawarma-italian.webp",
+   "available": false
   },
   {
    "id": "shawarma-halabi",
@@ -123,7 +131,8 @@
      "priceFils": 3500
     }
    ],
-   "image": "/images/menu/shawarma-halabi.webp"
+   "image": "/images/menu/shawarma-halabi.webp",
+   "available": false
   },
   {
    "id": "smash-classic",
