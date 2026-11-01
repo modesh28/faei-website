@@ -22,9 +22,13 @@ export async function redis(commands: (string | number)[][]): Promise<unknown[]>
   return ((await response.json()) as { result: unknown }[]).map((item) => item.result);
 }
 
+// The backup copy on GitHub Pages (modesh28.github.io) calls this server from another address.
+export const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Max-Age': '86400' };
+export const preflight = () => new Response(null, { status: 204, headers: CORS });
+
 export const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
-  headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+  headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...CORS },
 });
 export const notConnected = () => json({ error: 'not-connected' }, 503);
 

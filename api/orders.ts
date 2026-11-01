@@ -14,7 +14,7 @@
 //   GET   /api/orders          the admin page lists recent orders (needs a signed-in account)
 //   PATCH /api/orders          the admin page changes an order's status (needs a signed-in admin)
 
-import { connected, countCustomerOrder, json, notConnected, redis, type Role, sessionAccount } from './_lib.js';
+import { connected, CORS, countCustomerOrder, json, notConnected, preflight, redis, type Role, sessionAccount } from './_lib.js';
 
 // The admin screens ask for the version every few seconds. An instance that answered in the
 // last second and a half reuses its answer, which keeps the free Redis plan well within limits.
@@ -35,6 +35,8 @@ const validRef = (ref: unknown): ref is string => typeof ref === 'string' && /^[
 
 const text = (value: unknown, max = 300) => String(value ?? '').slice(0, max);
 const amount = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value < 1000 ? value : 0);
+
+export function OPTIONS(): Response { return preflight(); }
 
 export async function POST(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
@@ -124,7 +126,7 @@ async function popular(): Promise<Response> {
     const names = [...counts].filter(([, count]) => count >= POPULAR_MIN).sort((a, b) => b[1] - a[1]).slice(0, POPULAR_TOP).map(([name]) => name);
     lastPopular = { names, at: Date.now() };
   }
-  return new Response(JSON.stringify({ names: lastPopular.names }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' } });
+  return new Response(JSON.stringify({ names: lastPopular.names }), { headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' } });
 }
 
 async function busy(): Promise<Response> {
@@ -148,7 +150,7 @@ async function busy(): Promise<Response> {
     }
     lastBusy = { busy: open >= BUSY_OPEN || recent >= BUSY_RECENT, at: Date.now() };
   }
-  return new Response(JSON.stringify({ busy: lastBusy.busy }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
+  return new Response(JSON.stringify({ busy: lastBusy.busy }), { headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
 }
 
 export async function GET(request: Request): Promise<Response> {
