@@ -12,11 +12,16 @@ export type LiveOrder = {
   customerSent?: number; cancelledBy?: 'customer' | 'edit'; shop?: 'v8';
   // Rung up at the counter (the cashier screen), and by which account.
   source?: 'pos'; by?: string; paid?: number;
+  // Changed after it was placed (from the orders list or the cashier).
+  editedAt?: number; edits?: number;
 };
+
+export type OrderEdit = { items: OrderItem[]; extras: string; payment: string; fulfillment: string; discount: number; total: number };
 
 export type OutboxEntry =
   | { kind: 'order'; order: LiveOrder; tries?: number }
-  | { kind: 'status'; ref: string; status: string; at: number; tries?: number };
+  | { kind: 'status'; ref: string; status: string; at: number; tries?: number }
+  | { kind: 'edit'; ref: string; edit: OrderEdit; at: number; tries?: number };
 
 const OUTBOX_KEY = 'faei-admin-outbox';
 const CACHE_KEY = 'faei-admin-orders-cache';
@@ -48,9 +53,10 @@ export function mergeOutbox(server: LiveOrder[], outbox: OutboxEntry[]): LiveOrd
     if (entry.kind === 'order' && !byRef.has(entry.order.ref)) { byRef.set(entry.order.ref, entry.order); extra.push(entry.order); }
   }
   for (const entry of outbox) {
-    if (entry.kind !== 'status') continue;
+    if (entry.kind === 'order') continue;
     const order = byRef.get(entry.ref);
-    if (order) byRef.set(entry.ref, { ...order, status: entry.status });
+    if (!order) continue;
+    byRef.set(entry.ref, entry.kind === 'status' ? { ...order, status: entry.status } : { ...order, ...entry.edit, editedAt: entry.at });
   }
   return [...extra.map((order) => byRef.get(order.ref)!), ...server.map((order) => byRef.get(order.ref)!)];
 }

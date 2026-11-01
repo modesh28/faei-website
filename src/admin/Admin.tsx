@@ -5,7 +5,7 @@ import type { Menu, Product } from '../menu';
 import { useTheme } from '../theme';
 import { BRAND } from '../brand';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
-import { cacheOrders, mergeOutbox, quickFetch, readCachedOrders, readOutbox, writeOutbox, type LiveOrder, type OutboxEntry } from './offline';
+import { cacheOrders, mergeOutbox, quickFetch, readCachedOrders, readOutbox, writeOutbox, type LiveOrder, type OrderEdit, type OutboxEntry } from './offline';
 import Cashier from './Cashier';
 
 const SESSION_STORAGE = 'faei-admin-session';
@@ -185,6 +185,9 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
   const [v8Opened, setV8Opened] = useState(false);
   useEffect(() => { if (tab === 'v8') setV8Opened(true); }, [tab]);
   const live = useOrders(token, onLogout);
+  // An order being changed opens in the cashier screen, with the menu to add or remove items.
+  const [fixing, setFixing] = useState<LiveOrder | null>(null);
+  const openFix = (order: LiveOrder) => { setFixing(order); setTab('cashier'); window.scrollTo({ top: 0 }); };
   const [menu, setMenu] = useState<Menu | null>(null);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [saved, setSaved] = useState({ menu: '', offer: '', menuSha: '', offerSha: '' });
@@ -359,8 +362,8 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
       <main className="admin-shell">
-        {tab === 'cashier' && <Cashier live={live} showSales={isAdmin} menu={menu} />}
-        {tab === 'orders' && <Orders live={live} showSales={isAdmin} showV8={isDev && BRAND.innerShop} />}
+        {tab === 'cashier' && <Cashier live={live} showSales={isAdmin} menu={menu} editing={fixing} onEdit={setFixing} />}
+        {tab === 'orders' && <Orders live={live} showSales={isAdmin} showV8={isDev && BRAND.innerShop} onEdit={me.role === 'v8' ? undefined : openFix} />}
         {tab === 'items' && (menu ? (isDev
           ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} />
           : <Items menu={menu} photos={photos} onToggle={(id) => void quickToggle(id)} switching={switching} />) : menuState)}
@@ -701,6 +704,8 @@ export type Live = {
   setStatus: (ref: string, status: string) => Promise<void>; fresh: Set<string>;
   // The cashier screen: rings up a counter order (saved on this device first, sent when there's internet).
   addOrder: (order: LiveOrder) => void;
+  // Changes an order's items, payment… at any stage (also saved on the device first).
+  editOrder: (ref: string, edit: OrderEdit) => void;
   online: boolean; pending: number; pendingRefs: Set<string>;
 };
 
@@ -826,7 +831,7 @@ p { margin: 3px 0; }
 </style></head><body>
 <h1>${escapeHtml(BRAND.name)}</h1><div class="sub">${order.source === 'pos' ? 'طلب كاش' : 'طلب من الموقع'} · ${time}</div>
 <div class="id">#${escapeHtml(order.id)}</div>
-${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}
+${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}${order.editedAt ? '<p class="note">طلب معدّل</p>' : ''}
 <table>${rows}</table>
 ${order.extras ? `<p class="note">ملاحظات: ${escapeHtml(order.extras)}</p>` : ''}
 ${line('الاستلام', `${order.fulfillment}${order.address ? ` · ${order.address}` : ''}`)}
@@ -893,14 +898,14 @@ function useOrders(session: string, onLogout: () => void): Live {
         try {
           response = entry.kind === 'order'
             ? await quickFetch('/api/orders', { method: 'POST', headers: { Authorization: `Bearer ${session}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...entry.order, source: 'pos' }) })
-            : await quickFetch('/api/orders', { method: 'PATCH', headers: { Authorization: `Bearer ${session}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: entry.ref, status: entry.status }) });
+            : await quickFetch('/api/orders', { method: 'PATCH', headers: { Authorization: `Bearer ${session}`, 'Content-Type': 'application/json' }, body: JSON.stringify(entry.kind === 'status' ? { ref: entry.ref, status: entry.status } : { ref: entry.ref, edit: entry.edit }) });
         } catch { offline(); break; }
         if (response.status === 401) { onLogout(); break; }
         // The server is busy or the connection broke halfway: keep it and try again.
         if (response.status >= 500 || response.status === 429 || response.status === 408) {
           const tries = (entry.tries ?? 0) + 1;
           // A status change the server keeps refusing is dropped after a while; an order never is.
-          if (entry.kind === 'status' && tries > 20) setBox(outboxRef.current.slice(1));
+          if (entry.kind !== 'order' && tries > 20) setBox(outboxRef.current.slice(1));
           else setBox([{ ...entry, tries }, ...outboxRef.current.slice(1)]);
           break;
         }
@@ -992,6 +997,11 @@ function useOrders(session: string, onLogout: () => void): Live {
     setBox([...outboxRef.current.filter((entry) => !(entry.kind === 'status' && entry.ref === ref)), { kind: 'status', ref, status, at: Date.now() }]);
     if (await flush()) void fetchOrders();
   }
+  function editOrder(ref: string, edit: OrderEdit) {
+    // Two edits of the same order waiting to be sent: only the last one matters.
+    setBox([...outboxRef.current.filter((entry) => !(entry.kind === 'edit' && entry.ref === ref)), { kind: 'edit', ref, edit, at: Date.now() }]);
+    void flush().then((sent) => { if (sent) void fetchOrders(); });
+  }
   function addOrder(order: LiveOrder) {
     markPrinted(order.ref);
     setBox([...outboxRef.current, { kind: 'order', order }]);
@@ -1002,7 +1012,7 @@ function useOrders(session: string, onLogout: () => void): Live {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') void Notification.requestPermission().catch(() => {});
   }
   const pendingRefs = useMemo(() => new Set(outbox.flatMap((entry) => (entry.kind === 'order' ? [entry.order.ref] : []))), [outbox]);
-  return { orders, error, waiting, soundOn, enableSound, setStatus, fresh, addOrder, online, pending: outbox.length, pendingRefs };
+  return { orders, error, waiting, soundOn, enableSound, setStatus, fresh, addOrder, editOrder, online, pending: outbox.length, pendingRefs };
 }
 
 // Counter orders also go to the Google Sheet, like the site's, so the sheet keeps the whole day.
@@ -1047,7 +1057,7 @@ function ShopSwitch({ shop, onChange, counts }: { shop: Shop; onChange: (shop: S
 }
 
 // Staff see the day's orders but not how much money came in.
-function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; showV8: boolean }) {
+function Orders({ live, showSales, showV8, onEdit }: { live: Live; showSales: boolean; showV8: boolean; onEdit?: (order: LiveOrder) => void }) {
   const [, tick] = useState(0);
   const [showDone, setShowDone] = useState(false);
   const [shop, setShop] = useState<Shop>('faei');
@@ -1091,13 +1101,13 @@ function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; s
         : <>
           {!active.length && <p className="admin-empty">ما في طلبات مفتوحة هسه. أول ما يوصل طلب بيطلع هون. 👌</p>}
           <div className="admin-orders-grid">
-            {active.map((order) => <OrderCard key={order.ref} order={order} fresh={live.fresh.has(order.ref)} onStatus={(status) => void live.setStatus(order.ref, status)} />)}
+            {active.map((order) => <OrderCard key={order.ref} order={order} fresh={live.fresh.has(order.ref)} onStatus={(status) => void live.setStatus(order.ref, status)} onEdit={onEdit && (() => onEdit(order))} />)}
           </div>
         </>}
       {done.length > 0 && (
         <section className="admin-card">
           <button type="button" className="admin-link" onClick={() => setShowDone(!showDone)}>{showDone ? 'خبّي' : 'شوف'} اللي خلصوا اليوم ({done.length})</button>
-          {showDone && <div className="admin-orders-grid is-done">{done.map((order) => <OrderCard key={order.ref} order={order} fresh={false} onStatus={(status) => void live.setStatus(order.ref, status)} />)}</div>}
+          {showDone && <div className="admin-orders-grid is-done">{done.map((order) => <OrderCard key={order.ref} order={order} fresh={false} onStatus={(status) => void live.setStatus(order.ref, status)} onEdit={onEdit && (() => onEdit(order))} />)}</div>}
         </section>
       )}
     </>
@@ -1166,7 +1176,7 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
   );
 }
 
-function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolean; onStatus: (status: string) => void }) {
+function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh: boolean; onStatus: (status: string) => void; onEdit?: () => void }) {
   const late = order.status !== 'جاهز' && ACTIVE.includes(order.status) && Date.now() - order.createdAt > 20 * 60_000;
   return (
     <article className={`admin-order is-${['جديد', 'عم يتحضّر', 'جاهز', 'تم', 'ملغي'].indexOf(order.status)}${fresh ? ' is-fresh' : ''}${late ? ' is-late' : ''}`} data-testid={`order-${order.ref}`}>
@@ -1178,6 +1188,7 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
         <span className="admin-order-time">{ago(order.createdAt)}</span>
       </header>
       {order.preorder && <p className="admin-order-flag">طلب مسبق (انبعت والمحل مسكّر)</p>}
+      {order.editedAt && <p className="admin-order-flag is-edited">انعدّل{order.edits && order.edits > 1 ? ` ${order.edits} مرات` : ''} · {ago(order.editedAt)}</p>}
       {order.status === 'ملغي' && order.cancelledBy && <p className="admin-order-flag">{order.cancelledBy === 'edit' ? 'الزبون رجع عدّله (بيوصل الطلب الجديد لحاله)' : 'الزبون لغاه'}</p>}
       <ul>
         {order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}
@@ -1195,6 +1206,7 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
         {order.status === 'عم يتحضّر' && <button type="button" className="admin-green" onClick={() => onStatus('جاهز')} data-testid="button-ready">جاهز ✅ (بيوصل للزبون)</button>}
         {order.status === 'جاهز' && <button type="button" className="admin-primary" onClick={() => onStatus('تم')} data-testid="button-picked">استلمه 👍</button>}
         {(order.status === 'تم' || order.status === 'ملغي') && <button type="button" className="admin-link" onClick={() => onStatus('جديد')}>رجّعه للطلبات المفتوحة</button>}
+        {onEdit && <button type="button" className="admin-print" onClick={onEdit} aria-label={`عدّل الطلب ${order.id}`} title="عدّل الطلب" data-testid="button-edit"><Pencil size={15} /></button>}
         <button type="button" className="admin-print" onClick={() => { markPrinted(order.ref); void printOrder(order); }} aria-label={`اطبع الطلب ${order.id}`} title="اطبع" data-testid="button-print"><Printer size={15} /></button>
       </footer>
     </article>

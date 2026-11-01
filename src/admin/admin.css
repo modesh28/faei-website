@@ -436,3 +436,9 @@ a { color: inherit; }
   .admin-net { padding: 5px 7px; font-size: 0; gap: 4px; }
   .admin-net b { font-size: 11px; }
 }
+.pos-editing { margin: 0; padding: 8px 10px; border-radius: 10px; background: #fff6d6; color: #7a5600; font-size: 13px; font-weight: 700; line-height: 1.6; }
+.pos-editing .admin-link { display: block; padding: 2px 0 0; font-size: 13px; }
+.pos-editing-meta { margin: 0; font-size: 13px; color: var(--muted); font-weight: 700; }
+.pos-seg.is-pay-only { grid-template-columns: repeat(2, 1fr); }
+.admin-order-flag.is-edited { color: var(--accent); background: rgba(26,115,232,.08); }
+:root[data-theme="dark"] .pos-editing { background: #2a2614; color: #f4d77a; }

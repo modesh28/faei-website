@@ -13,6 +13,8 @@
 //   GET   /api/orders?popular  the most ordered FAEI items of the last 14 days (public), for the "الأكثر طلباً" badge
 //   GET   /api/orders          the admin page lists recent orders (needs a signed-in account)
 //   PATCH /api/orders          the admin page changes an order's status (needs a signed-in admin)
+//   PATCH /api/orders {ref, edit: {items, extras, payment, fulfillment, discount, total}}
+//                              the shop fixes an order at any stage (items, quantities, payment…); sales follow it
 //   POST  /api/orders {source: 'pos', …}
 //                              the cashier screen (الكاش) rings up a walk-in order (needs a signed-in FAEI account).
 //                              Rung up offline, it arrives later with its own time; the ref makes a resend harmless.
@@ -209,8 +211,9 @@ export async function PATCH(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
   const me = await sessionAccount(request);
   if (!me) return json({ error: 'not-allowed' }, 401);
-  let body: { ref?: unknown; status?: unknown };
-  try { body = await request.json() as { ref?: unknown; status?: unknown }; } catch { return json({ error: 'bad-json' }, 400); }
+  let body: { ref?: unknown; status?: unknown; edit?: unknown };
+  try { body = await request.json() as { ref?: unknown; status?: unknown; edit?: unknown }; } catch { return json({ error: 'bad-json' }, 400); }
+  if (validRef(body.ref) && body.edit && typeof body.edit === 'object') return editOrder(me.role, body.ref, body.edit as Record<string, unknown>);
   if (!validRef(body.ref) || typeof body.status !== 'string' || !STATUSES.includes(body.status)) return json({ error: 'bad-request' }, 400);
   const [stored] = await redis([['GET', `order:${body.ref}`]]);
   if (!stored) return json({ error: 'not-found' }, 404);
@@ -220,6 +223,35 @@ export async function PATCH(request: Request): Promise<Response> {
   if (before.status !== 'ملغي' && body.status === 'ملغي') await countCustomerOrder(order, -1);
   if (before.status === 'ملغي' && body.status !== 'ملغي') await countCustomerOrder(order, 1);
   const [, version] = await redis([['SET', `order:${body.ref}`, JSON.stringify(order), 'KEEPTTL'], ['INCR', 'orders:version']]);
+  lastVersion = { value: Number(version) || 0, at: Date.now() };
+  return json({ ok: true, order });
+}
+
+// Changes what's in an order, whatever its status. The customer's totals are recounted, and the sales
+// page reads the order's new total, so the day's numbers follow the change.
+async function editOrder(role: Role, ref: string, edit: Record<string, unknown>): Promise<Response> {
+  const [stored] = await redis([['GET', `order:${ref}`]]);
+  if (!stored) return json({ error: 'not-found' }, 404);
+  const before = JSON.parse(stored as string) as Record<string, unknown>;
+  if (role === 'v8' || !seesOrder(role, before as { shop?: string })) return json({ error: 'not-allowed' }, 403);
+  if (!Array.isArray(edit.items)) return json({ error: 'bad-request' }, 400);
+  const items = edit.items.slice(0, 40).map((item) => {
+    const line = item as Record<string, unknown>;
+    return { name: text(line.name, 120), quantity: Math.min(99, Math.max(1, Math.round(Number(line.quantity) || 1))), price: amount(line.price) };
+  }).filter((item) => item.name);
+  const order: Record<string, unknown> = {
+    ...before,
+    items,
+    extras: text(edit.extras ?? before.extras, 500),
+    payment: text(edit.payment ?? before.payment, 30),
+    fulfillment: text(edit.fulfillment ?? before.fulfillment, 60),
+    discount: edit.discount === undefined ? before.discount : amount(edit.discount),
+    total: amount(edit.total),
+    editedAt: Date.now(),
+    edits: (Number(before.edits) || 0) + 1,
+  };
+  if (before.status !== 'ملغي') { await countCustomerOrder(before, -1); await countCustomerOrder(order, 1); }
+  const [, version] = await redis([['SET', `order:${ref}`, JSON.stringify(order), 'KEEPTTL'], ['INCR', 'orders:version']]);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true, order });
 }

@@ -3,11 +3,11 @@
 // is saved on this device the moment it's rung up and sent to the server when there's a connection
 // (see useOrders and offline.ts), so it keeps working when the network drops or crawls.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Clock, Minus, Plus, Printer, Search, ShoppingBag, Trash2, Undo2, X } from 'lucide-react';
+import { Check, Clock, Minus, Pencil, Plus, Printer, Search, ShoppingBag, Trash2, Undo2, X } from 'lucide-react';
 
 import { categories as bundledCategories, products as bundledProducts, type Menu, type Product } from '../menu';
 import { markPrinted, printOrder, type Live } from './Admin';
-import { isToday, newRef, nextCounterNumber, quickFetch, type LiveOrder } from './offline';
+import { isToday, newRef, nextCounterNumber, quickFetch, type LiveOrder, type OrderEdit } from './offline';
 
 const MENU_KEY = 'faei-pos-menu';
 const CART_KEY = 'faei-pos-cart';
@@ -28,7 +28,9 @@ const lineName = (product: Product, index: number) => {
 };
 
 type Line = { key: string; quantity: number };
-type Draft = { lines: Line[]; note: string; payment: 'كاش' | 'كليك'; fulfillment: 'محلي' | 'سفري'; ready: boolean };
+type Draft = { lines: Line[]; note: string; payment: string; fulfillment: string; ready: boolean };
+// A line that isn't on today's menu (an old name, a V8 drink…) keeps its own name and price: "c|price|name".
+const customKey = (name: string, price: number) => `c|${price}|${name}`;
 const EMPTY: Draft = { lines: [], note: '', payment: 'كاش', fulfillment: 'محلي', ready: false };
 
 // The newest menu this device has seen: the panel's own copy, then the last download, then the one built in.
@@ -44,20 +46,38 @@ function useMenu(given: Menu | null): Menu {
   return menu;
 }
 
-export default function Cashier({ live, showSales, menu: given }: { live: Live; showSales: boolean; menu: Menu | null }) {
+export default function Cashier({ live, showSales, menu: given, editing, onEdit }: { live: Live; showSales: boolean; menu: Menu | null; editing: LiveOrder | null; onEdit: (order: LiveOrder | null) => void }) {
   const menu = useMenu(given);
   const byId = useMemo(() => new Map(menu.products.map((product) => [product.id, product])), [menu]);
-  const [draft, setDraftState] = useState<Draft>(() => ({ ...EMPTY, ...load<Partial<Draft>>(CART_KEY, {}) }));
-  const setDraft = (update: (current: Draft) => Draft) => setDraftState((current) => { const next = update(current); save(CART_KEY, next); return next; });
+  const byName = useMemo(() => new Map(menu.products.flatMap((product) => product.options.map((_, index) => [lineName(product, index), `${product.id}::${index}`] as const))), [menu]);
+  const [newDraft, setNewDraft] = useState<Draft>(() => ({ ...EMPTY, ...load<Partial<Draft>>(CART_KEY, {}) }));
+  // Changing an order that was already placed (any status): its own ticket, the new-order ticket waits untouched.
+  const [fixDraft, setFixDraft] = useState<Draft | null>(null);
+  useEffect(() => {
+    if (!editing) { setFixDraft(null); return; }
+    setFixDraft({
+      lines: editing.items.map((item) => ({ key: byName.get(item.name) ?? customKey(item.name, item.price), quantity: item.quantity })),
+      note: editing.extras, payment: editing.payment, fulfillment: editing.fulfillment, ready: false,
+    });
+  }, [editing?.ref]); // eslint-disable-line react-hooks/exhaustive-deps
+  const draft = fixDraft ?? newDraft;
+  const setDraft = (update: (current: Draft) => Draft) => {
+    if (fixDraft) { setFixDraft((current) => current && update(current)); return; }
+    setNewDraft((current) => { const next = update(current); save(CART_KEY, next); return next; });
+  };
   const [category, setCategory] = useState('');
   const [query, setQuery] = useState('');
   const [paid, setPaid] = useState(0);
   const [printOn, setPrintOn] = useState(() => load(PRINT_KEY, false));
   const [sheet, setSheet] = useState(false);
-  const [toast, setToast] = useState<{ order: LiveOrder; at: number } | null>(null);
+  const [toast, setToast] = useState<{ order: LiveOrder; at: number; edited?: boolean } | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const lines = draft.lines.flatMap((line) => {
+  const lines = draft.lines.flatMap((line): { key: string; quantity: number; product: Product | null; index: number; name: string; price: number }[] => {
+    if (line.key.startsWith('c|')) {
+      const [, price, ...name] = line.key.split('|');
+      return [{ ...line, product: null, index: 0, name: name.join('|'), price: Number(price) || 0 }];
+    }
     const [id, index] = line.key.split('::');
     const product = byId.get(id);
     const option = product?.options[Number(index)];
@@ -66,8 +86,7 @@ export default function Cashier({ live, showSales, menu: given }: { live: Live; 
   const total = Math.round(lines.reduce((sum, line) => sum + line.price * line.quantity, 0) * 1000) / 1000;
   const pieces = lines.reduce((sum, line) => sum + line.quantity, 0);
 
-  function add(product: Product, index: number, step = 1) {
-    const key = `${product.id}::${index}`;
+  function add(product: Product | null, index: number, step = 1, key = `${product?.id}::${index}`) {
     setDraft((current) => {
       const found = current.lines.find((line) => line.key === key);
       const next = found
@@ -76,9 +95,30 @@ export default function Cashier({ live, showSales, menu: given }: { live: Live; 
       return { ...current, lines: next };
     });
   }
-  const clear = () => { setDraft(() => ({ ...EMPTY, payment: draft.payment, fulfillment: draft.fulfillment })); setPaid(0); };
+  const clear = () => { setDraft((current) => ({ ...EMPTY, payment: current.payment, fulfillment: current.fulfillment })); setPaid(0); };
+
+  // A changed order keeps its site discount (e.g. the launch 15%) as the same percentage, and its delivery.
+  const oldSum = editing ? editing.items.reduce((sum, item) => sum + item.price * item.quantity, 0) : 0;
+  const discount = editing && oldSum > 0 && editing.discount ? Math.round((editing.discount / oldSum) * total * 1000) / 1000 : 0;
+  const delivery = editing && typeof editing.delivery === 'number' ? editing.delivery : 0;
+  const finalTotal = editing ? Math.max(0, Math.round((total - discount + delivery) * 1000) / 1000) : total;
+
+  function saveEdit() {
+    if (!editing || !fixDraft || !lines.length) return;
+    const edit: OrderEdit = {
+      items: lines.map((line) => ({ name: line.name, quantity: line.quantity, price: line.price })),
+      extras: fixDraft.note.trim(), payment: fixDraft.payment, fulfillment: fixDraft.fulfillment,
+      discount, total: finalTotal,
+    };
+    live.editOrder(editing.ref, edit);
+    if (printOn) void printOrder({ ...editing, ...edit, editedAt: Date.now() });
+    setToast({ order: { ...editing, ...edit }, at: Date.now(), edited: true });
+    setPaid(0);
+    onEdit(null);
+  }
 
   function ringUp() {
+    if (fixDraft) { saveEdit(); return; }
     if (!lines.length) return;
     const known = live.orders ?? [];
     const order: LiveOrder = {
@@ -144,39 +184,42 @@ export default function Cashier({ live, showSales, menu: given }: { live: Live; 
   const ticket = (
     <section className="pos-ticket" data-testid="pos-ticket">
       <header>
-        <h2><ShoppingBag size={17} /> الطلب {pieces > 0 && <i>{pieces}</i>}</h2>
+        <h2>{editing ? <><Pencil size={16} /> تعديل طلب <b dir="ltr">#{editing.id}</b></> : <><ShoppingBag size={17} /> الطلب</>} {pieces > 0 && <i>{pieces}</i>}</h2>
         {lines.length > 0 && <button type="button" className="admin-link" onClick={clear} data-testid="pos-clear"><Trash2 size={14} /> فضّي</button>}
         <button type="button" className="pos-sheet-close" onClick={() => setSheet(false)} aria-label="سكّر"><X size={18} /></button>
       </header>
-      {!lines.length && <p className="pos-empty">اكبس على الصنف عشان ينضاف. كبسة كمان بتزيد العدد.</p>}
+      {editing && <p className="pos-editing">{editing.source === 'pos' ? 'طلب كاش' : 'طلب من الموقع'} · {editing.status}. زيد أو نقّص أو ضيف أصناف من المنيو، وبعدين احفظ. المبيعات بتتعدل لحالها.
+        <button type="button" className="admin-link" onClick={() => onEdit(null)} data-testid="pos-edit-cancel">إلغاء التعديل</button></p>}
+      {!lines.length && <p className="pos-empty">{editing ? 'الطلب فاضي. ضيف صنف، أو إذا بدك تلغيه ألغيه من قائمة الطلبات.' : 'اكبس على الصنف عشان ينضاف. كبسة كمان بتزيد العدد.'}</p>}
       <ul className="pos-lines">
         {lines.map((line) => (
           <li key={line.key}>
             <span>{line.name}</span>
             <div className="pos-qty">
-              <button type="button" onClick={() => add(line.product, line.index, -1)} aria-label="نقّص"><Minus size={15} /></button>
+              <button type="button" onClick={() => add(line.product, line.index, -1, line.key)} aria-label="نقّص"><Minus size={15} /></button>
               <b>{line.quantity}</b>
-              <button type="button" onClick={() => add(line.product, line.index)} aria-label="زيد"><Plus size={15} /></button>
+              <button type="button" onClick={() => add(line.product, line.index, 1, line.key)} aria-label="زيد"><Plus size={15} /></button>
             </div>
             <em>{money(line.price * line.quantity)}</em>
           </li>
         ))}
       </ul>
       <input className="admin-input pos-note" value={draft.note} onChange={(event) => { const note = event.target.value; setDraft((current) => ({ ...current, note })); }} placeholder="ملاحظة (بدون بصل، حار…)" data-testid="pos-note" />
-      <div className="pos-seg">
-        {(['محلي', 'سفري'] as const).map((value) => <button key={value} type="button" className={draft.fulfillment === value ? 'is-active' : ''} onClick={() => setDraft((current) => ({ ...current, fulfillment: value }))}>{value === 'محلي' ? 'هون' : 'سفري'}</button>)}
+      {editing && editing.source !== 'pos' && <p className="pos-editing-meta">الاستلام: {editing.fulfillment}{editing.address ? ` · ${editing.address}` : ''}{typeof editing.delivery === 'number' && editing.delivery > 0 ? ` (توصيل ${money(editing.delivery)})` : ''}{discount ? ` · خصم الموقع ${money(discount)}` : ''}</p>}
+      <div className={`pos-seg${editing && editing.source !== 'pos' ? ' is-pay-only' : ''}`}>
+        {(!editing || editing.source === 'pos') && (['محلي', 'سفري'] as const).map((value) => <button key={value} type="button" className={draft.fulfillment === value ? 'is-active' : ''} onClick={() => setDraft((current) => ({ ...current, fulfillment: value }))}>{value === 'محلي' ? 'هون' : 'سفري'}</button>)}
         {(['كاش', 'كليك'] as const).map((value) => <button key={value} type="button" className={draft.payment === value ? 'is-active' : ''} onClick={() => setDraft((current) => ({ ...current, payment: value }))} data-testid={`pos-pay-${value}`}>{value}</button>)}
       </div>
-      <label className="pos-ready"><input type="checkbox" checked={draft.ready} onChange={(event) => { const ready = event.target.checked; setDraft((current) => ({ ...current, ready })); }} /> جاهز فوراً (ما بيروح عالمطبخ)</label>
+      {!editing && <label className="pos-ready"><input type="checkbox" checked={draft.ready} onChange={(event) => { const ready = event.target.checked; setDraft((current) => ({ ...current, ready })); }} /> جاهز فوراً (ما بيروح عالمطبخ)</label>}
       {draft.payment === 'كاش' && total > 0 && (
         <div className="pos-change">
           <small>الزبون دفع:</small>
-          {[1, 5, 10, 20].filter((note) => note >= total || note === 20).map((note) => <button key={note} type="button" className={paid === note ? 'is-active' : ''} onClick={() => setPaid(paid === note ? 0 : note)}>{note}</button>)}
-          {paid > 0 && <b className={paid >= total ? '' : 'is-short'}>{paid >= total ? `الباقي ${money(paid - total)}` : `ناقص ${money(total - paid)}`}</b>}
+          {[1, 5, 10, 20].filter((note) => note >= finalTotal || note === 20).map((note) => <button key={note} type="button" className={paid === note ? 'is-active' : ''} onClick={() => setPaid(paid === note ? 0 : note)}>{note}</button>)}
+          {paid > 0 && <b className={paid >= finalTotal ? '' : 'is-short'}>{paid >= finalTotal ? `الباقي ${money(paid - finalTotal)}` : `ناقص ${money(finalTotal - paid)}`}</b>}
         </div>
       )}
-      <div className="pos-total"><span>المجموع</span><b data-testid="pos-total">{money(total)} د.أ</b></div>
-      <button type="button" className="pos-ring" disabled={!lines.length} onClick={ringUp} data-testid="pos-ring"><Check size={20} /> دق الطلب</button>
+      <div className="pos-total"><span>المجموع</span><b data-testid="pos-total">{money(finalTotal)} د.أ</b></div>
+      <button type="button" className="pos-ring" disabled={!lines.length} onClick={ringUp} data-testid="pos-ring"><Check size={20} /> {editing ? 'احفظ التعديل' : 'دق الطلب'}</button>
       <label className="pos-print"><input type="checkbox" checked={printOn} onChange={(event) => { setPrintOn(event.target.checked); save(PRINT_KEY, event.target.checked); }} /> <Printer size={14} /> اطبع فاتورة مع كل طلب</label>
     </section>
   );
@@ -195,6 +238,7 @@ export default function Cashier({ live, showSales, menu: given }: { live: Live; 
                 <p>{order.items.map((item) => `${item.quantity}× ${item.name}`).join('، ')}{order.extras ? ` · ${order.extras}` : ''}</p>
                 <footer>
                   <button type="button" className="admin-primary" onClick={() => void live.setStatus(order.ref, 'عم يتحضّر')} data-testid={`pos-accept-${order.ref}`}><Check size={15} /> اقبله</button>
+                  <button type="button" className="admin-print" onClick={() => { onEdit(order); setSheet(true); }} aria-label="عدّل"><Pencil size={15} /></button>
                   <button type="button" className="admin-print" onClick={() => { markPrinted(order.ref); void printOrder(order); }} aria-label="اطبع"><Printer size={15} /></button>
                 </footer>
               </article>
@@ -261,6 +305,7 @@ export default function Cashier({ live, showSales, menu: given }: { live: Live; 
               <span>{order.items.map((item) => `${item.quantity}× ${item.name}`).join('، ')}</span>
               <em>{money(order.total)}{order.payment === 'كليك' ? ' كليك' : ''}</em>
               {live.pendingRefs.has(order.ref) ? <Clock size={14} aria-label="مستني النت" className="pos-wait" /> : <small>{order.status}</small>}
+              <button type="button" className="admin-print" onClick={() => { onEdit(order); setSheet(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} aria-label="عدّل" data-testid={`pos-edit-${order.ref}`}><Pencil size={14} /></button>
               <button type="button" className="admin-print" onClick={() => void printOrder(order)} aria-label="اطبع"><Printer size={14} /></button>
               {order.status !== 'ملغي' && <button type="button" className="admin-print" onClick={() => { if (confirm(`إلغاء طلب الكاش #${order.id}؟`)) void live.setStatus(order.ref, 'ملغي'); }} aria-label="إلغاء"><X size={14} /></button>}
             </li>
@@ -268,15 +313,15 @@ export default function Cashier({ live, showSales, menu: given }: { live: Live; 
         </ul>
       </section>
 
-      {lines.length > 0 && !sheet && (
+      {(lines.length > 0 || editing) && !sheet && (
         <button type="button" className="pos-bar" onClick={() => setSheet(true)} data-testid="pos-bar">
           <span><ShoppingBag size={17} /> {pieces} قطعة</span><b>{money(total)} د.أ</b><span>كمّل ←</span>
         </button>
       )}
       {toast && (
         <div className="pos-toast" role="status" data-testid="pos-toast">
-          <span>انضرب طلب <b>#{toast.order.id}</b> · {money(toast.order.total)} د.أ{live.pendingRefs.has(toast.order.ref) ? ' (محفوظ، بينبعت لما يرجع النت)' : ''}</span>
-          <button type="button" onClick={() => { void live.setStatus(toast.order.ref, 'ملغي'); setToast(null); }}><Undo2 size={15} /> تراجع</button>
+          <span>{toast.edited ? 'انعدّل' : 'انضرب'} طلب <b>#{toast.order.id}</b> · {money(toast.order.total)} د.أ{live.pendingRefs.has(toast.order.ref) ? ' (محفوظ، بينبعت لما يرجع النت)' : ''}</span>
+          {!toast.edited && <button type="button" onClick={() => { void live.setStatus(toast.order.ref, 'ملغي'); setToast(null); }}><Undo2 size={15} /> تراجع</button>}
         </div>
       )}
     </div>
