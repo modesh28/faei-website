@@ -27,4 +27,6 @@ const walk = (dir) => {
 walk(dist);
 fs.copyFileSync(path.join(dist, 'index.html'), path.join(dist, '404.html'));
 fs.writeFileSync(path.join(dist, '.nojekyll'), '');
+// Vercel reads vercel.json from the commit it builds: this stops it trying (and failing) to build gh-pages.
+fs.writeFileSync(path.join(dist, 'vercel.json'), JSON.stringify({ git: { deploymentEnabled: false } }));
 console.log(`pages mirror: rewrote ${changed} files`);
