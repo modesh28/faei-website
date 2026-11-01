@@ -7,6 +7,7 @@ import { BRAND } from '../brand';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
 import { cacheOrders, mergeOutbox, quickFetch, readCachedOrders, readOutbox, writeOutbox, dueText, orderNo, scheduledAt, type LiveOrder, type OrderEdit, type OutboxEntry } from './offline';
 import Cashier from './Cashier';
+import { siteOrder, unlock } from './sounds';
 
 const SESSION_STORAGE = 'faei-admin-session';
 const MENU_PATH = 'public/menu.json';
@@ -712,30 +713,8 @@ export type Live = {
   due: LiveOrder[]; snooze: (ref: string) => void;
 };
 
-let alertAudio: AudioContext | null = null;
-function ring() {
-  try {
-    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
-    if (!alertAudio) alertAudio = new Ctx();
-    const ctx = alertAudio;
-    if (ctx.state === 'suspended') void ctx.resume();
-    [0, 0.22, 0.44, 0.9, 1.12, 1.34].forEach((delay, index) => {
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const start = ctx.currentTime + delay;
-      oscillator.type = 'triangle';
-      oscillator.frequency.value = index % 3 === 2 ? 1320 : 990;
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.4, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
-      oscillator.connect(gain).connect(ctx.destination);
-      oscillator.start(start);
-      oscillator.stop(start + 0.22);
-    });
-  } catch { /* no sound on this device */ }
-  navigator.vibrate?.([300, 120, 300]);
-}
+// New website orders and scheduled-order reminders: loud and long (sounds.ts).
+function ring() { siteOrder(); }
 
 // Shows at a glance whether the panel is online and how many changes are still waiting to be sent.
 function NetPill({ online, pending }: { online: boolean; pending: number }) {
@@ -1039,6 +1018,15 @@ function useOrders(session: string, onLogout: () => void): Live {
     setBox([...outboxRef.current, { kind: 'order', order }]);
     void flush().then((sent) => { if (sent) void fetchOrders(); });
   }
+  // Any first tap on the panel switches the order sound on (browsers need one touch before playing sound).
+  useEffect(() => {
+    const first = () => {
+      unlock(); soundRef.current = true; setSoundOn(true);
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') void Notification.requestPermission().catch(() => {});
+    };
+    window.addEventListener('pointerdown', first, { once: true });
+    return () => window.removeEventListener('pointerdown', first);
+  }, []);
   function enableSound() {
     soundRef.current = true; setSoundOn(true); ring();
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') void Notification.requestPermission().catch(() => {});
@@ -1334,12 +1322,17 @@ function Sales({ session, showV8, products }: { session: string; showV8: boolean
   const [shop, setShop] = useState<Shop>('faei');
   const [showAllSleepers, setShowAllSleepers] = useState(false);
   const orders = useMemo(() => all && (showV8 ? all.filter((order) => shopOf(order) === shop) : all), [all, shop, showV8]);
+  // Refreshed every minute while open, so the numbers follow the day.
   useEffect(() => {
-    fetch('/api/orders?limit=1000', { cache: 'no-store', headers: { Authorization: `Bearer ${session}` } })
-      .then((response) => (response.ok ? response.json() : { orders: [] }))
-      .then((data: { orders: LiveOrder[] }) => setOrders(data.orders))
-      .catch(() => setOrders([]));
+    const load = () => fetch('/api/orders?limit=1000', { cache: 'no-store', headers: { Authorization: `Bearer ${session}` } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { orders: LiveOrder[] } | null) => { if (data) setOrders(data.orders); else setOrders((current) => current ?? []); })
+      .catch(() => setOrders((current) => current ?? []));
+    void load();
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void load(); }, 60_000);
+    return () => window.clearInterval(timer);
   }, [session]);
+  const [period, setPeriod] = useState<'today' | 'yesterday' | 'week'>('today');
   const stats = useMemo(() => {
     const valid = (orders ?? []).filter((order) => order.status !== 'ملغي');
     const day = (time: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date(time));
@@ -1360,25 +1353,76 @@ function Sales({ session, showV8, products }: { session: string; showV8: boolean
       ...rushAndSleepers(valid, shop === 'v8' ? [] : products, counts, week.length),
     };
   }, [orders, products, shop]);
+  // The clear summary on top: one period at a time, split the ways the shop counts its money.
+  const summary = useMemo(() => {
+    const day = (time: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date(time));
+    const today = day(Date.now());
+    const yesterday = day(Date.now() - 86_400_000);
+    const weekAgo = day(Date.now() - 6 * 86_400_000);
+    const inPeriod = (order: LiveOrder, which: typeof period) => {
+      const d = day(order.createdAt);
+      return which === 'today' ? d === today : which === 'yesterday' ? d === yesterday : d >= weekAgo;
+    };
+    const build = (which: typeof period) => {
+      const list = (orders ?? []).filter((order) => inPeriod(order, which));
+      const valid = list.filter((order) => order.status !== 'ملغي');
+      const sum = (items: LiveOrder[]) => items.reduce((total, order) => total + order.total, 0);
+      const counts = new Map<string, { pieces: number; money: number }>();
+      valid.forEach((order) => order.items.forEach((item) => {
+        const entry = counts.get(item.name) ?? { pieces: 0, money: 0 };
+        counts.set(item.name, { pieces: entry.pieces + item.quantity, money: entry.money + item.quantity * item.price });
+      }));
+      const total = sum(valid);
+      return {
+        total, count: valid.length, average: valid.length ? total / valid.length : 0,
+        cash: sum(valid.filter((order) => order.payment !== 'كليك')),
+        cliq: sum(valid.filter((order) => order.payment === 'كليك')),
+        site: sum(valid.filter((order) => order.source !== 'pos')), siteCount: valid.filter((order) => order.source !== 'pos').length,
+        counter: sum(valid.filter((order) => order.source === 'pos')), counterCount: valid.filter((order) => order.source === 'pos').length,
+        delivery: valid.filter((order) => order.fulfillment.startsWith('توصيل')).length,
+        discounts: valid.reduce((total, order) => total + (order.discount || 0), 0),
+        cancelled: list.length - valid.length,
+        items: [...counts.entries()].sort((a, b) => b[1].pieces - a[1].pieces).slice(0, 10),
+      };
+    };
+    return { now: build(period), before: period === 'today' ? build('yesterday') : null };
+  }, [orders, period]);
   if (orders === null) return <p className="admin-loading">لحظة…</p>;
   const most = Math.max(1, ...stats.days.map(([, total]) => total));
   return (
     <>
       {showV8 && <ShopSwitch shop={shop} onChange={setShop} />}
-      <div className="admin-stats">
-        <div><small>مبيعات اليوم</small><b>{stats.todayTotal.toFixed(2)} د.أ</b><em>{stats.todayCount} طلب · الكاش {stats.todayPos.toFixed(2)} ({stats.todayPosCount}) · الموقع {(stats.todayTotal - stats.todayPos).toFixed(2)}</em></div>
-        <div><small>آخر 7 أيام</small><b>{stats.weekTotal.toFixed(2)} د.أ</b><em>{stats.weekCount} طلب · كليك {stats.cliq.toFixed(2)}</em></div>
+      <div className="admin-view sales-period" role="tablist">
+        {([['today', 'اليوم'], ['yesterday', 'مبارح'], ['week', 'آخر 7 أيام']] as const).map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={period === key} className={period === key ? 'is-active' : ''} onClick={() => setPeriod(key)} data-testid={`sales-${key}`}>{label}</button>
+        ))}
       </div>
-      {stats.days.length > 0 && (
+      <section className="sales-hero" data-testid="sales-hero">
+        <small>المبيعات {period === 'today' ? 'اليوم' : period === 'yesterday' ? 'مبارح' : 'آخر 7 أيام'}</small>
+        <b>{summary.now.total.toFixed(2)} <span>د.أ</span></b>
+        <em>{summary.now.count} طلب · متوسط الطلب {summary.now.average.toFixed(2)}{summary.before && summary.before.total > 0 ? ` · ${summary.now.total >= summary.before.total ? '▲' : '▼'} ${Math.abs(Math.round(((summary.now.total - summary.before.total) / summary.before.total) * 100))}% عن مبارح` : ''}</em>
+      </section>
+      <div className="sales-grid">
+        <div className="is-cash"><small>كاش</small><b>{summary.now.cash.toFixed(2)}</b></div>
+        <div className="is-cliq"><small>كليك</small><b>{summary.now.cliq.toFixed(2)}</b></div>
+        <div><small>من الكاش ({summary.now.counterCount})</small><b>{summary.now.counter.toFixed(2)}</b></div>
+        <div><small>من الموقع ({summary.now.siteCount})</small><b>{summary.now.site.toFixed(2)}</b></div>
+        <div><small>توصيل</small><b>{summary.now.delivery} طلب</b></div>
+        <div><small>خصومات</small><b>{summary.now.discounts.toFixed(2)}</b></div>
+        <div className={summary.now.cancelled ? 'is-bad' : ''}><small>ملغي</small><b>{summary.now.cancelled}</b></div>
+      </div>
+      {summary.now.items.length > 0 && (
         <section className="admin-card">
-          <h2>كل يوم</h2>
-          <ul className="admin-days">{stats.days.map(([date, total]) => <li key={date}><span>{date.slice(5).replace('-', '/')}</span><i style={{ width: `${(total / most) * 100}%` }} /><b>{total.toFixed(2)}</b></li>)}</ul>
+          <h2>شو انباع {period === 'today' ? 'اليوم' : period === 'yesterday' ? 'مبارح' : 'هالأسبوع'}</h2>
+          <ul className="sales-items">{summary.now.items.map(([name, value]) => (
+            <li key={name}><span>{name}</span><i style={{ width: `${(value.pieces / summary.now.items[0][1].pieces) * 100}%` }} /><b>{value.pieces}</b><em>{value.money.toFixed(2)}</em></li>
+          ))}</ul>
         </section>
       )}
-      {stats.top.length > 0 && (
+      {stats.days.length > 0 && (
         <section className="admin-card">
-          <h2>الأكثر طلباً هالأسبوع</h2>
-          <ol className="admin-top-list">{stats.top.map(([item, count]) => <li key={item}><span>{item}</span><b>{count}</b></li>)}</ol>
+          <h2>آخر 7 أيام، يوم بيوم</h2>
+          <ul className="admin-days">{stats.days.map(([date, total]) => <li key={date}><span>{date.slice(5).replace('-', '/')}</span><i style={{ width: `${(total / most) * 100}%` }} /><b>{total.toFixed(2)}</b></li>)}</ul>
         </section>
       )}
       {stats.hoursCount > 0 && (

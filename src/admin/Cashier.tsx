@@ -9,6 +9,7 @@ import { categories as bundledCategories, products as bundledProducts, type Menu
 import { markPrinted, printOrder, type Live } from './Admin';
 import { dueText, isDelivery, isToday, newRef, nextCounterNumber, orderNo, quickFetch, scheduledAt, type LiveOrder, type OrderEdit } from './offline';
 import { LOW_STOCK, StockManager, usePos } from './Stock';
+import { rungUp, tap } from './sounds';
 
 const MENU_KEY = 'faei-pos-menu';
 const CART_KEY = 'faei-pos-cart';
@@ -153,6 +154,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
       discount, total: finalTotal,
     };
     live.editOrder(editing.ref, edit);
+    rungUp();
     if (printOn) void printOrder({ ...editing, ...edit, editedAt: Date.now() });
     setToast({ order: { ...editing, ...edit }, at: Date.now(), edited: true });
     setPaid(0); setOtherPaid('');
@@ -182,6 +184,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
       ...(draft.payment === 'كاش' && cashGiven > finalTotal ? { paid: cashGiven } : {}),
     };
     live.addOrder(order);
+    rungUp();
     if (printOn) void printOrder(order);
     setToast({ order, at: Date.now() });
     clear();
@@ -358,7 +361,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
   ];
 
   return (
-    <div className="pos" data-testid="cashier">
+    <div className="pos" data-testid="cashier" onPointerDownCapture={(event) => { const button = (event.target as HTMLElement).closest('button, [role="button"]'); if (button && !button.classList.contains('pos-ring')) tap(); }}>
       {!live.online && <p className="admin-offline">بدون نت هسه، والكاش شغّال عادي. الطلبات بتنحفظ عالجهاز وبتنبعت لحالها لما يرجع النت{live.pending ? ` (${live.pending} مستنيين)` : ''}.</p>}
       {!live.soundOn && <button type="button" className="admin-sound" onClick={live.enableSound}>اكبس هون عشان يرنّ لما يوصل طلب من الموقع</button>}
       <div className="pos-views" role="tablist">

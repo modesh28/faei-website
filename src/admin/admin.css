@@ -604,3 +604,25 @@ a { color: inherit; }
 .admin-banner.is-time { background: #fff1d6; color: #8a4b00; border: 2px solid #f0a020; }
 .admin-banner.is-time.is-soon { background: #c2412f; color: #fff; border-color: #c2412f; animation: pos-blink 1.6s infinite; }
 :root[data-theme="dark"] .admin-banner.is-time:not(.is-soon) { background: #2f2312; color: #f6c36b; }
+/* Sales, made clearer */
+.sales-period { margin-bottom: 12px; }
+.sales-hero { display: grid; gap: 4px; padding: 18px 20px; border-radius: 20px; background: linear-gradient(135deg, var(--ink), #24506f); color: #fff; margin-bottom: 12px; }
+.sales-hero small { opacity: .8; font-weight: 700; }
+.sales-hero b { font-size: 40px; line-height: 1.1; direction: ltr; text-align: right; }
+.sales-hero b span { font-size: 18px; opacity: .8; }
+.sales-hero em { font-style: normal; opacity: .9; font-weight: 700; font-size: 14px; }
+.sales-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.sales-grid div { display: grid; gap: 2px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.sales-grid small { color: var(--muted); font-weight: 700; }
+.sales-grid b { font-size: 22px; }
+.sales-grid .is-cash { border-color: var(--green); }
+.sales-grid .is-cash b { color: var(--green); }
+.sales-grid .is-cliq { border-color: var(--accent); }
+.sales-grid .is-cliq b { color: var(--accent); }
+.sales-grid .is-bad b { color: var(--red); }
+.sales-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sales-items li { position: relative; display: grid; grid-template-columns: 1fr 48px 64px; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; overflow: hidden; font-weight: 700; font-size: 14px; }
+.sales-items li i { position: absolute; inset: 0 0 0 auto; background: rgba(26,115,232,.1); z-index: 0; }
+.sales-items li > *:not(i) { position: relative; z-index: 1; }
+.sales-items b { text-align: center; }
+.sales-items em { font-style: normal; color: var(--muted); text-align: left; direction: ltr; }
