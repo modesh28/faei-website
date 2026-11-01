@@ -523,3 +523,32 @@ a { color: inherit; }
 .pos-ring { box-shadow: 0 10px 22px -10px rgba(35,149,90,.9); }
 .pos-left-tag { position: static; display: block; padding: 0 10px 8px; }
 .pos-off { position: static; display: block; padding: 0 10px 8px; }
+.pos-undo { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border: 2px solid #b7791f; border-radius: 10px; background: #fff8ec; color: #8a5a12; font-weight: 800; font-size: 13px; }
+:root[data-theme="dark"] .pos-undo { background: #2f2312; color: #f6c36b; }
+.pos-lines li { grid-template-columns: auto 1fr auto 52px; }
+.pos-line-x { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 8px; background: #fdeeee; color: var(--red); }
+:root[data-theme="dark"] .pos-line-x { background: #331616; }
+.admin-print.is-danger { color: var(--red); border-color: rgba(194,65,47,.4); }
+.pos-toast.is-cancel { background: var(--red); bottom: 140px; }
+
+/* Wide counter screens: the cashier uses the whole width. */
+.admin-shell:has(.pos) { max-width: none; }
+@media (min-width: 1200px) {
+  .pos-main { grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; }
+  .pos-side { position: sticky; top: 118px; max-height: calc(100vh - 130px); overflow-y: auto; }
+  .pos-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .pos-catgrid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .pos-cat img, .pos-cat .pos-thumb-empty { width: 88px; height: 88px; }
+  .pos-item-head img, .pos-item-head .pos-thumb-empty { width: 52px; height: 52px; }
+  .pos-item-head .pos-item-name { font-size: 15px; }
+  .pos-opts button { padding: 12px 10px; font-size: 15px; }
+  .pos-site-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .pos-history li { font-size: 14px; padding: 8px 0; }
+}
+@media (min-width: 1700px) {
+  .pos-main { grid-template-columns: minmax(0, 1fr) 460px; }
+  .pos-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .pos-total b { font-size: 30px; }
+  .pos-ring { padding: 20px; font-size: 21px; }
+}
+.pos-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }

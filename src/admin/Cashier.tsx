@@ -77,10 +77,19 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
     });
   }, [editing?.ref]); // eslint-disable-line react-hooks/exhaustive-deps
   const draft = fixDraft ?? newDraft;
+  // Every change to the ticket can be taken back with "تراجع" (or Ctrl+Z), one step at a time.
+  const history = useRef<Draft[]>([]);
   const setDraft = (update: (current: Draft) => Draft) => {
+    history.current = [...history.current.slice(-40), draft];
     if (fixDraft) { setFixDraft((current) => current && update(current)); return; }
     setNewDraft((current) => { const next = update(current); save(CART_KEY, next); return next; });
   };
+  function undo() {
+    const previous = history.current.pop();
+    if (!previous) return;
+    if (fixDraft) setFixDraft(previous); else { setNewDraft(previous); save(CART_KEY, previous); }
+  }
+  useEffect(() => { history.current = []; }, [editing?.ref]);
   const [category, setCategory] = useState('');
   const [query, setQuery] = useState('');
   const [paid, setPaid] = useState(0);
@@ -89,6 +98,8 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
   const [managing, setManaging] = useState(false);
   const [scanned, setScanned] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
+  const [undoCancel, setUndoCancel] = useState<{ order: LiveOrder; before: string } | null>(null);
+  useEffect(() => { if (!undoCancel) return; const timer = window.setTimeout(() => setUndoCancel(null), 15000); return () => window.clearTimeout(timer); }, [undoCancel]);
   const [view, setView] = useState<'ring' | 'site' | 'counter'>('ring');
   // Ticks every 30 s so "due in…" times stay fresh.
   const [, tick] = useState(0);
@@ -174,7 +185,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
   }
   useEffect(() => {
     if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 7000);
+    const timer = window.setTimeout(() => setToast(null), 15000);
     return () => window.clearTimeout(timer);
   }, [toast]);
 
@@ -196,6 +207,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
   useEffect(() => {
     const keys = (event: KeyboardEvent) => {
       if ((event.key === 'Enter' && (event.ctrlKey || event.metaKey)) || event.key === 'F9') { event.preventDefault(); ringUp(); return; }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !(event.target as HTMLElement).closest?.('input, textarea')) { event.preventDefault(); undo(); return; }
       const target = event.target as HTMLElement;
       // Typing in the barcode dialog or the stock screen is left alone.
       if (target.closest?.('[data-no-scan]')) return;
@@ -251,12 +263,19 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
     all: sum(todayValid),
     count: todayValid.length,
   };
+  // One tap cancels (with an undo on the toast), no need to open the order.
+  function cancelOrder(order: LiveOrder) {
+    const before = order.status;
+    void live.setStatus(order.ref, 'ملغي');
+    setUndoCancel({ order, before });
+  }
   const openEdit = (order: LiveOrder) => { onEdit(order); setView('ring'); setSheet(true); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const ticket = (
     <section className="pos-ticket" data-testid="pos-ticket">
       <header>
         <h2>{editing ? <><Pencil size={16} /> تعديل طلب <b dir="ltr">#{orderNo(editing)}</b></> : <><ShoppingBag size={17} /> الطلب</>} {pieces > 0 && <i>{pieces}</i>}</h2>
+        {history.current.length > 0 && <button type="button" className="pos-undo" onClick={undo} data-testid="pos-undo" title="Ctrl+Z"><Undo2 size={15} /> تراجع</button>}
         {lines.length > 0 && <button type="button" className="admin-link" onClick={clear} data-testid="pos-clear"><Trash2 size={14} /> فضّي</button>}
         <button type="button" className="pos-sheet-close" onClick={() => setSheet(false)} aria-label="سكّر"><X size={18} /></button>
       </header>
@@ -266,6 +285,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
       <ul className="pos-lines">
         {lines.map((line) => (
           <li key={line.key}>
+            <button type="button" className="pos-line-x" onClick={() => setDraft((current) => ({ ...current, lines: current.lines.filter((item) => item.key !== line.key) }))} aria-label={`شيل ${line.name}`} data-testid={`pos-remove-${line.key}`}><X size={14} /></button>
             <span>{line.name}</span>
             <div className="pos-qty">
               <button type="button" onClick={() => add(line.product, line.index, -1, line.key)} aria-label="نقّص"><Minus size={15} /></button>
@@ -337,6 +357,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
           <button type="button" className={next.status === 'جاهز' ? 'admin-green' : 'admin-primary'} onClick={() => void live.setStatus(order.ref, next.status)} data-testid={`pos-next-${order.ref}`}><Check size={15} /> {next.label}</button>
           <button type="button" className="admin-print" onClick={() => openEdit(order)} aria-label="عدّل"><Pencil size={15} /></button>
           <button type="button" className="admin-print" onClick={() => { markPrinted(order.ref); void printOrder(order); }} aria-label="اطبع"><Printer size={15} /></button>
+          <button type="button" className="admin-print is-danger" onClick={() => cancelOrder(order)} aria-label="ألغِ الطلب" data-testid={`pos-cancel-${order.ref}`}><X size={15} /></button>
         </footer>
       </article>
     );
@@ -439,7 +460,9 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
                 {live.pendingRefs.has(order.ref) ? <Clock size={14} aria-label="مستني النت" className="pos-wait" /> : <small>{order.status}</small>}
                 <button type="button" className="admin-print" onClick={() => openEdit(order)} aria-label="عدّل" data-testid={`pos-edit-${order.ref}`}><Pencil size={14} /></button>
                 <button type="button" className="admin-print" onClick={() => void printOrder(order)} aria-label="اطبع"><Printer size={14} /></button>
-                {order.status !== 'ملغي' && <button type="button" className="admin-print" onClick={() => { if (confirm(`إلغاء طلب الكاش #${orderNo(order)}؟`)) void live.setStatus(order.ref, 'ملغي'); }} aria-label="إلغاء"><X size={14} /></button>}
+                {order.status !== 'ملغي'
+                  ? <button type="button" className="admin-print is-danger" onClick={() => cancelOrder(order)} aria-label="ألغِ الطلب"><X size={14} /></button>
+                  : <button type="button" className="admin-link" onClick={() => void live.setStatus(order.ref, 'جديد')}>رجّعه</button>}
               </li>
             ))}
           </ul>
@@ -455,6 +478,12 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
         <div className="pos-toast" role="status" data-testid="pos-toast">
           <span>{toast.edited ? 'انعدّل' : 'انضرب'} طلب <b>#{orderNo(all.find((order) => order.ref === toast.order.ref) ?? toast.order)}</b> · {money(toast.order.total)} د.أ{live.pendingRefs.has(toast.order.ref) ? ' (محفوظ، بينبعت لما يرجع النت)' : ''}</span>
           {!toast.edited && <button type="button" onClick={() => { void live.setStatus(toast.order.ref, 'ملغي'); setToast(null); }}><Undo2 size={15} /> تراجع</button>}
+        </div>
+      )}
+      {undoCancel && (
+        <div className="pos-toast is-cancel" role="status" data-testid="pos-cancel-toast">
+          <span>انلغى طلب <b>#{orderNo(undoCancel.order)}</b></span>
+          <button type="button" onClick={() => { void live.setStatus(undoCancel.order.ref, undoCancel.before); setUndoCancel(null); }} data-testid="pos-cancel-undo"><Undo2 size={15} /> رجّعه</button>
         </div>
       )}
       {notice && <div className="pos-toast is-notice" role="status" data-testid="pos-notice">{notice}</div>}

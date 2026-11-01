@@ -1269,6 +1269,7 @@ function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh
       <footer>
         {order.status === 'جديد' && <><button type="button" className="admin-primary" onClick={() => onStatus('عم يتحضّر')} data-testid="button-start">بلّش تحضير</button><button type="button" className="admin-danger" onClick={() => { if (confirm(`إلغاء الطلب #${orderNo(order)}؟`)) onStatus('ملغي'); }}>إلغاء</button></>}
         {order.status === 'عم يتحضّر' && <button type="button" className="admin-green" onClick={() => onStatus('جاهز')} data-testid="button-ready">جاهز ✅ (بيوصل للزبون)</button>}
+        {(order.status === 'عم يتحضّر' || order.status === 'جاهز') && <button type="button" className="admin-print is-danger" onClick={() => { if (confirm(`إلغاء الطلب #${orderNo(order)}؟`)) onStatus('ملغي'); }} aria-label="إلغاء" title="إلغاء"><X size={15} /></button>}
         {order.status === 'جاهز' && <button type="button" className="admin-primary" onClick={() => onStatus('تم')} data-testid="button-picked">استلمه 👍</button>}
         {(order.status === 'تم' || order.status === 'ملغي') && <button type="button" className="admin-link" onClick={() => onStatus('جديد')}>رجّعه للطلبات المفتوحة</button>}
         {onEdit && <button type="button" className="admin-print" onClick={onEdit} aria-label={`عدّل الطلب ${order.id}`} title="عدّل الطلب" data-testid="button-edit"><Pencil size={15} /></button>}
