@@ -18,7 +18,9 @@ const walk = (dir) => {
     if (entry.isDirectory()) { walk(file); continue; }
     if (!/\.(js|css|html|json|webmanifest)$/.test(entry.name)) continue;
     const before = fs.readFileSync(file, 'utf8');
-    const after = before.replace(apiRe, `$1${API}`).replace(pathRe, `$1${BASE}/$2`);
+    let after = before.replace(apiRe, `$1${API}`).replace(pathRe, `$1${BASE}/$2`);
+    // Installed app: start_url / scope / id must stay inside the folder, or the app opens GitHub's 404.
+    if (entry.name.endsWith('.webmanifest')) after = after.replace(/("(?:start_url|scope|id)"\s*:\s*")\/(?!faei-website\/)/g, `$1${BASE}/`);
     if (after !== before) { fs.writeFileSync(file, after); changed++; }
   }
 };
