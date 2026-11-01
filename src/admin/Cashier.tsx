@@ -3,12 +3,12 @@
 // is saved on this device the moment it's rung up and sent to the server when there's a connection
 // (see useOrders and offline.ts), so it keeps working when the network drops or crawls.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Barcode, Bike, Boxes, Check, Clock, Globe, Minus, Pencil, Percent, Plus, Printer, ReceiptText, Search, ShoppingBag, Trash2, Undo2, X } from 'lucide-react';
+import { ArrowRight, Bike, Boxes, Check, Clock, Globe, Minus, Pencil, Percent, Plus, Printer, ReceiptText, Search, ShoppingBag, Trash2, Undo2, X } from 'lucide-react';
 
 import { categories as bundledCategories, products as bundledProducts, type Menu, type Product } from '../menu';
 import { markPrinted, printOrder, type Live } from './Admin';
 import { dueText, isDelivery, isToday, newRef, nextCounterNumber, orderNo, quickFetch, scheduledAt, type LiveOrder, type OrderEdit } from './offline';
-import { BarcodeDialog, LOW_STOCK, StockManager, usePos, type PosData } from './Stock';
+import { LOW_STOCK, StockManager, usePos } from './Stock';
 
 const MENU_KEY = 'faei-pos-menu';
 const CART_KEY = 'faei-pos-cart';
@@ -36,13 +36,6 @@ const customKey = (name: string, price: number) => `c|${price}|${name}`;
 const EMPTY: Draft = { lines: [], note: '', payment: 'كاش', fulfillment: 'من الكاش', ready: false, discount: null };
 const round3 = (value: number) => Math.round(value * 1000) / 1000;
 
-// The menu plus the counter-only shop goods (drinks, chips…) as one list of products.
-export function allProducts(menu: Menu, pos: PosData): { categories: string[]; products: Product[] } {
-  const goods: Product[] = pos.catalog.goods.map((good) => ({ id: good.id, name: good.name, category: good.category, options: [{ label: '', priceFils: good.priceFils }], image: good.image }));
-  const categories = [...menu.categories];
-  goods.forEach((good) => { if (!categories.includes(good.category)) categories.push(good.category); });
-  return { categories, products: [...menu.products, ...goods] };
-}
 
 // The newest menu this device has seen: the panel's own copy, then the last download, then the one built in.
 function useMenu(given: Menu | null): Menu {
@@ -60,7 +53,7 @@ function useMenu(given: Menu | null): Menu {
 export default function Cashier({ live, showSales, menu: given, editing, onEdit, session, canManage }: { live: Live; showSales: boolean; menu: Menu | null; editing: LiveOrder | null; onEdit: (order: LiveOrder | null) => void; session: string; canManage: boolean }) {
   const baseMenu = useMenu(given);
   const pos = usePos(session, live);
-  const menu = useMemo(() => allProducts(baseMenu, pos.data), [baseMenu, pos.data]);
+  const menu = baseMenu;
   const byId = useMemo(() => new Map(menu.products.map((product) => [product.id, product])), [menu]);
   const byName = useMemo(() => new Map(menu.products.flatMap((product) => product.options.map((_, index) => [lineName(product, index), `${product.id}::${index}`] as const))), [menu]);
   const [newDraft, setNewDraft] = useState<Draft>(() => ({ ...EMPTY, ...load<Partial<Draft>>(CART_KEY, {}) }));
@@ -90,13 +83,20 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
     if (fixDraft) setFixDraft(previous); else { setNewDraft(previous); save(CART_KEY, previous); }
   }
   useEffect(() => { history.current = []; }, [editing?.ref]);
-  const [category, setCategory] = useState('');
+  const [chosenCategory, setCategory] = useState('');
+  // Wide counter screens keep the sections on a rail beside the items (no drilling in and out).
+  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 1100px)').matches);
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1100px)');
+    const update = () => setWide(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
   const [query, setQuery] = useState('');
   const [paid, setPaid] = useState(0);
   const [otherPaid, setOtherPaid] = useState('');
   const [showDiscount, setShowDiscount] = useState(false);
   const [managing, setManaging] = useState(false);
-  const [scanned, setScanned] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [undoCancel, setUndoCancel] = useState<{ order: LiveOrder; before: string } | null>(null);
   useEffect(() => { if (!undoCancel) return; const timer = window.setTimeout(() => setUndoCancel(null), 15000); return () => window.clearTimeout(timer); }, [undoCancel]);
@@ -123,6 +123,11 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
   const pieces = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   function add(product: Product | null, index: number, step = 1, key = `${product?.id}::${index}`) {
+    // Counted item running out: a short warning, the sale still goes through.
+    if (product && step > 0) {
+      const left = leftOf(product.id);
+      if (left !== null && qtyOf(product) + step > left) setNotice(`⚠️ ${product.name}: ${left <= 0 ? 'خلص من المخزون' : `ضايل ${left} بس`}`);
+    }
     setDraft((current) => {
       const found = current.lines.find((line) => line.key === key);
       const next = found
@@ -189,62 +194,29 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  // A barcode was read: add its item, or (unknown code) offer to link it to an item or a new shop good.
-  function onScan(code: string) {
-    const key = pos.data.catalog.barcodes[code];
-    const [id, index] = (key ?? '').split('::');
-    const product = key ? menu.products.find((item) => item.id === id) : undefined;
-    if (product && product.options[Number(index)]) { add(product, Number(index)); setNotice(`✓ ${lineName(product, Number(index))}`); return; }
-    if (canManage) setScanned(code); else setNotice(`باركود مش معروف (${code}). خلّي الإدارة تربطه بصنف.`);
-  }
-  const onScanRef = useRef(onScan);
-  onScanRef.current = onScan;
-  useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(''), 2500); return () => window.clearTimeout(timer); }, [notice]);
-
   // Keyboard on the counter PC: type to search, Enter adds the first match, Ctrl+Enter (or F9) rings up.
-  // The laser scanner types the code very fast and ends with Enter; that's told apart from a person typing.
-  const scan = useRef({ text: '', last: 0, start: 0 });
   useEffect(() => {
     const keys = (event: KeyboardEvent) => {
       if ((event.key === 'Enter' && (event.ctrlKey || event.metaKey)) || event.key === 'F9') { event.preventDefault(); ringUp(); return; }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !(event.target as HTMLElement).closest?.('input, textarea')) { event.preventDefault(); undo(); return; }
-      const target = event.target as HTMLElement;
-      // Typing in the barcode dialog or the stock screen is left alone.
-      if (target.closest?.('[data-no-scan]')) return;
-      const now = performance.now();
-      const buffer = scan.current;
-      if (event.key === 'Enter') {
-        const fast = buffer.text.length >= 4 && now - buffer.last < 80 && (now - buffer.start) / buffer.text.length < 45;
-        if (fast) {
-          event.preventDefault();
-          event.stopPropagation();
-          const code = buffer.text;
-          if (target === searchRef.current) setQuery((current) => current.replace(code, '').trim());
-          onScanRef.current(code);
-        }
-        scan.current = { text: '', last: 0, start: 0 };
-        return;
-      }
-      if (event.key.length !== 1) return;
-      if (now - buffer.last > 80) scan.current = { text: event.key, last: now, start: now };
-      else scan.current = { ...buffer, text: buffer.text + event.key, last: now };
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !(event.target as HTMLElement).closest?.('input, textarea')) { event.preventDefault(); undo(); }
     };
-    window.addEventListener('keydown', keys, true);
-    return () => window.removeEventListener('keydown', keys, true);
+    window.addEventListener('keydown', keys);
+    return () => window.removeEventListener('keydown', keys);
   });
 
+  const category = chosenCategory || (wide ? menu.categories[0] ?? '' : '');
   const q = query.trim().toLocaleLowerCase('ar');
   const shown = menu.products.filter((product) => (q
     ? product.name.toLocaleLowerCase('ar').includes(q) || product.category.toLocaleLowerCase('ar').includes(q)
     : !category || product.category === category));
-  const qtyOf = (product: Product) => draft.lines.filter((line) => line.key.startsWith(`${product.id}::`)).reduce((sum, line) => sum + line.quantity, 0);
+  function qtyOf(product: Product, index?: number) { return draft.lines.filter((line) => (index === undefined ? line.key.startsWith(`${product.id}::`) : line.key === `${product.id}::${index}`)).reduce((sum, line) => sum + line.quantity, 0); }
   // Pieces left of a counted item: the server's count, minus orders still waiting on this device to be sent.
   const waitingPieces = useMemo(() => {
     const counts = new Map<string, number>();
     (live.orders ?? []).filter((order) => live.pendingRefs.has(order.ref)).forEach((order) => order.items.forEach((item) => { if (item.pid) counts.set(item.pid, (counts.get(item.pid) ?? 0) + item.quantity); }));
     return counts;
   }, [live.orders, live.pendingRefs]);
-  const leftOf = (id: string) => (id in pos.data.stock ? pos.data.stock[id] - (waitingPieces.get(id) ?? 0) : null);
+  function leftOf(id: string) { return id in pos.data.stock ? pos.data.stock[id] - (waitingPieces.get(id) ?? 0) : null; }
   const lowCount = menu.products.filter((product) => { const left = leftOf(product.id); return left !== null && left <= LOW_STOCK; }).length;
   const coverOf = (name: string) => menu.products.find((product) => product.category === name && product.image)?.image;
 
@@ -281,7 +253,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
       </header>
       {editing && <p className="pos-editing">{editing.source === 'pos' ? 'طلب كاش' : 'طلب من الموقع'} · {editing.status}. زيد أو نقّص أو ضيف أصناف من المنيو، وبعدين احفظ. المبيعات والمخزون بيتعدلوا لحالهم.
         <button type="button" className="admin-link" onClick={() => onEdit(null)} data-testid="pos-edit-cancel">إلغاء التعديل</button></p>}
-      {!lines.length && <p className="pos-empty">{editing ? 'الطلب فاضي. ضيف صنف، أو إذا بدك تلغيه ألغيه من قائمة الطلبات.' : 'اكبس على الصنف أو امسح الباركود عشان ينضاف.'}</p>}
+      {!lines.length && <p className="pos-empty">{editing ? 'الطلب فاضي. ضيف صنف، أو إذا بدك تلغيه ألغيه من قائمة الطلبات.' : 'اكبس على الصنف عشان ينضاف.'}</p>}
       <ul className="pos-lines">
         {lines.map((line) => (
           <li key={line.key}>
@@ -321,7 +293,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
       )}
       {discount > 0 && <div className="pos-sub"><span>الأصناف {money(total)}</span><span>خصم −{money(discount)}</span></div>}
       <div className="pos-total"><span>المجموع</span><b data-testid="pos-total">{money(finalTotal)} د.أ</b></div>
-      <button type="button" className="pos-ring" disabled={!lines.length} onClick={ringUp} data-testid="pos-ring"><Check size={20} /> {editing ? 'احفظ التعديل' : 'دق الطلب'}</button>
+      <button type="button" className="pos-ring" disabled={!lines.length} onClick={ringUp} data-testid="pos-ring"><Check size={20} /> {editing ? 'احفظ التعديل' : 'دق الطلب'}{lines.length > 0 && <span className="pos-ring-total">{money(finalTotal)} د.أ</span>}</button>
       <label className="pos-print"><input type="checkbox" checked={printOn} onChange={(event) => { setPrintOn(event.target.checked); save(PRINT_KEY, event.target.checked); }} /> <Printer size={14} /> اطبع فاتورة مع كل طلب</label>
     </section>
   );
@@ -337,7 +309,22 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
           <span className="pos-item-name">{product.name}</span>
           {product.options.length === 1 && <em>{money(product.options[0].priceFils / 1000)}</em>}
         </div>
-        {product.options.length > 1 && <div className="pos-opts">{product.options.map((option, index) => <button key={index} type="button" onClick={() => add(product, index)}>{option.label || 'عادي'} <em>{money(option.priceFils / 1000)}</em></button>)}</div>}
+        {product.options.length > 1 && <div className="pos-opts">{product.options.map((option, index) => {
+          const n = qtyOf(product, index);
+          return (
+            <div key={index} className={`pos-opt${n ? ' is-in' : ''}`}>
+              <button type="button" onClick={() => add(product, index)} data-testid={`pos-opt-${product.id}-${index}`}>{option.label || 'عادي'} <em>{money(option.priceFils / 1000)}</em>{n > 0 && <i>{n}</i>}</button>
+              {n > 0 && <button type="button" className="pos-opt-minus" onClick={() => add(product, index, -1)} aria-label={`نقّص ${option.label}`} data-testid={`pos-minus-${product.id}-${index}`}><Minus size={14} /></button>}
+            </div>
+          );
+        })}</div>}
+        {product.options.length === 1 && count > 0 && (
+          <div className="pos-tile-qty">
+            <button type="button" onClick={() => add(product, 0, -1)} aria-label="نقّص" data-testid={`pos-minus-${product.id}-0`}><Minus size={15} /></button>
+            <b>{count}</b>
+            <button type="button" onClick={() => add(product, 0)} aria-label="زيد"><Plus size={15} /></button>
+          </div>
+        )}
         {count > 0 && <i className="pos-count">{count}</i>}
         {off ? <small className="pos-off">مش متوفر</small> : left !== null && <small className={`pos-left-tag${left <= LOW_STOCK ? ' is-low' : ''}`}>{left <= 0 ? 'خلص' : `باقي ${left}`}</small>}
       </article>
@@ -387,15 +374,14 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
           <section className="pos-menu">
             <div className="pos-search">
               <Search size={16} />
-              <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="دوّر على صنف، أو امسح الباركود…" data-testid="pos-search"
+              <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="دوّر على صنف… (Enter بيضيف أول نتيجة)" data-testid="pos-search"
                 onKeyDown={(event) => {
                   if (event.key === 'Escape') setQuery('');
                   if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && q && shown[0]) { add(shown[0], 0); setQuery(''); }
                 }} />
-              <Barcode size={16} aria-label="الباركود شغّال" />
               {query && <button type="button" onClick={() => setQuery('')} aria-label="امسح"><X size={15} /></button>}
             </div>
-            {!q && category && (
+            {!q && category && !wide && (
               <div className="pos-cats">
                 <button type="button" onClick={() => setCategory('')} data-testid="pos-back"><ArrowRight size={14} /> كل الأقسام</button>
                 {menu.categories.map((name) => <button key={name} type="button" className={category === name ? 'is-active' : ''} onClick={() => setCategory(name)}>{name}</button>)}
@@ -416,9 +402,26 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
                   );
                 })}
               </div>
-              : <div className="pos-grid">
-                {shown.map(tile)}
-                {!shown.length && <p className="pos-empty">ما لقينا اشي بهالاسم.</p>}
+              : <div className={wide ? 'pos-browse' : ''}>
+                {wide && (
+                  <nav className="pos-rail" data-testid="pos-rail">
+                    {menu.categories.map((name) => {
+                      const cover = coverOf(name);
+                      const inCart = draft.lines.reduce((sum, line) => sum + (menu.products.find((product) => line.key.startsWith(`${product.id}::`))?.category === name ? line.quantity : 0), 0);
+                      return (
+                        <button key={name} type="button" className={!q && category === name ? 'is-active' : ''} onClick={() => { setQuery(''); setCategory(name); }} data-testid={`pos-cat-${name}`}>
+                          {cover ? <img src={cover} alt="" loading="lazy" /> : <span className="pos-thumb-empty">{name.slice(0, 2)}</span>}
+                          <span>{name}</span>
+                          {inCart > 0 && <i>{inCart}</i>}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                )}
+                <div className="pos-grid">
+                  {shown.map(tile)}
+                  {!shown.length && <p className="pos-empty">ما لقينا اشي بهالاسم.</p>}
+                </div>
               </div>}
           </section>
           <div className={`pos-side${sheet ? ' is-open' : ''}`}>{ticket}</div>
@@ -487,13 +490,6 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
         </div>
       )}
       {notice && <div className="pos-toast is-notice" role="status" data-testid="pos-notice">{notice}</div>}
-      {scanned && <BarcodeDialog code={scanned} products={menu.products} pos={pos} onDone={(key) => {
-        setScanned(null);
-        if (!key) return;
-        const [id, index] = key.split('::');
-        const product = menu.products.find((item) => item.id === id) ?? (id.startsWith('g-') ? { id, name: '', category: '', options: [{ label: '', priceFils: 0 }] } : undefined);
-        if (product) add(product as Product, Number(index));
-      }} />}
       {managing && <StockManager products={menu.products} categories={menu.categories} pos={pos} canManage={canManage} orders={live.orders ?? []} onClose={() => setManaging(false)} />}
     </div>
   );

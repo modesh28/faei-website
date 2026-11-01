@@ -573,3 +573,28 @@ a { color: inherit; }
 @media (max-width: 600px) { .pos-stock-list li { flex-wrap: wrap; } .pos-stock-actions, .pos-stock-edit { flex: 1 1 100%; justify-content: flex-end; } }
 .admin-sheet-wrap:has(.pos-stock), .admin-sheet-wrap:has(.pos-dialog) { background: rgba(10,20,30,.45); z-index: 70; }
 .pos-stock { max-width: 720px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.5); }
+
+/* Cashier v3: rail of sections on wide screens, +/− right on the item. */
+.pos-browse { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 12px; align-items: start; padding-top: 10px; }
+.pos-rail { position: sticky; top: 118px; display: flex; flex-direction: column; gap: 6px; max-height: calc(100vh - 130px); overflow-y: auto; scrollbar-width: thin; }
+.pos-rail button { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 2px solid transparent; border-radius: 14px; background: var(--surface); font-weight: 800; font-size: 15px; text-align: start; box-shadow: 0 1px 2px rgba(16,24,40,.05); }
+.pos-rail button img, .pos-rail .pos-thumb-empty { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: none; font-size: 12px; }
+.pos-rail button span { flex: 1; }
+.pos-rail .is-active { border-color: var(--accent); background: rgba(26,115,232,.08); color: var(--accent); }
+.pos-rail i { font-style: normal; min-width: 22px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; line-height: 20px; text-align: center; }
+.pos-browse .pos-grid { padding-top: 0; }
+.pos-opt { position: relative; display: flex; gap: 4px; }
+.pos-opt > button:first-child { flex: 1; display: inline-flex; justify-content: space-between; align-items: center; gap: 6px; }
+.pos-opt > button:first-child i { font-style: normal; min-width: 22px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; line-height: 20px; }
+.pos-opt.is-in > button:first-child { background: rgba(26,115,232,.1); }
+.pos-opt-minus { flex: none; width: 40px; display: grid; place-items: center; border: 2px solid var(--red) !important; color: var(--red) !important; background: var(--surface) !important; border-radius: 12px; padding: 0 !important; }
+.pos-opts { grid-template-columns: 1fr; }
+.pos-tile-qty { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px 10px; }
+.pos-tile-qty button { width: 44px; height: 38px; display: grid; place-items: center; border: 2px solid var(--accent); border-radius: 12px; background: var(--surface); color: var(--accent); }
+.pos-tile-qty button:first-child { border-color: var(--red); color: var(--red); }
+.pos-tile-qty b { font-size: 18px; }
+.pos-ring { justify-content: space-between; padding-inline: 22px; }
+.pos-ring-total { direction: ltr; padding: 4px 12px; border-radius: 10px; background: rgba(255,255,255,.2); font-size: 18px; }
+.pos-ring:disabled { justify-content: center; }
+.pos .admin-sound { padding: 8px; font-size: 14px; margin-bottom: 8px; }
+.pos-site-hint { padding: 8px 12px; }

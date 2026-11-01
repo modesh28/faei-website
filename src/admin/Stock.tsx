@@ -2,7 +2,7 @@
 // device for offline use. Counted items lose pieces with every sale (site or counter) and get them
 // back on a cancel; an item that reaches 0 shows "مش متوفر" on the site.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Barcode, Plus, Search, Trash2, X } from 'lucide-react';
+import { Plus, Search, Trash2, X } from 'lucide-react';
 
 import type { Product } from '../menu';
 import type { Live } from './Admin';
@@ -68,57 +68,6 @@ export function usePos(session: string, live: Live): Pos {
   };
 }
 
-const priceText = (fils: number) => (fils / 1000).toFixed(fils % 1000 === 0 ? 0 : 2);
-
-// A code nobody knows yet: link it to an item on the menu, or add it as a new shop good.
-export function BarcodeDialog({ code, products, pos, onDone }: { code: string; products: Product[]; pos: Pos; onDone: (key?: string) => void }) {
-  const [query, setQuery] = useState('');
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [count, setCount] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const q = query.trim().toLocaleLowerCase('ar');
-  const matches = q ? products.filter((product) => product.name.toLocaleLowerCase('ar').includes(q)).slice(0, 12) : [];
-  async function link(key: string) {
-    setBusy(true); setError('');
-    const ok = await pos.saveCatalog({ ...pos.data.catalog, barcodes: { ...pos.data.catalog.barcodes, [code]: key } });
-    setBusy(false);
-    if (ok) onDone(key); else setError('ما انحفظ. لازم يكون في نت عشان تربط باركود.');
-  }
-  async function create() {
-    const priceFils = Math.round(Number(price) * 1000);
-    if (!name.trim() || !(priceFils >= 0) || !price) { setError('اكتب الاسم والسعر.'); return; }
-    setBusy(true); setError('');
-    const good: Good = { id: `g-${Date.now().toString(36)}`, name: name.trim(), priceFils, category: 'بضاعة' };
-    const ok = await pos.saveCatalog({ goods: [...pos.data.catalog.goods, good], barcodes: { ...pos.data.catalog.barcodes, [code]: `${good.id}::0` } });
-    if (ok && count !== '') await pos.setStock(good.id, { set: Number(count) || 0 });
-    setBusy(false);
-    if (ok) onDone(`${good.id}::0`); else setError('ما انحفظ. لازم يكون في نت عشان تضيف صنف.');
-  }
-  return (
-    <div className="admin-sheet-wrap" data-no-scan onClick={(event) => { if (event.target === event.currentTarget) onDone(); }}>
-      <div className="admin-sheet pos-dialog" role="dialog" aria-label="باركود جديد" data-testid="barcode-dialog">
-        <header><h2><Barcode size={18} /> باركود جديد <code dir="ltr">{code}</code></h2><button type="button" className="pos-sheet-close" onClick={() => onDone()} aria-label="سكّر"><X size={18} /></button></header>
-        <h3>صنف جديد من بضاعة المحل</h3>
-        <div className="pos-form">
-          <input className="admin-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="الاسم (مثلاً: بيبسي علبة)" autoFocus data-testid="good-name" />
-          <input className="admin-input" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="السعر د.أ" inputMode="decimal" data-testid="good-price" />
-          <input className="admin-input" value={count} onChange={(event) => setCount(event.target.value)} placeholder="الكمية عندك (اختياري)" inputMode="numeric" />
-          <button type="button" className="admin-primary" disabled={busy} onClick={() => void create()} data-testid="good-save"><Plus size={15} /> ضيف</button>
-        </div>
-        <h3>أو اربطه بصنف موجود</h3>
-        <div className="pos-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="دوّر على الصنف…" /></div>
-        <ul className="pos-pick">
-          {matches.flatMap((product) => product.options.map((option, index) => (
-            <li key={`${product.id}${index}`}><button type="button" disabled={busy} onClick={() => void link(`${product.id}::${index}`)}>{product.name}{option.label ? ` — ${option.label}` : ''} <em>{priceText(option.priceFils)}</em></button></li>
-          )))}
-        </ul>
-        {error && <p className="admin-error">{error}</p>}
-      </div>
-    </div>
-  );
-}
 
 // Stock, kept simple: only the items you chose to count are on the list. Each shows what's left,
 // how many days that lasts at the current pace, and three quick actions: sold/spoilt −1, goods arrived +,
@@ -223,7 +172,6 @@ export function StockManager({ products, pos, canManage, orders, onClose }: { pr
           <div className="pos-stock-add">
             {adding === '' && <>
               <button type="button" className="admin-primary" onClick={() => setAdding('menu')} data-testid="stock-add-menu"><Plus size={15} /> عدّ صنف من المنيو</button>
-              <button type="button" className="admin-link" onClick={() => setAdding('good')} data-testid="stock-add-good"><Plus size={15} /> بضاعة جديدة (مش عالمنيو)</button>
             </>}
             {adding === 'menu' && <>
               <div className="pos-search"><Search size={16} /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="اكتب اسم الصنف…" data-testid="stock-search" /><button type="button" onClick={() => { setAdding(''); setQuery(''); }} aria-label="سكّر"><X size={15} /></button></div>
