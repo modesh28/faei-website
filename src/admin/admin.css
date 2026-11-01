@@ -552,3 +552,24 @@ a { color: inherit; }
   .pos-ring { padding: 20px; font-size: 21px; }
 }
 .pos-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
+.pos-stock-empty { padding: 14px; border-radius: 14px; background: var(--soft); margin: 8px 0; }
+.pos-stock-empty p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.pos-stock-alert { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: #fdeeee; color: var(--red); font-weight: 800; font-size: 14px; }
+:root[data-theme="dark"] .pos-stock-alert { background: #331616; }
+.pos-stock-list .pos-left { font-size: 22px; min-width: 48px; }
+.pos-stock-actions { display: flex; align-items: center; gap: 6px; }
+.pos-stock-actions > button { padding: 8px 12px; border: 2px solid var(--line); border-radius: 10px; background: var(--surface); font-weight: 800; }
+.pos-stock-actions > button.is-add { border-color: var(--green); color: var(--green); }
+.pos-stock-edit { display: flex; gap: 6px; }
+.pos-stock-edit .admin-input { width: 110px; flex: none; }
+.pos-stock-more { position: relative; }
+.pos-stock-more summary { list-style: none; cursor: pointer; padding: 6px 10px; border-radius: 10px; font-weight: 800; }
+.pos-stock-more summary::-webkit-details-marker { display: none; }
+.pos-stock-more[open] > button { position: absolute; left: 0; z-index: 5; white-space: nowrap; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-weight: 700; box-shadow: var(--shadow); display: inline-flex; gap: 4px; align-items: center; }
+.pos-stock-more[open] > button:nth-of-type(1) { top: 36px; }
+.pos-stock-more[open] > button:nth-of-type(2) { top: 76px; color: var(--red); }
+.pos-stock-add { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pos-stock-add .pos-search, .pos-stock-add .pos-pick { flex: 1 1 100%; }
+@media (max-width: 600px) { .pos-stock-list li { flex-wrap: wrap; } .pos-stock-actions, .pos-stock-edit { flex: 1 1 100%; justify-content: flex-end; } }
+.admin-sheet-wrap:has(.pos-stock), .admin-sheet-wrap:has(.pos-dialog) { background: rgba(10,20,30,.45); z-index: 70; }
+.pos-stock { max-width: 720px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.5); }

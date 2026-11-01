@@ -6,7 +6,7 @@ import { Barcode, Plus, Search, Trash2, X } from 'lucide-react';
 
 import type { Product } from '../menu';
 import type { Live } from './Admin';
-import { quickFetch } from './offline';
+import { quickFetch, type LiveOrder } from './offline';
 
 export type Good = { id: string; name: string; priceFils: number; category: string; image?: string };
 export type PosData = { catalog: { goods: Good[]; barcodes: Record<string, string> }; stock: Record<string, number>; version: number };
@@ -120,108 +120,124 @@ export function BarcodeDialog({ code, products, pos, onDone }: { code: string; p
   );
 }
 
-// Stock take and goods: set what's on the shelf, add what arrived, barcodes, and the shop's own goods.
-export function StockManager({ products, categories, pos, canManage, onClose }: { products: Product[]; categories: string[]; pos: Pos; canManage: boolean; onClose: () => void }) {
+// Stock, kept simple: only the items you chose to count are on the list. Each shows what's left,
+// how many days that lasts at the current pace, and three quick actions: sold/spoilt −1, goods arrived +,
+// and "جرد" to type the real count. Adding an item to the list or a new shop good is one small form.
+type SoldRate = Map<string, number>;
+export function StockManager({ products, pos, canManage, orders, onClose }: { products: Product[]; categories: string[]; pos: Pos; canManage: boolean; orders: LiveOrder[]; onClose: () => void }) {
+  const [state, setState] = useState<Record<string, 'saving' | 'error'>>({});
+  const [editing, setEditing] = useState<{ id: string; mode: 'set' | 'add' } | null>(null);
+  const [value, setValue] = useState('');
+  const [adding, setAdding] = useState<'' | 'menu' | 'good'>('');
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'counted' | 'low'>('all');
-  const [category, setCategory] = useState('');
-  const [state, setState] = useState<Record<string, 'saving' | 'saved' | 'error'>>({});
-  const [adding, setAdding] = useState({ name: '', price: '', category: 'بضاعة', count: '', code: '' });
+  const [good, setGood] = useState({ name: '', price: '', count: '', code: '' });
   const [message, setMessage] = useState('');
   const stock = pos.data.stock;
-  const codesOf = useMemo(() => {
-    const map = new Map<string, string[]>();
-    Object.entries(pos.data.catalog.barcodes).forEach(([code, key]) => { const id = key.split('::')[0]; map.set(id, [...(map.get(id) ?? []), code]); });
+  const counted = products.filter((product) => product.id in stock);
+  // Pieces sold per day over the days we have orders for (at most a week), per item.
+  const rate: SoldRate = useMemo(() => {
+    const since = Date.now() - 7 * 86_400_000;
+    const recent = orders.filter((order) => order.status !== 'ملغي' && order.createdAt > since);
+    const days = Math.max(1, Math.min(7, (Date.now() - Math.min(Date.now() - 86_400_000, ...recent.map((order) => order.createdAt))) / 86_400_000));
+    const map: SoldRate = new Map();
+    recent.forEach((order) => order.items.forEach((item) => { if (item.pid) map.set(item.pid, (map.get(item.pid) ?? 0) + item.quantity); }));
+    map.forEach((count, id) => map.set(id, count / days));
     return map;
-  }, [pos.data.catalog.barcodes]);
-  const q = query.trim().toLocaleLowerCase('ar');
-  const shown = products.filter((product) => (!q || product.name.toLocaleLowerCase('ar').includes(q) || (codesOf.get(product.id) ?? []).some((code) => code.includes(q)))
-    && (!category || product.category === category)
-    && (filter === 'all' || (product.id in stock && (filter === 'counted' || stock[product.id] <= LOW_STOCK))));
-  const low = products.filter((product) => product.id in stock && stock[product.id] <= LOW_STOCK).length;
+  }, [orders]);
+  const daysLeft = (id: string) => { const perDay = rate.get(id) ?? 0; return perDay > 0 ? stock[id] / perDay : null; };
+  const sorted = [...counted].sort((a, b) => stock[a.id] - stock[b.id]);
+  const low = sorted.filter((product) => stock[product.id] <= LOW_STOCK || (daysLeft(product.id) ?? 99) < 2);
 
-  async function change(id: string, value: { set: number | null } | { add: number }) {
+  async function change(id: string, update: { set: number | null } | { add: number }) {
     setState((current) => ({ ...current, [id]: 'saving' }));
-    const ok = await pos.setStock(id, value);
-    setState((current) => ({ ...current, [id]: ok ? 'saved' : 'error' }));
+    const ok = await pos.setStock(id, update);
+    setState((current) => { const next = { ...current }; if (ok) delete next[id]; else next[id] = 'error'; return next; });
+    if (!ok) setMessage('ما انحفظ، لازم يكون في نت.');
   }
-  async function removeCode(code: string) {
-    const barcodes = { ...pos.data.catalog.barcodes };
-    delete barcodes[code];
-    if (!await pos.saveCatalog({ ...pos.data.catalog, barcodes })) setMessage('ما انحفظ، تأكد من النت.');
-  }
-  async function removeGood(good: Product) {
-    if (!confirm(`نشيل "${good.name}" من بضاعة المحل؟`)) return;
-    const barcodes = Object.fromEntries(Object.entries(pos.data.catalog.barcodes).filter(([, key]) => !key.startsWith(`${good.id}::`)));
-    if (await pos.saveCatalog({ goods: pos.data.catalog.goods.filter((item) => item.id !== good.id), barcodes })) void pos.setStock(good.id, { set: null });
-    else setMessage('ما انحفظ، تأكد من النت.');
+  function submit() {
+    if (!editing || value === '' || !Number.isFinite(Number(value))) { setEditing(null); return; }
+    void change(editing.id, editing.mode === 'set' ? { set: Math.round(Number(value)) } : { add: Math.round(Number(value)) });
+    setEditing(null); setValue('');
   }
   async function addGood() {
-    const priceFils = Math.round(Number(adding.price) * 1000);
-    if (!adding.name.trim() || !adding.price || !(priceFils >= 0)) { setMessage('اكتب الاسم والسعر.'); return; }
-    const good: Good = { id: `g-${Date.now().toString(36)}`, name: adding.name.trim(), priceFils, category: adding.category.trim() || 'بضاعة' };
-    const barcodes = adding.code.trim() ? { ...pos.data.catalog.barcodes, [adding.code.trim()]: `${good.id}::0` } : pos.data.catalog.barcodes;
-    if (!await pos.saveCatalog({ goods: [...pos.data.catalog.goods, good], barcodes })) { setMessage('ما انحفظ، تأكد من النت.'); return; }
-    if (adding.count !== '') await pos.setStock(good.id, { set: Number(adding.count) || 0 });
-    setAdding({ name: '', price: '', category: adding.category, count: '', code: '' });
-    setMessage(`انضاف ${good.name} ✅`);
+    const priceFils = Math.round(Number(good.price) * 1000);
+    if (!good.name.trim() || !good.price || !(priceFils >= 0)) { setMessage('اكتب الاسم والسعر.'); return; }
+    const item: Good = { id: `g-${Date.now().toString(36)}`, name: good.name.trim(), priceFils, category: 'بضاعة' };
+    const barcodes = good.code.trim() ? { ...pos.data.catalog.barcodes, [good.code.trim()]: `${item.id}::0` } : pos.data.catalog.barcodes;
+    if (!await pos.saveCatalog({ goods: [...pos.data.catalog.goods, item], barcodes })) { setMessage('ما انحفظ، لازم يكون في نت.'); return; }
+    await pos.setStock(item.id, { set: Number(good.count) || 0 });
+    setGood({ name: '', price: '', count: '', code: '' }); setAdding(''); setMessage(`انضاف ${item.name} ✅`);
   }
+  async function removeGood(product: Product) {
+    if (!confirm(`نشيل "${product.name}" من بضاعة المحل؟`)) return;
+    const barcodes = Object.fromEntries(Object.entries(pos.data.catalog.barcodes).filter(([, key]) => !key.startsWith(`${product.id}::`)));
+    if (await pos.saveCatalog({ goods: pos.data.catalog.goods.filter((item) => item.id !== product.id), barcodes })) void pos.setStock(product.id, { set: null });
+  }
+  const q = query.trim().toLocaleLowerCase('ar');
+  const candidates = q ? products.filter((product) => !(product.id in stock) && product.name.toLocaleLowerCase('ar').includes(q)).slice(0, 8) : [];
 
   return (
     <div className="admin-sheet-wrap" data-no-scan onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <div className="admin-sheet pos-stock" role="dialog" aria-label="المخزون" data-testid="stock-manager">
-        <header><h2>المخزون والجرد</h2><button type="button" className="pos-sheet-close" onClick={onClose} aria-label="سكّر"><X size={18} /></button></header>
-        <p className="admin-hint">اكتب كم حبة عندك من الصنف (جرد). كل بيعة من الكاش أو الموقع بتنقص لحالها، والإلغاء برجّعها. لما يخلص الصنف بيصير "مش متوفر" عالموقع. الصنف اللي ما إله رقم ما بنعدّه.</p>
-        <div className="pos-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="دوّر بالاسم أو الباركود…" data-testid="stock-search" /></div>
-        <div className="pos-cats">
-          <button type="button" className={filter === 'all' ? 'is-active' : ''} onClick={() => setFilter('all')}>الكل</button>
-          <button type="button" className={filter === 'counted' ? 'is-active' : ''} onClick={() => setFilter('counted')}>المعدود</button>
-          <button type="button" className={filter === 'low' ? 'is-active' : ''} onClick={() => setFilter('low')} data-testid="stock-low">قرب يخلص{low ? ` (${low})` : ''}</button>
-          <select className="admin-input pos-cat-select" value={category} onChange={(event) => setCategory(event.target.value)}><option value="">كل الأقسام</option>{categories.map((name) => <option key={name}>{name}</option>)}</select>
-        </div>
+        <header><h2>المخزون</h2><button type="button" className="pos-sheet-close" onClick={onClose} aria-label="سكّر"><X size={18} /></button></header>
+        {!counted.length && (
+          <div className="pos-stock-empty">
+            <b>لسا ما في أصناف بتنعد.</b>
+            <p>ضيف الأصناف اللي بدك تعرف قديش ضايل منها (مشروبات، علب، خبز…). كل بيعة بتنقص لحالها، ولما يخلص الصنف بيصير "مش متوفر" عالموقع.</p>
+          </div>
+        )}
+        {low.length > 0 && <p className="pos-stock-alert" data-testid="stock-low">⚠️ قرب يخلص: {low.map((product) => `${product.name} (${stock[product.id] <= 0 ? 'خلص' : stock[product.id]})`).join('، ')}</p>}
         <ul className="pos-stock-list">
-          {shown.map((product) => {
-            const left = product.id in stock ? stock[product.id] : null;
-            const isGood = product.id.startsWith('g-');
+          {sorted.map((product) => {
+            const left = stock[product.id];
+            const days = daysLeft(product.id);
+            const isOpen = editing?.id === product.id;
             return (
-              <li key={product.id} className={left !== null && left <= LOW_STOCK ? (left <= 0 ? 'is-out' : 'is-low') : ''} data-testid={`stock-${product.id}`}>
+              <li key={product.id} className={left <= 0 ? 'is-out' : left <= LOW_STOCK || (days ?? 99) < 2 ? 'is-low' : ''} data-testid={`stock-${product.id}`}>
                 {product.image ? <img src={product.image} alt="" loading="lazy" /> : <span className="pos-thumb-empty">{product.name.slice(0, 2)}</span>}
                 <div className="pos-stock-name">
                   <b>{product.name}</b>
-                  <small>{product.category}{isGood ? ` · ${priceText(product.options[0].priceFils)} د.أ` : ''}</small>
-                  {(codesOf.get(product.id) ?? []).map((code) => <span key={code} className="pos-code" dir="ltr"><Barcode size={11} /> {code}{canManage && <button type="button" onClick={() => void removeCode(code)} aria-label="شيل الباركود"><X size={10} /></button>}</span>)}
+                  <small>{days !== null ? (days < 1 ? 'بيخلص اليوم' : `بيكفي حوالي ${Math.round(days)} يوم`) : 'ما انباع منه مؤخراً'}</small>
                 </div>
-                <div className="pos-stock-count">
-                  <b className="pos-left">{left === null ? '—' : left <= 0 ? 'خلص' : left}</b>
-                  {canManage && <>
-                    <input className="admin-input" inputMode="numeric" placeholder="جرد" aria-label="الكمية بالجرد" data-testid={`stock-set-${product.id}`}
-                      onKeyDown={(event) => { if (event.key === 'Enter') { const value = (event.target as HTMLInputElement).value; if (value !== '') { void change(product.id, { set: Number(value) || 0 }); (event.target as HTMLInputElement).value = ''; } } }}
-                      onBlur={(event) => { const value = event.target.value; if (value !== '') { void change(product.id, { set: Number(value) || 0 }); event.target.value = ''; } }} />
-                    <button type="button" className="admin-print" onClick={() => { const value = prompt(`كم حبة وصلت من ${product.name}؟`); if (value && Number(value)) void change(product.id, { add: Number(value) }); }} title="وصلت بضاعة" aria-label="وصلت بضاعة"><Plus size={14} /></button>
-                    {left !== null && <button type="button" className="admin-link" onClick={() => void change(product.id, { set: null })} title="بطّل تعدّه">بطّل عدّ</button>}
-                    {isGood && <button type="button" className="admin-print" onClick={() => void removeGood(product)} aria-label="احذف"><Trash2 size={14} /></button>}
-                  </>}
-                  {state[product.id] === 'saving' && <small>…</small>}
-                  {state[product.id] === 'error' && <small className="is-error">ما انحفظ</small>}
-                </div>
+                <b className="pos-left">{left <= 0 ? 'خلص' : left}</b>
+                {canManage && (isOpen
+                  ? <form className="pos-stock-edit" onSubmit={(event) => { event.preventDefault(); submit(); }}>
+                    <input className="admin-input" autoFocus inputMode="numeric" value={value} onChange={(event) => setValue(event.target.value)} placeholder={editing.mode === 'set' ? 'العدد الحقيقي' : 'كم وصل؟'} data-testid={`stock-input-${product.id}`} />
+                    <button type="submit" className="admin-primary">تمام</button>
+                  </form>
+                  : <div className="pos-stock-actions">
+                    <button type="button" onClick={() => void change(product.id, { add: -1 })} aria-label="نقّص واحد (تلف)" title="نقّص واحد">−1</button>
+                    <button type="button" className="is-add" onClick={() => { setEditing({ id: product.id, mode: 'add' }); setValue(''); }} data-testid={`stock-add-${product.id}`}>+ وصل</button>
+                    <button type="button" onClick={() => { setEditing({ id: product.id, mode: 'set' }); setValue(String(Math.max(0, left))); }} data-testid={`stock-set-${product.id}`}>جرد</button>
+                    <details className="pos-stock-more"><summary aria-label="أكثر">⋯</summary>
+                      <button type="button" onClick={() => void change(product.id, { set: null })}>بطّل عدّه</button>
+                      {product.id.startsWith('g-') && <button type="button" onClick={() => void removeGood(product)}><Trash2 size={13} /> احذفه</button>}
+                    </details>
+                  </div>)}
+                {state[product.id] === 'saving' && <small>…</small>}
               </li>
             );
           })}
         </ul>
         {canManage && (
-          <section className="pos-add-good">
-            <h3>ضيف صنف من بضاعة المحل (مشروبات، شيبس…)</h3>
-            <p className="admin-hint">بيطلع بالكاش بس، مش عالموقع. أسرع إشي: امسح الباركود وهو مفتوح الكاش وبيسألك.</p>
-            <div className="pos-form">
-              <input className="admin-input" value={adding.name} onChange={(event) => setAdding({ ...adding, name: event.target.value })} placeholder="الاسم" />
-              <input className="admin-input" value={adding.price} onChange={(event) => setAdding({ ...adding, price: event.target.value })} placeholder="السعر د.أ" inputMode="decimal" />
-              <input className="admin-input" value={adding.category} onChange={(event) => setAdding({ ...adding, category: event.target.value })} placeholder="القسم" list="pos-categories" />
-              <datalist id="pos-categories">{categories.map((name) => <option key={name} value={name} />)}</datalist>
-              <input className="admin-input" value={adding.count} onChange={(event) => setAdding({ ...adding, count: event.target.value })} placeholder="الكمية (اختياري)" inputMode="numeric" />
-              <input className="admin-input" value={adding.code} onChange={(event) => setAdding({ ...adding, code: event.target.value })} placeholder="الباركود (امسحه هون)" dir="ltr" onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }} />
+          <div className="pos-stock-add">
+            {adding === '' && <>
+              <button type="button" className="admin-primary" onClick={() => setAdding('menu')} data-testid="stock-add-menu"><Plus size={15} /> عدّ صنف من المنيو</button>
+              <button type="button" className="admin-link" onClick={() => setAdding('good')} data-testid="stock-add-good"><Plus size={15} /> بضاعة جديدة (مش عالمنيو)</button>
+            </>}
+            {adding === 'menu' && <>
+              <div className="pos-search"><Search size={16} /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="اكتب اسم الصنف…" data-testid="stock-search" /><button type="button" onClick={() => { setAdding(''); setQuery(''); }} aria-label="سكّر"><X size={15} /></button></div>
+              <ul className="pos-pick">{candidates.map((product) => <li key={product.id}><button type="button" onClick={() => { void change(product.id, { set: 0 }).then(() => { setEditing({ id: product.id, mode: 'set' }); setValue(''); }); setQuery(''); setAdding(''); }}>{product.name} <em>ضيف</em></button></li>)}</ul>
+            </>}
+            {adding === 'good' && <div className="pos-form">
+              <input className="admin-input" autoFocus value={good.name} onChange={(event) => setGood({ ...good, name: event.target.value })} placeholder="الاسم (مثلاً: مي صغيرة)" />
+              <input className="admin-input" value={good.price} onChange={(event) => setGood({ ...good, price: event.target.value })} placeholder="السعر د.أ" inputMode="decimal" />
+              <input className="admin-input" value={good.count} onChange={(event) => setGood({ ...good, count: event.target.value })} placeholder="كم عندك؟" inputMode="numeric" />
+              <input className="admin-input" value={good.code} onChange={(event) => setGood({ ...good, code: event.target.value })} placeholder="الباركود (اختياري)" dir="ltr" onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }} />
               <button type="button" className="admin-primary" onClick={() => void addGood()}><Plus size={15} /> ضيف</button>
-            </div>
-          </section>
+              <button type="button" className="admin-link" onClick={() => setAdding('')}>إلغاء</button>
+            </div>}
+          </div>
         )}
         {message && <p className="admin-hint" role="status">{message}</p>}
       </div>

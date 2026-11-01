@@ -494,7 +494,7 @@ export default function Cashier({ live, showSales, menu: given, editing, onEdit,
         const product = menu.products.find((item) => item.id === id) ?? (id.startsWith('g-') ? { id, name: '', category: '', options: [{ label: '', priceFils: 0 }] } : undefined);
         if (product) add(product as Product, Number(index));
       }} />}
-      {managing && <StockManager products={menu.products} categories={menu.categories} pos={pos} canManage={canManage} onClose={() => setManaging(false)} />}
+      {managing && <StockManager products={menu.products} categories={menu.categories} pos={pos} canManage={canManage} orders={live.orders ?? []} onClose={() => setManaging(false)} />}
     </div>
   );
 }
