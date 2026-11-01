@@ -50,8 +50,7 @@
     }
    ],
    "image": "/images/menu/shawarma-meal.webp",
-   "popular": true,
-   "available": false
+   "popular": true
   },
   {
    "id": "shawarma-meal-super",
