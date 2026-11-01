@@ -19,7 +19,7 @@
 //                              the cashier screen (الكاش) rings up a walk-in order (needs a signed-in FAEI account).
 //                              Rung up offline, it arrives later with its own time; the ref makes a resend harmless.
 
-import { connected, CORS, countCustomerOrder, json, notConnected, preflight, redis, type Role, sessionAccount } from './_lib.js';
+import { adjustStock, connected, CORS, countCustomerOrder, validPid, json, notConnected, preflight, redis, type Role, sessionAccount } from './_lib.js';
 
 // The admin screens ask for the version every few seconds. An instance that answered in the
 // last second and a half reuses its answer, which keeps the free Redis plan well within limits.
@@ -30,7 +30,7 @@ const POPULAR_TOP = 4;
 // "Busy" = this many FAEI orders still open (new or being made), or arrived in the last 20 minutes.
 const BUSY_OPEN = 6;
 const BUSY_RECENT = 6;
-let lastBusy = { busy: false, at: 0 };
+let lastBusy = { busy: false, soldOut: [] as string[], at: 0 };
 const POPULAR_MIN = 3;
 
 // Kept 35 days, so the sales page can show the last few weeks.
@@ -53,7 +53,7 @@ export async function POST(request: Request): Promise<Response> {
   if (body.action === 'sent' || body.action === 'cancel') return customerAnswer(body.ref, body.action, body.reason === 'edit');
   const items = Array.isArray(body.items) ? body.items.slice(0, 40).map((item) => {
     const line = item as Record<string, unknown>;
-    return { name: text(line.name, 120), quantity: Math.min(99, Math.max(1, Math.round(Number(line.quantity) || 1))), price: amount(line.price) };
+    return { name: text(line.name, 120), quantity: Math.min(99, Math.max(1, Math.round(Number(line.quantity) || 1))), price: amount(line.price), ...(validPid(line.pid) ? { pid: line.pid } : {}) };
   }) : [];
   // Counter orders come from the cashier screen, which may have rung them up while offline.
   let pos: { by: string; createdAt: number; status: string } | null = null;
@@ -88,6 +88,14 @@ export async function POST(request: Request): Promise<Response> {
     delivery: typeof body.delivery === 'string' ? text(body.delivery, 30) : amount(body.delivery),
     total: amount(body.total),
   };
+  // The day's order number, shared by the site and the counter: 1, 2, 3 … and back to 1 after 500.
+  const [exists] = await redis([['EXISTS', `order:${order.ref}`]]);
+  if (exists) return json({ ok: true, duplicate: true });
+  if (order.shop !== 'v8') {
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date(order.createdAt));
+    const [count] = await redis([['INCR', `ordernum:${day}`], ['EXPIRE', `ordernum:${day}`, 3 * 86_400]]);
+    (order as Record<string, unknown>).num = ((Number(count) - 1) % 500) + 1;
+  }
   const [created] = await redis([['SET', `order:${order.ref}`, JSON.stringify(order), 'EX', KEEP_SECONDS, 'NX']]);
   if (created !== 'OK') return json({ ok: true, duplicate: true });
   // A customer who came back to change their order: the old one leaves the shop's screen while it's still new.
@@ -98,12 +106,14 @@ export async function POST(request: Request): Promise<Response> {
       Object.assign(previous, { status: 'ملغي', 'at_ملغي': Date.now(), cancelledBy: 'edit', replacedBy: order.id });
       await redis([['SET', `order:${body.replaces}`, JSON.stringify(previous), 'KEEPTTL']]);
       await countCustomerOrder(previous, -1);
+      await adjustStock(previous.items, 1);
     }
   }
   const [, , version] = await redis([['LPUSH', 'orders', order.ref], ['LTRIM', 'orders', 0, 1999], ['INCR', 'orders:version']]);
   await countCustomerOrder(order, 1);
+  if (order.status !== 'ملغي') await adjustStock(order.items, -1);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
-  return json({ ok: true, created: true });
+  return json({ ok: true, created: true, num: (order as Record<string, unknown>).num });
 }
 
 async function customerAnswer(ref: string, action: 'sent' | 'cancel', edit: boolean): Promise<Response> {
@@ -115,6 +125,7 @@ async function customerAnswer(ref: string, action: 'sent' | 'cancel', edit: bool
     if (order.status !== 'جديد') return json({ error: 'started', status: order.status }, 409);
     Object.assign(order, { status: 'ملغي', 'at_ملغي': Date.now(), cancelledBy: edit ? 'edit' : 'customer' });
     await countCustomerOrder(order, -1);
+    await adjustStock(order.items, 1);
   } else {
     order.customerSent = Date.now();
   }
@@ -168,9 +179,13 @@ async function busy(): Promise<Response> {
         if (created > since) recent += 1;
       }
     }
-    lastBusy = { busy: open >= BUSY_OPEN || recent >= BUSY_RECENT, at: Date.now() };
+    // Items whose stock ran out (set from the cashier's inventory) show as "مش متوفر" on the site.
+    const [stock] = await redis([['HGETALL', 'stock']]) as [string[]];
+    const soldOut: string[] = [];
+    for (let i = 0; i < (stock?.length ?? 0); i += 2) if (Number(stock[i + 1]) <= 0) soldOut.push(stock[i]);
+    lastBusy = { busy: open >= BUSY_OPEN || recent >= BUSY_RECENT, soldOut, at: Date.now() };
   }
-  return new Response(JSON.stringify({ busy: lastBusy.busy }), { headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
+  return new Response(JSON.stringify({ busy: lastBusy.busy, soldOut: lastBusy.soldOut }), { headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
 }
 
 export async function GET(request: Request): Promise<Response> {
@@ -220,8 +235,8 @@ export async function PATCH(request: Request): Promise<Response> {
   const before = JSON.parse(stored as string) as Record<string, unknown>;
   if (!seesOrder(me.role, before as { shop?: string })) return json({ error: 'not-allowed' }, 403);
   const order = { ...before, status: body.status, [`at_${body.status}`]: Date.now() };
-  if (before.status !== 'ملغي' && body.status === 'ملغي') await countCustomerOrder(order, -1);
-  if (before.status === 'ملغي' && body.status !== 'ملغي') await countCustomerOrder(order, 1);
+  if (before.status !== 'ملغي' && body.status === 'ملغي') { await countCustomerOrder(order, -1); await adjustStock(order.items, 1); }
+  if (before.status === 'ملغي' && body.status !== 'ملغي') { await countCustomerOrder(order, 1); await adjustStock(order.items, -1); }
   const [, version] = await redis([['SET', `order:${body.ref}`, JSON.stringify(order), 'KEEPTTL'], ['INCR', 'orders:version']]);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true, order });
@@ -237,7 +252,7 @@ async function editOrder(role: Role, ref: string, edit: Record<string, unknown>)
   if (!Array.isArray(edit.items)) return json({ error: 'bad-request' }, 400);
   const items = edit.items.slice(0, 40).map((item) => {
     const line = item as Record<string, unknown>;
-    return { name: text(line.name, 120), quantity: Math.min(99, Math.max(1, Math.round(Number(line.quantity) || 1))), price: amount(line.price) };
+    return { name: text(line.name, 120), quantity: Math.min(99, Math.max(1, Math.round(Number(line.quantity) || 1))), price: amount(line.price), ...(validPid(line.pid) ? { pid: line.pid } : {}) };
   }).filter((item) => item.name);
   const order: Record<string, unknown> = {
     ...before,
@@ -250,7 +265,10 @@ async function editOrder(role: Role, ref: string, edit: Record<string, unknown>)
     editedAt: Date.now(),
     edits: (Number(before.edits) || 0) + 1,
   };
-  if (before.status !== 'ملغي') { await countCustomerOrder(before, -1); await countCustomerOrder(order, 1); }
+  if (before.status !== 'ملغي') {
+    await countCustomerOrder(before, -1); await countCustomerOrder(order, 1);
+    await adjustStock(before.items, 1); await adjustStock(order.items, -1);
+  }
   const [, version] = await redis([['SET', `order:${ref}`, JSON.stringify(order), 'KEEPTTL'], ['INCR', 'orders:version']]);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
   return json({ ok: true, order });

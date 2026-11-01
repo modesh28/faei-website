@@ -4,7 +4,7 @@
 // The outbox is sent to the server in order whenever there's a connection; the order's ref makes
 // sending the same thing twice harmless.
 
-export type OrderItem = { name: string; quantity: number; price: number };
+export type OrderItem = { name: string; quantity: number; price: number; pid?: string };
 export type LiveOrder = {
   ref: string; id: string; createdAt: number; status: string; items: OrderItem[]; extras: string;
   fulfillment: string; address: string; phone?: string; time: string; payment: string; preorder: boolean;
@@ -14,6 +14,8 @@ export type LiveOrder = {
   source?: 'pos'; by?: string; paid?: number;
   // Changed after it was placed (from the orders list or the cashier).
   editedAt?: number; edits?: number;
+  // The day's order number from the server (site and counter share it).
+  num?: number;
 };
 
 export type OrderEdit = { items: OrderItem[]; extras: string; payment: string; fulfillment: string; discount: number; total: number };
@@ -68,12 +70,50 @@ export const isToday = (time: number) => dayOf(time) === dayOf(Date.now());
 
 // Counter orders get a short number that restarts every day (1, 2, 3 …), easy to call out.
 const COUNTER_KEY = 'faei-pos-counter';
+// The number shown at once: the next after the newest number of today's orders (site and counter).
+// The server hands out the real one when the order arrives; online that's the same number.
 export function nextCounterNumber(known: LiveOrder[]): string {
   const today = dayOf(Date.now());
   const stored = load<{ day: string; n: number }>(COUNTER_KEY, { day: today, n: 0 });
   const local = stored.day === today ? stored.n : 0;
-  const seen = known.filter((order) => order.source === 'pos' && isToday(order.createdAt)).reduce((max, order) => Math.max(max, Number(order.id) || 0), 0);
-  const n = Math.max(local, seen) + 1;
+  const todays = known.filter((order) => isToday(order.createdAt) && order.shop !== 'v8');
+  const newest = todays.reduce((best, order) => (order.num && order.createdAt >= best.at ? { at: order.createdAt, n: order.num } : best), { at: 0, n: 0 });
+  const waiting = todays.filter((order) => !order.num && order.source === 'pos' && order.createdAt > newest.at).length;
+  const n = Math.max(newest.n + waiting, newest.n ? 0 : local) % 500 + 1;
   save(COUNTER_KEY, { day: today, n });
   return String(n);
 }
+
+// The order number everyone sees: the server's daily number (1, 2, 3 … back to 1 after 500),
+// or, until the server gave one, the order's own id.
+export const orderNo = (order: LiveOrder) => (order.num ? String(order.num) : order.id);
+
+// A site order for a set time ("1:30 م"): when it's due, as a time stamp. Orders "بأسرع وقت" give null.
+// The time is on the day the order was placed, or the next day if that time had already passed (a preorder at night).
+export function scheduledAt(order: LiveOrder): number | null {
+  const match = /(\d{1,2}):(\d{2})\s*([صم])/.exec(order.time || '');
+  if (!match) return null;
+  let hour = Number(match[1]) % 12;
+  if (match[3] === 'م') hour += 12;
+  const minutes = hour * 60 + Number(match[2]);
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Amman' }).format(new Date(order.createdAt));
+  let at = ammanTime(day, minutes);
+  if (at < order.createdAt - 5 * 60_000) at += 24 * 3600_000;
+  return at;
+}
+function ammanTime(day: string, minutes: number): number {
+  const [y, m, d] = day.split('-').map(Number);
+  const guess = Date.UTC(y, m - 1, d, Math.floor(minutes / 60), minutes % 60);
+  // Amman's offset from UTC at that moment (+2 or +3).
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Amman', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(guess));
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+  const shown = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
+  return guess - (shown - guess);
+}
+export function dueText(at: number): string {
+  const minutes = Math.round((at - Date.now()) / 60_000);
+  if (minutes > 60) return `بعد ${Math.floor(minutes / 60)} س ${minutes % 60} د`;
+  if (minutes > 0) return `بعد ${minutes} د`;
+  return minutes === 0 ? 'هسه' : `متأخر ${-minutes} د`;
+}
+export const isDelivery = (order: LiveOrder) => order.fulfillment.startsWith('توصيل');

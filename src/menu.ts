@@ -29,4 +29,6 @@ export type Menu = { categories: Category[]; products: Product[] };
 
 export const categories: Category[] = (menu as Menu).categories;
 export const products: Product[] = (menu as Menu).products;
-export const isAvailable = (product: Product) => product.available !== false;
+// Filled from the server: items whose counted stock (the cashier's inventory) is used up.
+export const soldOut = new Set<string>();
+export const isAvailable = (product: Product) => product.available !== false && !soldOut.has(product.id);

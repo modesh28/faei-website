@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, ChevronDown, Users, Clock, Compass, Copy, Ellipsis, EllipsisVertical, Flame, MapPin, Menu, Minus, Moon, Plus, Search, Share, ShoppingBag, Smartphone, SquarePlus, Sun, Tag, Trash2, X } from 'lucide-react';
-import { categories, products, isAvailable, type Category, type Product } from './menu';
+import { categories, products, isAvailable, soldOut, type Category, type Product } from './menu';
 import Wayfinder from './Wayfinder';
 import V8Section, { V8_EXTRAS, v8Products, v8Visible } from './V8';
 import TimePick from './TimePick';
@@ -300,7 +300,7 @@ function OpenInBrowser() {
 // After an order is sent, a small card counts down to when it should be ready, then rings.
 // It's an estimate made on the phone, so it works with no staff action and no server.
 const ACTIVE_ORDER_KEY = 'faei-active-order-v1';
-type ActiveOrder = { id: string; ref?: string; placedAt: number; readyAt: number | null; peak?: boolean };
+type ActiveOrder = { id: string; ref?: string; num?: number; placedAt: number; readyAt: number | null; peak?: boolean };
 function readActiveOrder(): ActiveOrder | null {
   try {
     const order = JSON.parse(localStorage.getItem(ACTIVE_ORDER_KEY) ?? 'null') as ActiveOrder | null;
@@ -320,13 +320,17 @@ function isPeakNow(date = new Date()): boolean {
 // Asks the server every minute (while the page is on screen) whether FAEI is swamped right now.
 function useLiveBusy() {
   const [, setBusy] = useState(false);
+  const [, setSoldOutVersion] = useState('');
+  const setSoldOut = (ids: string[]) => { soldOut.clear(); ids.forEach((id) => soldOut.add(id)); setSoldOutVersion(ids.join(',')); };
   useEffect(() => {
     const check = () => {
       if (document.visibilityState !== 'visible' || !isOpenNow()) return;
-      fetch('/api/orders?busy').then((response) => (response.ok ? response.json() : null)).then((data: { busy?: boolean } | null) => {
+      fetch('/api/orders?busy').then((response) => (response.ok ? response.json() : null)).then((data: { busy?: boolean; soldOut?: string[] } | null) => {
         if (typeof data?.busy !== 'boolean') return;
         liveBusy = data.busy;
         setBusy(data.busy);
+        // Items whose stock ran out at the counter show "مش متوفر" here too.
+        if (Array.isArray(data.soldOut)) setSoldOut(data.soldOut);
       }).catch(() => {});
     };
     check();
@@ -407,7 +411,7 @@ function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder
     playChime();
     navigator.vibrate?.([200, 100, 200]);
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      const text = { body: `طلبك رقم ${order.id} ${confirmed ? 'جاهز' : 'صار جاهز تقريباً'}، تفضّل استلمه 🙌`, icon: '/icon-192.png', tag: order.id };
+      const text = { body: `طلبك رقم ${order.num ?? order.id} ${confirmed ? 'جاهز' : 'صار جاهز تقريباً'}، تفضّل استلمه 🙌`, icon: '/icon-192.png', tag: order.id };
       navigator.serviceWorker?.getRegistration()
         .then((registration) => { if (registration) return registration.showNotification(BRAND.name, text); new Notification(BRAND.name, text); })
         .catch(() => {});
@@ -421,7 +425,7 @@ function OrderTracker({ order, raised, onClose, onAnswer }: { order: ActiveOrder
   const progress = ready ? 1 : order.readyAt ? Math.min(live ? 0.95 : 1, 1 - left / total) : 0;
   const title = cancelled ? 'انلغى الطلب' : confirmed ? 'طلبك جاهز ✅' : order.readyAt === null ? 'طلبك مسجّل' : ready ? 'طلبك صار جاهز تقريباً ✅'
     : live && timerDone ? 'قرّب يجهز 👨‍🍳' : live === 'جديد' ? 'وصلنا طلبك 👍' : 'طلبك عم يتحضّر 👨‍🍳';
-  const id = `رقم \u2066${order.id}\u2069`;
+  const id = `رقم \u2066${order.num ?? order.id}\u2069`;
   const detail = cancelled ? `${id} · تواصل معنا عالواتساب` : ready ? `${id} · تفضّل استلمه` : order.readyAt === null ? `${id} · بنجهزه أول ما نفتح`
     : live && timerDone ? `${id} · بيرنّ تلفونك أول ما يجهز` : order.peak ? `${id} · وقت ذروة، جاهز بعد حوالي` : `${id} · جاهز بعد حوالي`;
   const minutes = Math.floor(left / 60_000);
@@ -952,7 +956,7 @@ function App() {
         body: JSON.stringify({
           ref,
           id: orderId,
-          items: cartLines.map(({ name, option, quantity }) => ({ name, quantity, price: option.priceFils / 1000 })),
+          items: cartLines.map(({ name, option, quantity, product }) => ({ name, quantity, price: option.priceFils / 1000, pid: product.id })),
           extras: extras.trim(),
           fulfillment: isDelivery ? `توصيل ${zone === 'inside' ? BRAND.delivery.inside : BRAND.delivery.outside}` : 'استلام',
           address: isDelivery ? address.trim() : '',
@@ -965,6 +969,15 @@ function App() {
           delivery: isDelivery ? (zone === 'inside' ? deliveryFils / 1000 : 'بنتفق عليه') : 0,
           total: grandTotalFils / 1000,
         }),
+      }).then((response) => response.json()).then((data: { num?: number }) => {
+        // The shop calls orders by the day's number (1, 2, 3 …), so the tracker shows it too.
+        if (!data?.num) return;
+        setActiveOrder((current) => {
+          if (!current || current.ref !== ref) return current;
+          const next = { ...current, num: data.num };
+          try { localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(next)); } catch { /* fine */ }
+          return next;
+        });
       }).catch(() => {});
     } catch { /* The order still goes to WhatsApp. */ }
     // V8's drinks in a FAEI order also show on V8's own screen, so they make them; FAEI delivers and collects.

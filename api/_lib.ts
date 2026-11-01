@@ -143,3 +143,19 @@ export async function countCustomerOrder(order: { phone?: unknown; total?: unkno
   }
   await redis([['HSET', 'customers', order.phone, JSON.stringify(current)]]);
 }
+
+// Stock (the cashier's inventory): Redis hash "stock", one count per product id. Only items someone
+// gave a count are tracked; the rest are unlimited. Selling takes pieces off, a cancel puts them back.
+export const validPid = (pid: unknown): pid is string => typeof pid === 'string' && /^[a-z0-9-]{1,60}$/.test(pid);
+export async function adjustStock(items: unknown, sign: 1 | -1) {
+  if (!Array.isArray(items)) return;
+  const totals = new Map<string, number>();
+  for (const line of items as { pid?: unknown; quantity?: unknown }[]) {
+    if (validPid(line?.pid)) totals.set(line.pid, (totals.get(line.pid) ?? 0) + (Number(line.quantity) || 1));
+  }
+  if (!totals.size) return;
+  const ids = [...totals.keys()];
+  const [current] = await redis([['HMGET', 'stock', ...ids]]) as [(string | null)[]];
+  const commands = ids.filter((_, index) => current[index] !== null).map((id) => ['HINCRBY', 'stock', id, sign * totals.get(id)!]);
+  if (commands.length) await redis([...commands, ['INCR', 'pos:version']]);
+}
