@@ -13,6 +13,9 @@
 //   GET   /api/orders?popular  the most ordered FAEI items of the last 14 days (public), for the "الأكثر طلباً" badge
 //   GET   /api/orders          the admin page lists recent orders (needs a signed-in account)
 //   PATCH /api/orders          the admin page changes an order's status (needs a signed-in admin)
+//   POST  /api/orders {source: 'pos', …}
+//                              the cashier screen (الكاش) rings up a walk-in order (needs a signed-in FAEI account).
+//                              Rung up offline, it arrives later with its own time; the ref makes a resend harmless.
 
 import { connected, CORS, countCustomerOrder, json, notConnected, preflight, redis, type Role, sessionAccount } from './_lib.js';
 
@@ -50,13 +53,27 @@ export async function POST(request: Request): Promise<Response> {
     const line = item as Record<string, unknown>;
     return { name: text(line.name, 120), quantity: Math.min(99, Math.max(1, Math.round(Number(line.quantity) || 1))), price: amount(line.price) };
   }) : [];
+  // Counter orders come from the cashier screen, which may have rung them up while offline.
+  let pos: { by: string; createdAt: number; status: string } | null = null;
+  if (body.source === 'pos') {
+    const me = await sessionAccount(request);
+    if (!me || me.role === 'v8') return json({ error: 'not-allowed' }, 401);
+    const at = Number(body.createdAt);
+    const now = Date.now();
+    pos = {
+      by: me.username,
+      createdAt: Number.isFinite(at) && at > now - 3 * 86_400_000 && at < now + 5 * 60_000 ? Math.min(at, now) : now,
+      status: typeof body.status === 'string' && STATUSES.includes(body.status) ? body.status : 'جديد',
+    };
+  }
   const order = {
     ref: body.ref,
     id: text(body.id, 20),
+    ...(pos ? { source: 'pos', by: pos.by, paid: amount(body.paid) } : {}),
     // Orders for V8 (the coffee house inside FAEI) show on their own list.
     ...(body.shop === 'v8' ? { shop: 'v8' } : {}),
-    createdAt: Date.now(),
-    status: 'جديد',
+    createdAt: pos ? pos.createdAt : Date.now(),
+    status: pos ? pos.status : 'جديد',
     items,
     extras: text(body.extras, 500),
     fulfillment: text(body.fulfillment, 60),
@@ -72,7 +89,7 @@ export async function POST(request: Request): Promise<Response> {
   const [created] = await redis([['SET', `order:${order.ref}`, JSON.stringify(order), 'EX', KEEP_SECONDS, 'NX']]);
   if (created !== 'OK') return json({ ok: true, duplicate: true });
   // A customer who came back to change their order: the old one leaves the shop's screen while it's still new.
-  if (validRef(body.replaces) && body.replaces !== order.ref) {
+  if (!pos && validRef(body.replaces) && body.replaces !== order.ref) {
     const [old] = await redis([['GET', `order:${body.replaces}`]]);
     const previous = old ? JSON.parse(old as string) as Record<string, unknown> : null;
     if (previous && previous.status === 'جديد') {
@@ -84,7 +101,7 @@ export async function POST(request: Request): Promise<Response> {
   const [, , version] = await redis([['LPUSH', 'orders', order.ref], ['LTRIM', 'orders', 0, 1999], ['INCR', 'orders:version']]);
   await countCustomerOrder(order, 1);
   lastVersion = { value: Number(version) || 0, at: Date.now() };
-  return json({ ok: true });
+  return json({ ok: true, created: true });
 }
 
 async function customerAnswer(ref: string, action: 'sent' | 'cancel', edit: boolean): Promise<Response> {
@@ -140,11 +157,12 @@ async function busy(): Promise<Response> {
       const stale = Date.now() - 90 * 60_000;
       for (const value of values) {
         if (!value) continue;
-        const order = JSON.parse(value) as { shop?: string; status?: string; createdAt?: number };
+        const order = JSON.parse(value) as { shop?: string; status?: string; createdAt?: number; source?: string };
         if (order.shop === 'v8' || order.status === 'ملغي') continue;
         const created = order.createdAt ?? 0;
         // Orders nobody closed for hours don't count, so a forgotten card doesn't keep the site "busy".
-        if ((order.status === 'جديد' || order.status === 'عم يتحضّر') && created > stale) open += 1;
+        // Counter orders often never get moved along on the screen, so only their arrival counts.
+        if ((order.status === 'جديد' || order.status === 'عم يتحضّر') && created > stale && order.source !== 'pos') open += 1;
         if (created > since) recent += 1;
       }
     }

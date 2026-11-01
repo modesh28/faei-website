@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, BarChart3, Coffee, Images, Printer, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BarChart3, Calculator, Coffee, Images, Printer, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
 import { useTheme } from '../theme';
 import { BRAND } from '../brand';
 import { commitFiles, fileSha, GitHubError, readJson, type NewFile } from './github';
+import { cacheOrders, mergeOutbox, quickFetch, readCachedOrders, readOutbox, writeOutbox, type LiveOrder, type OutboxEntry } from './offline';
+import Cashier from './Cashier';
 
 const SESSION_STORAGE = 'faei-admin-session';
 const MENU_PATH = 'public/menu.json';
@@ -39,13 +41,20 @@ export async function adminCall<T = Record<string, unknown>>(body: Record<string
 
 export default function Admin() {
   const [session, setSession] = useState<Session | null>(readSession);
-  const [state, setState] = useState<'loading' | 'offline' | 'not-connected' | 'setup' | 'ready'>('loading');
+  // Signed in on this device already: the panel opens straight away, even with no internet
+  // (the cashier and the orders work offline); the check only runs in the background.
+  const [state, setState] = useState<'loading' | 'offline' | 'not-connected' | 'setup' | 'ready'>(() => (readSession() ? 'ready' : 'loading'));
   async function check() {
-    setState('loading');
+    const signedIn = !!readSession();
+    if (!signedIn) setState('loading');
     try {
-      const { status, data } = await adminCall<{ setUp?: boolean }>({ action: 'state' });
-      setState(status === 503 ? 'not-connected' : status !== 200 ? 'offline' : data.setUp ? 'ready' : 'setup');
-    } catch { setState('offline'); }
+      const response = await quickFetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'state' }) }, 10000);
+      const data = await response.json().catch(() => ({})) as { setUp?: boolean };
+      const status = response.status;
+      if (status === 503) setState('not-connected');
+      else if (status !== 200) { if (!signedIn) setState('offline'); }
+      else setState(data.setUp ? 'ready' : 'setup');
+    } catch { if (!signedIn) setState('offline'); }
   }
   useEffect(() => { void check(); }, []);
   function signIn(next: Session) { write(SESSION_STORAGE, JSON.stringify(next)); setSession(next); setState('ready'); }
@@ -155,7 +164,8 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
   );
 }
 
-type Tab = 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'gallery' | 'v8' | 'accounts';
+const TAB_KEY = 'faei-admin-tab';
+type Tab = 'cashier' | 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'gallery' | 'v8' | 'accounts';
 
 function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void; onRole: (role: Role) => void }) {
   const token = me.session;
@@ -168,7 +178,9 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
       .then(({ status, data }) => { if (status === 401) onLogout(); else if (data.role && data.role !== me.role) onRole(data.role); })
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const [tab, setTab] = useState<Tab>('orders');
+  // The counter's device reopens on the cashier screen.
+  const [tab, setTabState] = useState<Tab>(() => (read(TAB_KEY) === 'cashier' && me.role !== 'v8' ? 'cashier' : 'orders'));
+  const setTab = (next: Tab) => { write(TAB_KEY, next === 'cashier' ? 'cashier' : ''); setTabState(next); };
   // The V8 editor stays mounted once opened, so its unsaved edits survive a tab switch.
   const [v8Opened, setV8Opened] = useState(false);
   useEffect(() => { if (tab === 'v8') setV8Opened(true); }, [tab]);
@@ -327,12 +339,14 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
       <header className="admin-top">
         {me.role === 'v8' ? <img src="/images/v8/v8-logo.webp" alt="V8" className="admin-v8-logo" /> : <img src={BRAND.images.logo} alt={BRAND.name} />}
         <strong>لوحة الإدارة <small>{me.username} · {ROLE_NAMES[me.role]}</small></strong>
+        <NetPill online={live.online} pending={live.pending} />
         <ThemeButton />
         <InstallPanel />
         <a href="/" target="_blank" rel="noreferrer" className="admin-ghost" aria-label="الموقع"><span>الموقع</span> <ExternalLink size={14} /></a>
         <button type="button" className="admin-ghost" onClick={() => { if (!dirty || confirm('في تعديلات ما انحفظت. أكيد بدك تطلع؟')) onLogout(); }} aria-label="تسجيل خروج"><LogOut size={16} /></button>
       </header>
       <nav className="admin-tabs">
+        {me.role !== 'v8' && <button type="button" className={tab === 'cashier' ? 'is-active' : ''} onClick={() => setTab('cashier')} data-testid="tab-cashier"><Calculator size={16} /> الكاش</button>}
         <button type="button" className={tab === 'orders' ? 'is-active' : ''} onClick={() => setTab('orders')} data-testid="tab-orders"><ClipboardList size={16} /> الطلبات{live.waiting > 0 && <i className="admin-badge">{live.waiting}</i>}</button>
         {isAdmin && <>
           <button type="button" className={tab === 'items' ? 'is-active' : ''} onClick={() => setTab('items')} data-testid="tab-items"><UtensilsCrossed size={16} /> الأصناف</button>
@@ -345,6 +359,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
       <main className="admin-shell">
+        {tab === 'cashier' && <Cashier live={live} showSales={isAdmin} menu={menu} />}
         {tab === 'orders' && <Orders live={live} showSales={isAdmin} showV8={isDev && BRAND.innerShop} />}
         {tab === 'items' && (menu ? (isDev
           ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} />
@@ -681,14 +696,13 @@ function OfferForm({ offer, onChange }: { offer: Offer; onChange: (offer: Offer)
 
 // ---- Live orders ----
 
-type OrderItem = { name: string; quantity: number; price: number };
-type LiveOrder = {
-  ref: string; id: string; createdAt: number; status: string; items: OrderItem[]; extras: string;
-  fulfillment: string; address: string; phone?: string; time: string; payment: string; preorder: boolean;
-  discount: number; delivery: number | string; total: number;
-  customerSent?: number; cancelledBy?: 'customer' | 'edit'; shop?: 'v8';
+export type Live = {
+  orders: LiveOrder[] | null; error: string; waiting: number; soundOn: boolean; enableSound: () => void;
+  setStatus: (ref: string, status: string) => Promise<void>; fresh: Set<string>;
+  // The cashier screen: rings up a counter order (saved on this device first, sent when there's internet).
+  addOrder: (order: LiveOrder) => void;
+  online: boolean; pending: number; pendingRefs: Set<string>;
 };
-type Live = { orders: LiveOrder[] | null; error: string; waiting: number; soundOn: boolean; enableSound: () => void; setStatus: (ref: string, status: string) => Promise<void>; fresh: Set<string> };
 
 let alertAudio: AudioContext | null = null;
 function ring() {
@@ -713,6 +727,16 @@ function ring() {
     });
   } catch { /* no sound on this device */ }
   navigator.vibrate?.([300, 120, 300]);
+}
+
+// Shows at a glance whether the panel is online and how many changes are still waiting to be sent.
+function NetPill({ online, pending }: { online: boolean; pending: number }) {
+  if (online && !pending) return <span className="admin-net is-on" title="متصل" data-testid="net-pill"><i /> متصل</span>;
+  return (
+    <span className={`admin-net ${online ? 'is-sync' : 'is-off'}`} data-testid="net-pill" title={online ? 'عم نبعت التعديلات' : 'شغّال بدون نت، كل اشي محفوظ عالجهاز وبينبعت لحاله لما يرجع النت'}>
+      <i /> {online ? 'عم يتزامن' : 'بدون نت'}{pending > 0 && <b>{pending}</b>}
+    </span>
+  );
 }
 
 function ThemeButton() {
@@ -781,7 +805,7 @@ function notify(orders: LiveOrder[]) {
 const AUTOPRINT_KEY = 'faei-admin-autoprint';
 const PRINTED_KEY = 'faei-admin-printed';
 const escapeHtml = (text: string) => text.replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]!));
-function receiptHtml(order: LiveOrder): string {
+export function receiptHtml(order: LiveOrder): string {
   const time = new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(order.createdAt));
   const rows = order.items.map((item) => `<tr><td class="q">${item.quantity}×</td><td>${escapeHtml(item.name)}</td><td class="p">${(item.price * item.quantity).toFixed(2)}</td></tr>`).join('');
   const line = (label: string, value: string) => (value ? `<p><b>${label}:</b> ${escapeHtml(value)}</p>` : '');
@@ -800,7 +824,7 @@ p { margin: 3px 0; }
 .note { border: 1px solid #000; padding: 4px 6px; margin: 6px 0; font-weight: 700; }
 .foot { text-align: center; margin-top: 10px; font-size: 11px; }
 </style></head><body>
-<h1>${escapeHtml(BRAND.name)}</h1><div class="sub">طلب من الموقع · ${time}</div>
+<h1>${escapeHtml(BRAND.name)}</h1><div class="sub">${order.source === 'pos' ? 'طلب كاش' : 'طلب من الموقع'} · ${time}</div>
 <div class="id">#${escapeHtml(order.id)}</div>
 ${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}
 <table>${rows}</table>
@@ -809,13 +833,14 @@ ${line('الاستلام', `${order.fulfillment}${order.address ? ` · ${order.a
 ${line('الوقت', order.time)}
 ${line('الدفع', order.payment)}
 ${line('التلفون', order.phone ?? '')}
+${order.paid ? line('دفع', `${order.paid.toFixed(2)} · الباقي ${(order.paid - order.total).toFixed(2)}`) : ''}
 ${order.discount ? line('خصم', order.discount.toFixed(2)) : ''}
 <div class="total"><span>المجموع</span><span dir="ltr">${order.total.toFixed(2)} JOD</span></div>
 <div class="foot">${escapeHtml(BRAND.slogan.start + BRAND.slogan.highlight)}</div>
 </body></html>`;
 }
 let printQueue: Promise<void> = Promise.resolve();
-function printOrder(order: LiveOrder): Promise<void> {
+export function printOrder(order: LiveOrder): Promise<void> {
   printQueue = printQueue.then(() => new Promise<void>((resolve) => {
     const frame = document.createElement('iframe');
     frame.setAttribute('aria-hidden', 'true');
@@ -830,7 +855,7 @@ function printOrder(order: LiveOrder): Promise<void> {
   }));
   return printQueue;
 }
-function markPrinted(ref: string): boolean {
+export function markPrinted(ref: string): boolean {
   let list: string[] = [];
   try { list = JSON.parse(read(PRINTED_KEY) || '[]') as string[]; } catch { list = []; }
   if (list.includes(ref)) return false;
@@ -839,37 +864,86 @@ function markPrinted(ref: string): boolean {
 }
 
 // Checks for orders every 3 seconds while the page is on screen (15 in the background) and rings for new ones.
+// Works offline too: the last list is kept on this device, and changes wait in the outbox (offline.ts).
 function useOrders(session: string, onLogout: () => void): Live {
-  const [orders, setOrders] = useState<LiveOrder[] | null>(null);
+  const [server, setServer] = useState<LiveOrder[] | null>(() => readCachedOrders()?.orders ?? null);
+  const [outbox, setOutbox] = useState<OutboxEntry[]>(readOutbox);
   const [error, setError] = useState('');
+  const [online, setOnline] = useState(() => navigator.onLine !== false);
   const [soundOn, setSoundOn] = useState(false);
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const known = useRef<Set<string> | null>(null);
   const soundRef = useRef(false);
   const version = useRef(-1);
+  const flushing = useRef(false);
+  const outboxRef = useRef(outbox);
+
+  function setBox(next: OutboxEntry[]) { outboxRef.current = next; writeOutbox(next); setOutbox(next); }
+  const offline = () => { setOnline(false); setError(''); };
+
+  // Sends the outbox, oldest first. Stops at the first network problem and tries again later.
+  async function flush(): Promise<boolean> {
+    if (flushing.current) return false;
+    flushing.current = true;
+    let sent = false;
+    try {
+      while (outboxRef.current.length) {
+        const entry = outboxRef.current[0];
+        let response: Response;
+        try {
+          response = entry.kind === 'order'
+            ? await quickFetch('/api/orders', { method: 'POST', headers: { Authorization: `Bearer ${session}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...entry.order, source: 'pos' }) })
+            : await quickFetch('/api/orders', { method: 'PATCH', headers: { Authorization: `Bearer ${session}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: entry.ref, status: entry.status }) });
+        } catch { offline(); break; }
+        if (response.status === 401) { onLogout(); break; }
+        // The server is busy or the connection broke halfway: keep it and try again.
+        if (response.status >= 500 || response.status === 429 || response.status === 408) {
+          const tries = (entry.tries ?? 0) + 1;
+          // A status change the server keeps refusing is dropped after a while; an order never is.
+          if (entry.kind === 'status' && tries > 20) setBox(outboxRef.current.slice(1));
+          else setBox([{ ...entry, tries }, ...outboxRef.current.slice(1)]);
+          break;
+        }
+        if (entry.kind === 'order' && response.ok) {
+          const data = await response.json().catch(() => ({})) as { created?: boolean };
+          if (data.created) logToSheet(entry.order);
+          // Keep it on screen until the next download of the list brings it from the server.
+          setServer((current) => (current && !current.some((order) => order.ref === entry.order.ref) ? [entry.order, ...current] : current ?? [entry.order]));
+        }
+        // Done, or refused for good (e.g. an order that no longer exists): either way it leaves the outbox.
+        setBox(outboxRef.current.slice(1));
+        setOnline(true);
+        sent = true;
+      }
+    } finally { flushing.current = false; }
+    return sent;
+  }
 
   // A cheap check first; the full list is only downloaded when something changed.
   async function poll() {
+    if (outboxRef.current.length && await flush()) { await fetchOrders(); return; }
     try {
-      const response = await fetch('/api/orders?version', { cache: 'no-store' });
+      const response = await quickFetch('/api/orders?version', {}, 6000);
       if (!response.ok) throw new Error(String(response.status));
       const data = await response.json() as { version: number };
-      setError('');
+      setOnline(true); setError('');
       if (data.version !== version.current) await fetchOrders();
-    } catch { setError('ما في اتصال، عم نحاول كمان مرة…'); }
+    } catch { offline(); }
   }
   async function fetchOrders() {
     try {
-      const response = await fetch('/api/orders', { cache: 'no-store', headers: { Authorization: `Bearer ${session}` } });
+      const response = await quickFetch('/api/orders', { headers: { Authorization: `Bearer ${session}` } }, 10000);
       if (response.status === 401) { onLogout(); return; }
       if (!response.ok) throw new Error(String(response.status));
       const data = await response.json() as { orders: LiveOrder[]; version: number };
-      setError('');
+      setOnline(true); setError('');
       version.current = data.version;
-      setOrders(data.orders);
+      setServer(data.orders);
+      cacheOrders(data.orders, data.version);
       const refs = new Set(data.orders.map((order) => order.ref));
       if (known.current) {
-        const added = data.orders.filter((order) => !known.current!.has(order.ref) && order.status === 'جديد');
+        // Counter orders were rung up here, so they don't ring or print again.
+        const added = data.orders.filter((order) => !known.current!.has(order.ref) && order.status === 'جديد' && order.source !== 'pos');
         if (added.length) {
           if (soundRef.current) ring();
           notify(added);
@@ -878,10 +952,10 @@ function useOrders(session: string, onLogout: () => void): Live {
         }
       }
       known.current = refs;
-    } catch { setError('ما في اتصال، عم نحاول كمان مرة…'); }
+    } catch { offline(); }
   }
   useEffect(() => {
-    void fetchOrders();
+    void flush().then(() => fetchOrders());
     let last = 0;
     const timer = window.setInterval(() => {
       const gap = document.visibilityState === 'visible' ? 3000 : 15000;
@@ -890,8 +964,12 @@ function useOrders(session: string, onLogout: () => void): Live {
       void poll();
     }, 1000);
     const wake = () => { if (document.visibilityState === 'visible') void poll(); };
+    const back = () => { setOnline(true); void poll(); };
+    const lost = () => setOnline(false);
     document.addEventListener('visibilitychange', wake);
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', wake); };
+    window.addEventListener('online', back);
+    window.addEventListener('offline', lost);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', wake); window.removeEventListener('online', back); window.removeEventListener('offline', lost); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep a tablet at the counter awake while orders are open.
@@ -904,23 +982,47 @@ function useOrders(session: string, onLogout: () => void): Live {
     return () => { document.removeEventListener('visibilitychange', grab); void lock?.release().catch(() => {}); };
   }, []);
 
-  const waiting = (orders ?? []).filter((order) => order.status === 'جديد').length;
+  const orders = useMemo(() => (server === null && !outbox.length ? null : mergeOutbox(server ?? [], outbox)), [server, outbox]);
+  const waiting = (orders ?? []).filter((order) => order.status === 'جديد' && order.source !== 'pos').length;
   useEffect(() => { document.title = waiting ? `(${waiting}) طلب جديد · ${BRAND.name}` : `لوحة ${BRAND.name}`; }, [waiting]);
 
   async function setStatus(ref: string, status: string) {
-    setOrders((current) => current && current.map((order) => (order.ref === ref ? { ...order, status } : order)));
     setFresh((current) => { const next = new Set(current); next.delete(ref); return next; });
-    try {
-      const response = await fetch('/api/orders', { method: 'PATCH', headers: { Authorization: `Bearer ${session}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ref, status }) });
-      if (response.status === 401) onLogout();
-    } catch { /* the next poll shows the real state */ }
-    void fetchOrders();
+    // A newer change to the same order replaces one still waiting to be sent.
+    setBox([...outboxRef.current.filter((entry) => !(entry.kind === 'status' && entry.ref === ref)), { kind: 'status', ref, status, at: Date.now() }]);
+    if (await flush()) void fetchOrders();
+  }
+  function addOrder(order: LiveOrder) {
+    markPrinted(order.ref);
+    setBox([...outboxRef.current, { kind: 'order', order }]);
+    void flush().then((sent) => { if (sent) void fetchOrders(); });
   }
   function enableSound() {
     soundRef.current = true; setSoundOn(true); ring();
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') void Notification.requestPermission().catch(() => {});
   }
-  return { orders, error, waiting, soundOn, enableSound, setStatus, fresh };
+  const pendingRefs = useMemo(() => new Set(outbox.flatMap((entry) => (entry.kind === 'order' ? [entry.order.ref] : []))), [outbox]);
+  return { orders, error, waiting, soundOn, enableSound, setStatus, fresh, addOrder, online, pending: outbox.length, pendingRefs };
+}
+
+// Counter orders also go to the Google Sheet, like the site's, so the sheet keeps the whole day.
+let sheetUrl: Promise<string> | null = null;
+function logToSheet(order: LiveOrder) {
+  sheetUrl ??= quickFetch('/settings.json').then((response) => response.json()).then((data: { sheetUrl?: string }) => data.sheetUrl || BRAND.sheetUrl).catch(() => BRAND.sheetUrl);
+  void sheetUrl.then((url) => {
+    if (!url) return;
+    const time = new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', hour: 'numeric', minute: '2-digit' }).format(new Date(order.createdAt));
+    fetch(url, {
+      method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        orderId: `كاش ${order.id}`,
+        items: order.items.map((item) => `${item.name} × ${item.quantity}`).join('، '),
+        pieces: order.items.reduce((sum, item) => sum + item.quantity, 0),
+        itemsTotal: order.total, discount: 0, delivery: 0, total: order.total,
+        fulfillment: order.fulfillment, address: '', time, payment: order.payment, extras: order.extras, phone: '', source: 'كاش',
+      }),
+    }).catch(() => {});
+  });
 }
 
 const ago = (time: number) => {
@@ -959,7 +1061,7 @@ function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; s
     if (on) (live.orders ?? []).forEach((order) => markPrinted(order.ref));
   };
   useEffect(() => { const timer = window.setInterval(() => tick((n) => n + 1), 30_000); return () => window.clearInterval(timer); }, []);
-  if (live.orders === null) return <>{live.error ? <p className="admin-error">{live.error}</p> : <p className="admin-loading">لحظة، عم نجيب الطلبات…</p>}</>;
+  if (live.orders === null) return <>{!live.online ? <p className="admin-error">ما في نت هسه. أول ما يرجع بتطلع الطلبات لحالها.</p> : <p className="admin-loading">لحظة، عم نجيب الطلبات…</p>}</>;
   const all = live.orders;
   const openIn = (name: Shop) => all.filter((order) => shopOf(order) === name && ACTIVE.includes(order.status)).length;
   // Only the developer gets both lists; everyone else already gets just their shop's orders.
@@ -972,7 +1074,7 @@ function Orders({ live, showSales, showV8 }: { live: Live; showSales: boolean; s
   return (
     <>
       {!live.soundOn && <button type="button" className="admin-sound" onClick={live.enableSound} data-testid="button-sound"><Bell size={18} /> اكبس هون عشان يرنّ ويطلعلك إشعار لما يوصل طلب جديد</button>}
-      {live.error && <p className="admin-error">{live.error}</p>}
+      {!live.online && <p className="admin-offline">بدون نت هسه: اللي بتعمله بينحفظ عالجهاز وبينبعت لحاله لما يرجع النت.</p>}
       {showV8 && <ShopSwitch shop={shop} onChange={setShop} counts={{ faei: openIn('faei'), v8: openIn('v8') }} />}
       <div className="admin-stats">
         <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هسه</em></div>
@@ -1047,6 +1149,7 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
                     <GripVertical size={16} aria-hidden="true" />
                     <b dir="ltr">#{order.id}</b>
                     {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
+                    {order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
                     <span className="admin-order-time">{ago(order.createdAt)}</span>
                   </header>
                   <ul>{order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}</ul>
@@ -1070,6 +1173,7 @@ function OrderCard({ order, fresh, onStatus }: { order: LiveOrder; fresh: boolea
       <header>
         <b dir="ltr">#{order.id}</b>
         {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
+        {order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
         <span className="admin-order-status">{order.status}</span>
         <span className="admin-order-time">{ago(order.createdAt)}</span>
       </header>
@@ -1153,7 +1257,7 @@ function Sales({ session, showV8, products }: { session: string; showV8: boolean
     const byDay = new Map<string, number>();
     week.forEach((order) => byDay.set(day(order.createdAt), (byDay.get(day(order.createdAt)) ?? 0) + order.total));
     return {
-      todayTotal: sum(todays), todayCount: todays.length, weekTotal: sum(week), weekCount: week.length,
+      todayTotal: sum(todays), todayCount: todays.length, todayPos: sum(todays.filter((order) => order.source === 'pos')), todayPosCount: todays.filter((order) => order.source === 'pos').length, weekTotal: sum(week), weekCount: week.length,
       cliq: sum(week.filter((order) => order.payment === 'كليك')),
       top: [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8),
       days: [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])),
@@ -1166,7 +1270,7 @@ function Sales({ session, showV8, products }: { session: string; showV8: boolean
     <>
       {showV8 && <ShopSwitch shop={shop} onChange={setShop} />}
       <div className="admin-stats">
-        <div><small>مبيعات اليوم</small><b>{stats.todayTotal.toFixed(2)} د.أ</b><em>{stats.todayCount} طلب</em></div>
+        <div><small>مبيعات اليوم</small><b>{stats.todayTotal.toFixed(2)} د.أ</b><em>{stats.todayCount} طلب · الكاش {stats.todayPos.toFixed(2)} ({stats.todayPosCount}) · الموقع {(stats.todayTotal - stats.todayPos).toFixed(2)}</em></div>
         <div><small>آخر 7 أيام</small><b>{stats.weekTotal.toFixed(2)} د.أ</b><em>{stats.weekCount} طلب · كليك {stats.cliq.toFixed(2)}</em></div>
       </div>
       {stats.days.length > 0 && (
@@ -1195,12 +1299,12 @@ function Sales({ session, showV8, products }: { session: string; showV8: boolean
       {stats.sleepers.length > 0 && (
         <section className="admin-card admin-sleepers" data-testid="sleeping-items">
           <h2>أصناف نايمة 😴</h2>
-          <p className="admin-hint">{stats.sleepers.length} صنف ما انطلبوا من الموقع ولا مرة آخر 7 أيام. جرّب عليهم عرض، أو صورة أحلى، أو شيلهم من المنيو.{stats.fewOrders ? ' (لسا الطلبات قليلة، فالقائمة رح تصير أدق مع الوقت.)' : ''}</p>
+          <p className="admin-hint">{stats.sleepers.length} صنف ما انطلبوا ولا مرة آخر 7 أيام (لا من الموقع ولا من الكاش). جرّب عليهم عرض، أو صورة أحلى، أو شيلهم من المنيو.{stats.fewOrders ? ' (لسا الطلبات قليلة، فالقائمة رح تصير أدق مع الوقت.)' : ''}</p>
           <ul className="admin-chips-list">{stats.sleepers.slice(0, showAllSleepers ? undefined : 12).map((product) => <li key={product.id}>{product.name}<small>{product.category}</small></li>)}</ul>
           {stats.sleepers.length > 12 && <button type="button" className="admin-link" onClick={() => setShowAllSleepers(!showAllSleepers)}>{showAllSleepers ? 'خبّي' : `شوف الكل (${stats.sleepers.length})`}</button>}
         </section>
       )}
-      <p className="admin-hint">المبيعات من طلبات الموقع (بدون الملغي). كل طلب كمان بينسجل بشيت الطلبات زي قبل.</p>
+      <p className="admin-hint">المبيعات من طلبات الموقع وطلبات الكاش مع بعض (بدون الملغي). كل طلب كمان بينسجل بشيت الطلبات زي قبل.</p>
     </>
   );
 }
