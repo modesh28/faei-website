@@ -753,7 +753,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-pepperoni",
@@ -765,7 +766,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-salami",
@@ -777,7 +779,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-turkey",
@@ -789,7 +792,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-margherita",
@@ -801,7 +805,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-cheese-mix",
@@ -813,7 +818,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-shawarma",
@@ -825,7 +831,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-four-seasons",
@@ -837,7 +844,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-alfredo",
@@ -849,7 +857,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-fajita",
@@ -861,7 +870,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-zinger",
@@ -873,7 +883,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-faei",
@@ -885,7 +896,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "calzone-alfredo",
