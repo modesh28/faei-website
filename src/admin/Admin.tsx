@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, BarChart3, Calculator, Coffee, Images, Printer, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
@@ -165,6 +165,10 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
   );
 }
 
+// The new orders screen, cashier, sounds and sales page (2026-11-01) show on the developer's account
+// only; the manager and staff keep the panel as it was before (mohammad, 2026-11-02).
+const DevUi = createContext(false);
+let devUiOn = false;
 const TAB_KEY = 'faei-admin-tab';
 type Tab = 'cashier' | 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'gallery' | 'v8' | 'accounts';
 
@@ -173,6 +177,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
   // dev: everything. admin: orders, items on/off, sales. staff: orders.
   const isDev = me.role === 'dev';
   const isAdmin = me.role === 'dev' || me.role === 'admin';
+  devUiOn = isDev;
   // The role can change on the server (another account edited it), so check it once on open.
   useEffect(() => {
     adminCall<{ role?: Role }>({ action: 'me' }, token)
@@ -180,7 +185,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // The counter's device reopens on the cashier screen.
-  const [tab, setTabState] = useState<Tab>(() => (read(TAB_KEY) === 'cashier' && me.role !== 'v8' ? 'cashier' : 'orders'));
+  const [tab, setTabState] = useState<Tab>(() => (read(TAB_KEY) === 'cashier' && me.role === 'dev' ? 'cashier' : 'orders'));
   const setTab = (next: Tab) => { write(TAB_KEY, next === 'cashier' ? 'cashier' : ''); setTabState(next); };
   // The V8 editor stays mounted once opened, so its unsaved edits survive a tab switch.
   const [v8Opened, setV8Opened] = useState(false);
@@ -339,18 +344,19 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
     : <p className="admin-loading">لحظة، عم نجيب المنيو…</p>;
 
   return (
+    <DevUi.Provider value={isDev}>
     <div className="admin-app">
       <header className="admin-top">
         {me.role === 'v8' ? <img src="/images/v8/v8-logo.webp" alt="V8" className="admin-v8-logo" /> : <img src={BRAND.images.logo} alt={BRAND.name} />}
         <strong>لوحة الإدارة <small>{me.username} · {ROLE_NAMES[me.role]}</small></strong>
-        <NetPill online={live.online} pending={live.pending} />
+        {isDev && <NetPill online={live.online} pending={live.pending} />}
         <ThemeButton />
         <InstallPanel />
         <a href="/" target="_blank" rel="noreferrer" className="admin-ghost" aria-label="الموقع"><span>الموقع</span> <ExternalLink size={14} /></a>
         <button type="button" className="admin-ghost" onClick={() => { if (!dirty || confirm('في تعديلات ما انحفظت. أكيد بدك تطلع؟')) onLogout(); }} aria-label="تسجيل خروج"><LogOut size={16} /></button>
       </header>
       <nav className="admin-tabs">
-        {me.role !== 'v8' && <button type="button" className={tab === 'cashier' ? 'is-active' : ''} onClick={() => setTab('cashier')} data-testid="tab-cashier"><Calculator size={16} /> الكاش</button>}
+        {isDev && <button type="button" className={tab === 'cashier' ? 'is-active' : ''} onClick={() => setTab('cashier')} data-testid="tab-cashier"><Calculator size={16} /> الكاش</button>}
         <button type="button" className={tab === 'orders' ? 'is-active' : ''} onClick={() => setTab('orders')} data-testid="tab-orders"><ClipboardList size={16} /> الطلبات{live.waiting > 0 && <i className="admin-badge">{live.waiting}</i>}</button>
         {isAdmin && <>
           <button type="button" className={tab === 'items' ? 'is-active' : ''} onClick={() => setTab('items')} data-testid="tab-items"><UtensilsCrossed size={16} /> الأصناف</button>
@@ -363,8 +369,8 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         <button type="button" className={tab === 'accounts' ? 'is-active' : ''} onClick={() => setTab('accounts')} data-testid="tab-accounts"><Users size={16} /> {isDev ? 'الحسابات' : 'حسابي'}</button>
       </nav>
       <main className="admin-shell">
-        {tab === 'cashier' && <Cashier live={live} showSales={isAdmin} menu={menu} editing={fixing} onEdit={setFixing} session={token} canManage={isAdmin} />}
-        {tab === 'orders' && <Orders live={live} showSales={isAdmin} showV8={isDev && BRAND.innerShop} onEdit={me.role === 'v8' ? undefined : openFix} />}
+        {isDev && tab === 'cashier' && <Cashier live={live} showSales={isAdmin} menu={menu} editing={fixing} onEdit={setFixing} session={token} canManage={isAdmin} />}
+        {tab === 'orders' && <Orders live={live} showSales={isAdmin} showV8={isDev && BRAND.innerShop} onEdit={isDev ? openFix : undefined} />}
         {tab === 'items' && (menu ? (isDev
           ? <Items menu={menu} photos={photos} onToggle={toggle} onEdit={setEditing} onNew={() => setEditing({ id: '', name: '', category: menu.categories[0] ?? '', options: [{ label: '', priceFils: 0 }] })} onMove={moveCategory} />
           : <Items menu={menu} photos={photos} onToggle={(id) => void quickToggle(id)} switching={switching} />) : menuState)}
@@ -375,7 +381,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         {isDev && v8Opened && <div hidden={tab !== 'v8'}><V8Editor session={token} onLogout={onLogout} /></div>}
         {tab === 'accounts' && <Accounts me={me} />}
       </main>
-      <DueAlert live={live} />
+      {isDev && <DueAlert live={live} />}
       {(dirty || saving !== 'idle') && (
         <div className={`admin-savebar is-${saving}`} data-testid="savebar">
           {saving === 'saving' ? <span>عم نحفظ…</span>
@@ -410,6 +416,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         />
       )}
     </div>
+    </DevUi.Provider>
   );
 }
 
@@ -713,8 +720,33 @@ export type Live = {
   due: LiveOrder[]; snooze: (ref: string) => void;
 };
 
-// New website orders and scheduled-order reminders: loud and long (sounds.ts).
-function ring() { siteOrder(); }
+// New website orders and scheduled-order reminders: loud and long on the developer's panel (sounds.ts),
+// the earlier ring for everyone else.
+function ring() { if (devUiOn) siteOrder(); else classicRing(); }
+let classicAudio: AudioContext | null = null;
+function classicRing() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    if (!classicAudio) classicAudio = new Ctx();
+    const ctx = classicAudio;
+    if (ctx.state === 'suspended') void ctx.resume();
+    [0, 0.22, 0.44, 0.9, 1.12, 1.34].forEach((delay, index) => {
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = ctx.currentTime + delay;
+      oscillator.type = 'triangle';
+      oscillator.frequency.value = index % 3 === 2 ? 1320 : 990;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.4, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.2);
+      oscillator.connect(gain).connect(ctx.destination);
+      oscillator.start(start);
+      oscillator.stop(start + 0.22);
+    });
+  } catch { /* no sound on this device */ }
+  navigator.vibrate?.([300, 120, 300]);
+}
 
 // Shows at a glance whether the panel is online and how many changes are still waiting to be sent.
 function NetPill({ online, pending }: { online: boolean; pending: number }) {
@@ -842,7 +874,7 @@ p { margin: 3px 0; }
 </style></head><body>
 <h1>${escapeHtml(BRAND.name)}</h1><div class="sub">${order.source === 'pos' ? 'طلب كاش' : 'طلب من الموقع'} · ${time}</div>
 <div class="id">#${escapeHtml(orderNo(order))}</div>
-${scheduledAt(order) ? `<p class="big">⏰ للساعة ${escapeHtml(order.time)}</p>` : ''}${order.fulfillment.startsWith('توصيل') ? `<p class="big">توصيل${order.address ? `: ${escapeHtml(order.address)}` : ''}</p>` : ''}${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}${order.editedAt ? '<p class="note">طلب معدّل</p>' : ''}
+${devUiOn && scheduledAt(order) ? `<p class="big">⏰ للساعة ${escapeHtml(order.time)}</p>` : ''}${devUiOn && order.fulfillment.startsWith('توصيل') ? `<p class="big">توصيل${order.address ? `: ${escapeHtml(order.address)}` : ''}</p>` : ''}${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}${devUiOn && order.editedAt ? '<p class="note">طلب معدّل</p>' : ''}
 <table>${rows}</table>
 ${order.extras ? `<p class="note">ملاحظات: ${escapeHtml(order.extras)}</p>` : ''}
 ${line('الاستلام', `${order.fulfillment}${order.address ? ` · ${order.address}` : ''}`)}
@@ -1021,6 +1053,7 @@ function useOrders(session: string, onLogout: () => void): Live {
   // Any first tap on the panel switches the order sound on (browsers need one touch before playing sound).
   useEffect(() => {
     const first = () => {
+      if (!devUiOn) return;
       unlock(); soundRef.current = true; setSoundOn(true);
       if (typeof Notification !== 'undefined' && Notification.permission === 'default') void Notification.requestPermission().catch(() => {});
     };
@@ -1038,6 +1071,7 @@ function useOrders(session: string, onLogout: () => void): Live {
   ordersRef.current = orders;
   useEffect(() => {
     const check = () => {
+      if (!devUiOn) return;
       let alerts: Record<string, number> = {};
       try { alerts = JSON.parse(read(DUE_KEY) || '{}') as Record<string, number>; } catch { alerts = {}; }
       const now = Date.now();
@@ -1136,7 +1170,7 @@ function Orders({ live, showSales, showV8, onEdit }: { live: Live; showSales: bo
   return (
     <>
       {!live.soundOn && <button type="button" className="admin-sound" onClick={live.enableSound} data-testid="button-sound"><Bell size={18} /> اكبس هون عشان يرنّ ويطلعلك إشعار لما يوصل طلب جديد</button>}
-      {!live.online && <p className="admin-offline">بدون نت هسه: اللي بتعمله بينحفظ عالجهاز وبينبعت لحاله لما يرجع النت.</p>}
+      {devUiOn && !live.online && <p className="admin-offline">بدون نت هسه: اللي بتعمله بينحفظ عالجهاز وبينبعت لحاله لما يرجع النت.</p>}
       {showV8 && <ShopSwitch shop={shop} onChange={setShop} counts={{ faei: openIn('faei'), v8: openIn('v8') }} />}
       <div className="admin-stats">
         <div><small>طلبات اليوم</small><b>{todays.length}</b><em>{active.length} شغّالين هسه</em></div>
@@ -1197,7 +1231,7 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
     <div className="admin-board" data-testid="kitchen-board">
       {COLUMNS.map((column) => {
         // Orders for a set time line up by that time, the rest by when they came in.
-        const list = orders.filter((order) => order.status === column.status).sort((a, b) => (scheduledAt(a) ?? a.createdAt) - (scheduledAt(b) ?? b.createdAt));
+        const list = orders.filter((order) => order.status === column.status).sort((a, b) => (devUiOn ? (scheduledAt(a) ?? a.createdAt) - (scheduledAt(b) ?? b.createdAt) : a.createdAt - b.createdAt));
         return (
           <section key={column.status} className={`admin-col is-${COLUMNS.indexOf(column)}${drag?.moved && drag.over === column.status && drag.from !== column.status ? ' is-over' : ''}`} data-column={column.status}>
             <h2>{column.title} <i>{list.length}</i></h2>
@@ -1212,8 +1246,8 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
                     <GripVertical size={16} aria-hidden="true" />
                     <b dir="ltr">#{orderNo(order)}</b>
                     {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
-                    {order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
-                    {order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
+                    {devUiOn && order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
+                    {devUiOn && order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
                     <span className="admin-order-time">{ago(order.createdAt)}</span>
                   </header>
                   <OrderBanners order={order} />
@@ -1233,7 +1267,9 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
 
 // Big, hard-to-miss strips for the kitchen: a delivery (with where to) and an order for a set time.
 function OrderBanners({ order }: { order: LiveOrder }) {
+  const dev = useContext(DevUi);
   const at = scheduledAt(order);
+  if (!dev) return null;
   const delivery = order.fulfillment.startsWith('توصيل');
   if (!at && !delivery) return null;
   const soon = at !== null && at - Date.now() < 30 * 60_000;
@@ -1252,14 +1288,14 @@ function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh
       <header>
         <b dir="ltr">#{orderNo(order)}</b>
         {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
-        {order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
-        {order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
+        {devUiOn && order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
+        {devUiOn && order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
         <span className="admin-order-status">{order.status}</span>
         <span className="admin-order-time">{ago(order.createdAt)}</span>
       </header>
       <OrderBanners order={order} />
       {order.preorder && <p className="admin-order-flag">طلب مسبق (انبعت والمحل مسكّر)</p>}
-      {order.editedAt && <p className="admin-order-flag is-edited">انعدّل{order.edits && order.edits > 1 ? ` ${order.edits} مرات` : ''} · {ago(order.editedAt)}</p>}
+      {devUiOn && order.editedAt && <p className="admin-order-flag is-edited">انعدّل{order.edits && order.edits > 1 ? ` ${order.edits} مرات` : ''} · {ago(order.editedAt)}</p>}
       {order.status === 'ملغي' && order.cancelledBy && <p className="admin-order-flag">{order.cancelledBy === 'edit' ? 'الزبون رجع عدّله (بيوصل الطلب الجديد لحاله)' : 'الزبون لغاه'}</p>}
       <ul>
         {order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}
@@ -1275,7 +1311,7 @@ function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh
       <footer>
         {order.status === 'جديد' && <><button type="button" className="admin-primary" onClick={() => onStatus('عم يتحضّر')} data-testid="button-start">بلّش تحضير</button><button type="button" className="admin-danger" onClick={() => { if (confirm(`إلغاء الطلب #${orderNo(order)}؟`)) onStatus('ملغي'); }}>إلغاء</button></>}
         {order.status === 'عم يتحضّر' && <button type="button" className="admin-green" onClick={() => onStatus('جاهز')} data-testid="button-ready">جاهز ✅ (بيوصل للزبون)</button>}
-        {(order.status === 'عم يتحضّر' || order.status === 'جاهز') && <button type="button" className="admin-print is-danger" onClick={() => { if (confirm(`إلغاء الطلب #${orderNo(order)}؟`)) onStatus('ملغي'); }} aria-label="إلغاء" title="إلغاء"><X size={15} /></button>}
+        {devUiOn && (order.status === 'عم يتحضّر' || order.status === 'جاهز') && <button type="button" className="admin-print is-danger" onClick={() => { if (confirm(`إلغاء الطلب #${orderNo(order)}؟`)) onStatus('ملغي'); }} aria-label="إلغاء" title="إلغاء"><X size={15} /></button>}
         {order.status === 'جاهز' && <button type="button" className="admin-primary" onClick={() => onStatus('تم')} data-testid="button-picked">استلمه 👍</button>}
         {(order.status === 'تم' || order.status === 'ملغي') && <button type="button" className="admin-link" onClick={() => onStatus('جديد')}>رجّعه للطلبات المفتوحة</button>}
         {onEdit && <button type="button" className="admin-print" onClick={onEdit} aria-label={`عدّل الطلب ${order.id}`} title="عدّل الطلب" data-testid="button-edit"><Pencil size={15} /></button>}
@@ -1392,6 +1428,13 @@ function Sales({ session, showV8, products }: { session: string; showV8: boolean
   return (
     <>
       {showV8 && <ShopSwitch shop={shop} onChange={setShop} />}
+      {!devUiOn && <>
+        <div className="admin-stats">
+          <div><small>مبيعات اليوم</small><b>{stats.todayTotal.toFixed(2)} د.أ</b><em>{stats.todayCount} طلب</em></div>
+          <div><small>آخر 7 أيام</small><b>{stats.weekTotal.toFixed(2)} د.أ</b><em>{stats.weekCount} طلب · كليك {stats.cliq.toFixed(2)}</em></div>
+        </div>
+      </>}
+      {devUiOn && <>
       <div className="admin-view sales-period" role="tablist">
         {([['today', 'اليوم'], ['yesterday', 'مبارح'], ['week', 'آخر 7 أيام']] as const).map(([key, label]) => (
           <button key={key} type="button" role="tab" aria-selected={period === key} className={period === key ? 'is-active' : ''} onClick={() => setPeriod(key)} data-testid={`sales-${key}`}>{label}</button>
@@ -1419,10 +1462,17 @@ function Sales({ session, showV8, products }: { session: string; showV8: boolean
           ))}</ul>
         </section>
       )}
+      </>}
       {stats.days.length > 0 && (
         <section className="admin-card">
-          <h2>آخر 7 أيام، يوم بيوم</h2>
+          <h2>{devUiOn ? 'آخر 7 أيام، يوم بيوم' : 'كل يوم'}</h2>
           <ul className="admin-days">{stats.days.map(([date, total]) => <li key={date}><span>{date.slice(5).replace('-', '/')}</span><i style={{ width: `${(total / most) * 100}%` }} /><b>{total.toFixed(2)}</b></li>)}</ul>
+        </section>
+      )}
+      {!devUiOn && stats.top.length > 0 && (
+        <section className="admin-card">
+          <h2>الأكثر طلباً هالأسبوع</h2>
+          <ol className="admin-top-list">{stats.top.map(([item, count]) => <li key={item}><span>{item}</span><b>{count}</b></li>)}</ol>
         </section>
       )}
       {stats.hoursCount > 0 && (
