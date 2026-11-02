@@ -169,6 +169,8 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
 // only; the manager and staff keep the panel as it was before (mohammad, 2026-11-02).
 const DevUi = createContext(false);
 let devUiOn = false;
+// The manager sees order numbers as before 2026-11-01 (the order id); the daily number is for the developer screen.
+const shownNo = (order: LiveOrder) => (devUiOn ? orderNo(order) : order.id);
 const TAB_KEY = 'faei-admin-tab';
 type Tab = 'cashier' | 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'gallery' | 'v8' | 'accounts';
 
@@ -826,7 +828,7 @@ function DueAlert({ live }: { live: Live }) {
         const at = scheduledAt(order);
         return (
           <div key={order.ref}>
-            <p><b>⏰ طلب رقم {orderNo(order)}، شو صار عليه؟</b><span>موعده {order.time}{at ? ` (${dueText(at)})` : ''} · {order.items.map((item) => `${item.quantity}× ${item.name}`).join('، ')}{order.fulfillment.startsWith('توصيل') ? ' · 🛵 توصيل' : ''}</span></p>
+            <p><b>⏰ طلب رقم {shownNo(order)}، شو صار عليه؟</b><span>موعده {order.time}{at ? ` (${dueText(at)})` : ''} · {order.items.map((item) => `${item.quantity}× ${item.name}`).join('، ')}{order.fulfillment.startsWith('توصيل') ? ' · 🛵 توصيل' : ''}</span></p>
             <button type="button" className="admin-green" onClick={() => { void live.setStatus(order.ref, 'عم يتحضّر'); live.snooze(order.ref); }} data-testid={`due-start-${order.ref}`}>بلّشنا ✅</button>
             <button type="button" className="admin-link" onClick={() => live.snooze(order.ref)}>ذكّرني بعد 10 د</button>
           </div>
@@ -838,7 +840,7 @@ function DueAlert({ live }: { live: Live }) {
 
 function notify(orders: LiveOrder[]) {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted' || document.visibilityState === 'visible') return;
-  const title = orders.length === 1 ? `طلب ${orders[0].shop === 'v8' ? 'V8 ' : ''}جديد #${orderNo(orders[0])}` : `${orders.length} طلبات جديدة`;
+  const title = orders.length === 1 ? `طلب ${orders[0].shop === 'v8' ? 'V8 ' : ''}جديد #${shownNo(orders[0])}` : `${orders.length} طلبات جديدة`;
   const body = orders.flatMap((order) => order.items.map((item) => `${item.quantity}× ${item.name}`)).join('، ').slice(0, 140) || 'افتح اللوحة';
   const options = { body, tag: 'faei-order', renotify: true, icon: '/icon-192.png' } as NotificationOptions;
   navigator.serviceWorker?.getRegistration('/')
@@ -856,7 +858,7 @@ export function receiptHtml(order: LiveOrder): string {
   const time = new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(order.createdAt));
   const rows = order.items.map((item) => `<tr><td class="q">${item.quantity}×</td><td>${escapeHtml(item.name)}</td><td class="p">${(item.price * item.quantity).toFixed(2)}</td></tr>`).join('');
   const line = (label: string, value: string) => (value ? `<p><b>${label}:</b> ${escapeHtml(value)}</p>` : '');
-  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>#${escapeHtml(orderNo(order))}</title><style>
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>#${escapeHtml(shownNo(order))}</title><style>
 @page { size: 80mm auto; margin: 3mm; }
 * { box-sizing: border-box; }
 body { margin: 0; width: 74mm; font: 13px/1.45 Tahoma, Arial, sans-serif; color: #000; }
@@ -873,7 +875,7 @@ p { margin: 3px 0; }
 .foot { text-align: center; margin-top: 10px; font-size: 11px; }
 </style></head><body>
 <h1>${escapeHtml(BRAND.name)}</h1><div class="sub">${order.source === 'pos' ? 'طلب كاش' : 'طلب من الموقع'} · ${time}</div>
-<div class="id">#${escapeHtml(orderNo(order))}</div>
+<div class="id">#${escapeHtml(shownNo(order))}</div>
 ${devUiOn && scheduledAt(order) ? `<p class="big">⏰ للساعة ${escapeHtml(order.time)}</p>` : ''}${devUiOn && order.fulfillment.startsWith('توصيل') ? `<p class="big">توصيل${order.address ? `: ${escapeHtml(order.address)}` : ''}</p>` : ''}${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}${devUiOn && order.editedAt ? '<p class="note">طلب معدّل</p>' : ''}
 <table>${rows}</table>
 ${order.extras ? `<p class="note">ملاحظات: ${escapeHtml(order.extras)}</p>` : ''}
@@ -1085,7 +1087,7 @@ function useOrders(session: string, onLogout: () => void): Live {
         ring10.forEach((order) => { alerts[order.ref] = now; });
         write(DUE_KEY, JSON.stringify(Object.fromEntries(Object.entries(alerts).filter(([, at]) => now - at < 86_400_000))));
         ring();
-        notifyText(ring10.length === 1 ? `⏰ طلب رقم ${orderNo(ring10[0])}، شو صار عليه؟` : `⏰ ${ring10.length} طلبات مجدولة لازم تبلّشوا فيهم`, ring10.map((order) => `#${orderNo(order)} موعده ${order.time}`).join('، '));
+        notifyText(ring10.length === 1 ? `⏰ طلب رقم ${shownNo(ring10[0])}، شو صار عليه؟` : `⏰ ${ring10.length} طلبات مجدولة لازم تبلّشوا فيهم`, ring10.map((order) => `#${shownNo(order)} موعده ${order.time}`).join('، '));
         setDue((current) => [...new Set([...current, ...ring10.map((order) => order.ref)])]);
       }
       // Started or cancelled in the meantime: off the reminder.
@@ -1111,7 +1113,7 @@ function logToSheet(order: LiveOrder) {
     fetch(url, {
       method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        orderId: `كاش ${orderNo(order)}`,
+        orderId: `كاش ${shownNo(order)}`,
         items: order.items.map((item) => `${item.name} × ${item.quantity}`).join('، '),
         pieces: order.items.reduce((sum, item) => sum + item.quantity, 0),
         itemsTotal: order.total, discount: 0, delivery: 0, total: order.total,
@@ -1244,7 +1246,7 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
                   style={dragging ? { position: 'fixed', zIndex: 80, width: drag.width, left: drag.x - drag.dx, top: drag.y - drag.dy } : undefined}>
                   <header onPointerDown={(event) => down(event, order)} onPointerMove={move} onPointerUp={up} onPointerCancel={() => setDrag(null)}>
                     <GripVertical size={16} aria-hidden="true" />
-                    <b dir="ltr">#{orderNo(order)}</b>
+                    <b dir="ltr">#{shownNo(order)}</b>
                     {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
                     {devUiOn && order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
                     {devUiOn && order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
@@ -1286,7 +1288,7 @@ function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh
   return (
     <article className={`admin-order is-${['جديد', 'عم يتحضّر', 'جاهز', 'تم', 'ملغي'].indexOf(order.status)}${fresh ? ' is-fresh' : ''}${late ? ' is-late' : ''}`} data-testid={`order-${order.ref}`}>
       <header>
-        <b dir="ltr">#{orderNo(order)}</b>
+        <b dir="ltr">#{shownNo(order)}</b>
         {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
         {devUiOn && order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
         {devUiOn && order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
@@ -1309,9 +1311,9 @@ function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh
         <div><dt>المجموع</dt><dd><b>{order.total.toFixed(2)} د.أ</b>{order.discount ? ` (بعد خصم ${order.discount.toFixed(2)})` : ''}</dd></div>
       </dl>
       <footer>
-        {order.status === 'جديد' && <><button type="button" className="admin-primary" onClick={() => onStatus('عم يتحضّر')} data-testid="button-start">بلّش تحضير</button><button type="button" className="admin-danger" onClick={() => { if (confirm(`إلغاء الطلب #${orderNo(order)}؟`)) onStatus('ملغي'); }}>إلغاء</button></>}
+        {order.status === 'جديد' && <><button type="button" className="admin-primary" onClick={() => onStatus('عم يتحضّر')} data-testid="button-start">بلّش تحضير</button><button type="button" className="admin-danger" onClick={() => { if (confirm(`إلغاء الطلب #${shownNo(order)}؟`)) onStatus('ملغي'); }}>إلغاء</button></>}
         {order.status === 'عم يتحضّر' && <button type="button" className="admin-green" onClick={() => onStatus('جاهز')} data-testid="button-ready">جاهز ✅ (بيوصل للزبون)</button>}
-        {devUiOn && (order.status === 'عم يتحضّر' || order.status === 'جاهز') && <button type="button" className="admin-print is-danger" onClick={() => { if (confirm(`إلغاء الطلب #${orderNo(order)}؟`)) onStatus('ملغي'); }} aria-label="إلغاء" title="إلغاء"><X size={15} /></button>}
+        {devUiOn && (order.status === 'عم يتحضّر' || order.status === 'جاهز') && <button type="button" className="admin-print is-danger" onClick={() => { if (confirm(`إلغاء الطلب #${shownNo(order)}؟`)) onStatus('ملغي'); }} aria-label="إلغاء" title="إلغاء"><X size={15} /></button>}
         {order.status === 'جاهز' && <button type="button" className="admin-primary" onClick={() => onStatus('تم')} data-testid="button-picked">استلمه 👍</button>}
         {(order.status === 'تم' || order.status === 'ملغي') && <button type="button" className="admin-link" onClick={() => onStatus('جديد')}>رجّعه للطلبات المفتوحة</button>}
         {onEdit && <button type="button" className="admin-print" onClick={onEdit} aria-label={`عدّل الطلب ${order.id}`} title="عدّل الطلب" data-testid="button-edit"><Pencil size={15} /></button>}
