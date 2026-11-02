@@ -25,7 +25,8 @@
      "priceFils": 750
     }
    ],
-   "image": "/images/menu/shawarma-sandwich.webp"
+   "image": "/images/menu/shawarma-sandwich.webp",
+   "available": false
   },
   {
    "id": "shawarma-sandwich-super",
