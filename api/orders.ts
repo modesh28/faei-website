@@ -19,7 +19,7 @@
 //                              the cashier screen (الكاش) rings up a walk-in order (needs a signed-in FAEI account).
 //                              Rung up offline, it arrives later with its own time; the ref makes a resend harmless.
 
-import { adjustStock, connected, CORS, countCustomerOrder, githubFile, githubToken, githubWrite, randomId, redisUrl, validPid, json, notConnected, preflight, redis, type Role, sessionAccount } from './_lib.js';
+import { adjustStock, connected, CORS, countCustomerOrder, githubFile, githubToken, githubWrite, redisUrl, validPid, json, notConnected, preflight, redis, type Role, sessionAccount } from './_lib.js';
 
 // The admin screens ask for the version every few seconds. An instance that answered in the
 // last second and a half reuses its answer, which keeps the free Redis plan well within limits.
@@ -70,20 +70,36 @@ async function drainInbox() {
   if (items?.length) lastVersion.at = 0;
 }
 
+// Like redis(), but keeps each command's error instead of hiding it.
+async function redisRaw(commands: (string | number)[][]): Promise<{ result?: unknown; error?: string }[]> {
+  const response = await fetch(`${redisUrl()}/pipeline`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(commands),
+  });
+  if (!response.ok) throw new Error(`redis ${response.status}`);
+  return await response.json() as { result?: unknown; error?: string }[];
+}
+
 // Once: make the add-only key and put it in public/settings.json for the site.
 let inboxChecked = false;
 async function ensureInbox() {
   if (inboxChecked) return;
   inboxChecked = true;
-  const [ready, lock] = await redis([['GET', 'config:inbox'], ['SET', 'config:inbox-try', '1', 'NX', 'EX', 1800]]);
+  const [ready, lock] = await redis([['GET', 'config:inbox'], ['SET', 'config:inbox-try', '1', 'NX', 'EX', 600]]);
   if (ready === '1' || lock !== 'OK') return;
   const github = await githubToken();
   if (!github) return;
-  const password = randomId(24);
-  const [, token] = await redis([
+  // Upstash only takes a password it made itself (ACL GENTOKEN; GENPASS on older plans).
+  const generated = await redisRaw([['ACL', 'GENTOKEN']]);
+  const password = typeof generated[0]?.result === 'string' ? generated[0].result : String((await redisRaw([['ACL', 'GENPASS']]))[0]?.result ?? '');
+  if (!password) return;
+  const answers = await redisRaw([
     ['ACL', 'SETUSER', 'faei-inbox', 'on', 'resetpass', `>${password}`, 'resetkeys', '~inbox', 'resetchannels', '-@all', '+rpush'],
     ['ACL', 'RESTTOKEN', 'faei-inbox', password],
   ]);
+  if (answers.some((answer) => answer.error)) { console.error('inbox setup', answers.map((answer) => answer.error)); return; }
+  const token = answers[1]?.result;
   if (typeof token !== 'string' || !token) return;
   const file = await githubFile(github, 'public/settings.json');
   const settings = JSON.parse(file.text) as Record<string, unknown>;
