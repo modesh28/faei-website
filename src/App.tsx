@@ -722,18 +722,38 @@ const writePending = (list: PendingOrder[]) => { try { localStorage.setItem(PEND
 const dropPending = (ref: unknown) => writePending(readPending().filter((entry) => entry.body.ref !== ref));
 function postOrder(body: Record<string, unknown>): Promise<{ num?: number } | null> {
   if (!readPending().some((entry) => entry.body.ref === body.ref)) writePending([...readPending(), { body, at: Date.now() }]);
-  return fetch('/api/orders', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    .then(async (response) => {
+  const attempt = async (): Promise<{ num?: number } | null | 'retry'> => {
+    // Each try gives up after 6 s, so a weak connection gets a fresh try instead of hanging.
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 6000);
+    try {
+      const response = await fetch('/api/orders', { method: 'POST', keepalive: true, signal: controller.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       // Sent, or refused for good (a 4xx won't get better by trying again).
-      if (response.status < 500) dropPending(body.ref);
-      return response.ok ? await response.json() as { num?: number } : null;
-    })
-    .catch(() => null);
+      if (response.status >= 500) return 'retry';
+      dropPending(body.ref);
+      return response.ok ? await response.json().catch(() => ({})) as { num?: number } : null;
+    } catch { return 'retry'; } finally { window.clearTimeout(timer); }
+  };
+  // Three tries right away (0, 1.5 s, 4 s later); after that the order waits on the phone and is
+  // sent again every 20 seconds, and whenever the customer comes back to the site.
+  return (async () => {
+    for (const wait of [0, 1500, 2500]) {
+      if (wait) await new Promise((done) => window.setTimeout(done, wait));
+      const result = await attempt();
+      if (result !== 'retry') return result;
+    }
+    return null;
+  })();
 }
+const inFlight = new Set<unknown>();
 function resendPending() {
   const fresh = readPending().filter((entry) => Date.now() - entry.at < 6 * 3600_000);
   writePending(fresh);
-  for (const entry of fresh) void postOrder(entry.body);
+  for (const entry of fresh) {
+    if (inFlight.has(entry.body.ref)) continue;
+    inFlight.add(entry.body.ref);
+    void postOrder(entry.body).finally(() => inFlight.delete(entry.body.ref));
+  }
 }
 
 function App() {
@@ -743,7 +763,8 @@ function App() {
     const again = () => { if (document.visibilityState === 'visible') resendPending(); };
     document.addEventListener('visibilitychange', again);
     window.addEventListener('online', again);
-    return () => { document.removeEventListener('visibilitychange', again); window.removeEventListener('online', again); };
+    const timer = window.setInterval(() => { if (readPending().length) resendPending(); }, 20_000);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', again); window.removeEventListener('online', again); };
   }, []);
   const [cart, setCart] = useState<CartEntry[]>(readCart);
   const popularNames = usePopularNames();
@@ -1042,7 +1063,7 @@ function App() {
     // go to WhatsApp in the same tab; desktops open it in a new tab.
     const isPhone = /Android|iPhone|iPad|iPod|Instagram|FBAN|FBAV|Snapchat|TikTok/i.test(navigator.userAgent);
     // A phone leaves this page, so wait (a moment at most) for the shop's screen to get the order first.
-    if (isPhone) { void Promise.race([sentToScreen, new Promise((done) => window.setTimeout(done, 2500))]).then(() => { window.location.href = url; }); return; }
+    if (isPhone) { void Promise.race([sentToScreen, new Promise((done) => window.setTimeout(done, 4000))]).then(() => { window.location.href = url; }); return; }
     const popup = window.open(url, '_blank');
     if (popup) popup.opener = null;
     else window.location.assign(url);
