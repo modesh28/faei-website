@@ -1,10 +1,14 @@
 # Keeps the backup copy at https://modesh28.github.io/faei-website/ in step with the main site,
 # including menu and offer edits made from the admin page.
+# Also carries the LMT.COFFEE backup at https://modesh28.github.io/faei-website/lmt/ (scripts/lmt-mirror.mjs),
+# refreshed every 15 minutes so LMT panel edits show up there too.
 name: Backup copy on GitHub Pages
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
 permissions:
   contents: write
 concurrency: pages-mirror
@@ -20,12 +24,20 @@ jobs:
       - run: npm ci
       - run: npx vite build --base=/faei-website/
       - run: node scripts/pages-mirror.mjs
+      - run: node scripts/lmt-mirror.mjs
+        continue-on-error: true
       - name: Publish to gh-pages
         run: |
-          cd dist
+          cd dist && rm -rf lmt-tmp
           git init -q -b gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          REMOTE="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          HAVE_OLD=0; git fetch -q --depth=1 "$REMOTE" gh-pages 2>/dev/null && HAVE_OLD=1
+          # LMT's Vercel didn't answer this time: keep the LMT copy that is already published.
+          if [ ! -f lmt/index.html ] && [ $HAVE_OLD = 1 ]; then git checkout -q FETCH_HEAD -- lmt 2>/dev/null || true; fi
           git add -A
           git commit -qm "Backup copy from ${GITHUB_SHA::7}"
-          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+          # Nothing changed since the last copy (most 15-minute runs): don't republish.
+          if [ $HAVE_OLD = 1 ] && [ "$(git rev-parse HEAD^{tree})" = "$(git rev-parse FETCH_HEAD^{tree})" ]; then echo "no changes"; exit 0; fi
+          git push -qf "$REMOTE" gh-pages
