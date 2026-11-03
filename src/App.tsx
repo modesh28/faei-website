@@ -711,7 +711,40 @@ function usePopularNames(): Set<string> {
   return useMemo(() => new Set(names), [names]);
 }
 
+// Orders on their way to the shop's screen. A phone leaves the page for WhatsApp right after
+// sending, which can kill the request (Instagram's in-app browser especially), so each order is
+// kept on the phone until the server confirms it, and sent again when the customer comes back.
+// The order's ref makes a second copy harmless.
+const PENDING_KEY = 'faei-pending-orders';
+type PendingOrder = { body: Record<string, unknown>; at: number };
+const readPending = (): PendingOrder[] => { try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]') as PendingOrder[]; } catch { return []; } };
+const writePending = (list: PendingOrder[]) => { try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch { /* fine */ } };
+const dropPending = (ref: unknown) => writePending(readPending().filter((entry) => entry.body.ref !== ref));
+function postOrder(body: Record<string, unknown>): Promise<{ num?: number } | null> {
+  if (!readPending().some((entry) => entry.body.ref === body.ref)) writePending([...readPending(), { body, at: Date.now() }]);
+  return fetch('/api/orders', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(async (response) => {
+      // Sent, or refused for good (a 4xx won't get better by trying again).
+      if (response.status < 500) dropPending(body.ref);
+      return response.ok ? await response.json() as { num?: number } : null;
+    })
+    .catch(() => null);
+}
+function resendPending() {
+  const fresh = readPending().filter((entry) => Date.now() - entry.at < 6 * 3600_000);
+  writePending(fresh);
+  for (const entry of fresh) void postOrder(entry.body);
+}
+
 function App() {
+  // Orders that didn't reach the shop's screen yet (the phone left for WhatsApp too fast) go again.
+  useEffect(() => {
+    resendPending();
+    const again = () => { if (document.visibilityState === 'visible') resendPending(); };
+    document.addEventListener('visibilitychange', again);
+    window.addEventListener('online', again);
+    return () => { document.removeEventListener('visibilitychange', again); window.removeEventListener('online', again); };
+  }, []);
   const [cart, setCart] = useState<CartEntry[]>(readCart);
   const popularNames = usePopularNames();
   const [theme, toggleTheme] = useTheme();
@@ -946,14 +979,9 @@ function App() {
       phone: phoneNumber,
       source: VISIT_SOURCE,
     });
-    // Also send it to the shop's live orders screen (/admin). Fire-and-forget, like the sheet.
+    // Also send it to the shop's live orders screen (/admin); kept on the phone until it arrives.
     const ref = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => 'abcdefghijklmnopqrstuvwxyz0123456789'[byte % 36]).join('');
-    try {
-      fetch('/api/orders', {
-        method: 'POST',
-        keepalive: true,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    const sentToScreen = postOrder({
           ref,
           id: orderId,
           items: cartLines.map(({ name, option, quantity, product }) => ({ name, quantity, price: option.priceFils / 1000, pid: product.id })),
@@ -968,8 +996,8 @@ function App() {
           discount: discountFils / 1000,
           delivery: isDelivery ? (zone === 'inside' ? deliveryFils / 1000 : 'بنتفق عليه') : 0,
           total: grandTotalFils / 1000,
-        }),
-      }).then((response) => response.json()).then((data: { num?: number }) => {
+    }).then((data) => {
+        if (!data) return;
         // The shop calls orders by the day's number (1, 2, 3 …), so the tracker shows it too.
         if (!data?.num) return;
         setActiveOrder((current) => {
@@ -978,18 +1006,12 @@ function App() {
           try { localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(next)); } catch { /* fine */ }
           return next;
         });
-      }).catch(() => {});
-    } catch { /* The order still goes to WhatsApp. */ }
+      });
     // V8's drinks in a FAEI order also show on V8's own screen, so they make them; FAEI delivers and collects.
     const v8Lines = cartLines.filter((line) => isV8Id(line.product.id));
     if (v8Lines.length) {
       const v8Ref = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => 'abcdefghijklmnopqrstuvwxyz0123456789'[byte % 36]).join('');
-      try {
-        fetch('/api/orders', {
-          method: 'POST',
-          keepalive: true,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      void postOrder({
             ref: v8Ref,
             id: `${orderId}-V8`,
             shop: 'v8',
@@ -1004,9 +1026,7 @@ function App() {
             discount: 0,
             delivery: 0,
             total: v8Lines.reduce((sum, line) => sum + line.option.priceFils * line.quantity, 0) / 1000,
-          }),
-        }).catch(() => {});
-      } catch { /* FAEI's order still lists the drinks. */ }
+      });
     }
     const saved: LastOrder = { cart, extras: extras.trim() };
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(saved)); } catch { /* Reorder is optional. */ }
@@ -1021,7 +1041,8 @@ function App() {
     // Phones (and in-app browsers like Instagram's, where a new tab can silently do nothing)
     // go to WhatsApp in the same tab; desktops open it in a new tab.
     const isPhone = /Android|iPhone|iPad|iPod|Instagram|FBAN|FBAV|Snapchat|TikTok/i.test(navigator.userAgent);
-    if (isPhone) { window.location.href = url; return; }
+    // A phone leaves this page, so wait (a moment at most) for the shop's screen to get the order first.
+    if (isPhone) { void Promise.race([sentToScreen, new Promise((done) => window.setTimeout(done, 2500))]).then(() => { window.location.href = url; }); return; }
     const popup = window.open(url, '_blank');
     if (popup) popup.opener = null;
     else window.location.assign(url);
