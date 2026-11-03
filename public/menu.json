@@ -855,7 +855,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp"
+   "image": "/images/menu/pizza2.webp",
+   "available": false
   },
   {
    "id": "pizza-fajita",
