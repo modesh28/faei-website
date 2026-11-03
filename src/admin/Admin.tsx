@@ -856,7 +856,7 @@ const PRINTED_KEY = 'faei-admin-printed';
 const escapeHtml = (text: string) => text.replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]!));
 export function receiptHtml(order: LiveOrder): string {
   const time = new Intl.DateTimeFormat('ar-JO', { timeZone: 'Asia/Amman', day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(order.createdAt));
-  const rows = order.items.map((item) => `<tr><td class="q">${item.quantity}×</td><td>${escapeHtml(item.name)}</td><td class="p">${(item.price * item.quantity).toFixed(2)}</td></tr>`).join('');
+  const rows = order.items.map((item) => `<tr><td class="q">${item.quantity}×</td><td>${escapeHtml(item.name)}</td><td class="p">${item.price === 0 && item.name.startsWith('V8 · ') ? 'V8' : (item.price * item.quantity).toFixed(2)}</td></tr>`).join('');
   const line = (label: string, value: string) => (value ? `<p><b>${label}:</b> ${escapeHtml(value)}</p>` : '');
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>#${escapeHtml(shownNo(order))}</title><style>
 @page { size: 80mm auto; margin: 3mm; }

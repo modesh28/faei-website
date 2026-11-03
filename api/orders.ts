@@ -88,6 +88,15 @@ export async function POST(request: Request): Promise<Response> {
     delivery: typeof body.delivery === 'string' ? text(body.delivery, 30) : amount(body.delivery),
     total: amount(body.total),
   };
+  // A FAEI order with V8 drinks in it: FAEI's screen lists the drinks so the order is complete, but
+  // its price and total are FAEI's only (V8 gets its own order with its own price). mohammad, 2026-11-03.
+  if (order.shop !== 'v8') {
+    let v8Sum = 0;
+    for (const item of order.items) {
+      if (item.name.startsWith('V8 · ') || (item as { pid?: string }).pid?.startsWith('v8-')) { v8Sum += item.price * item.quantity; item.price = 0; }
+    }
+    if (v8Sum) order.total = Math.max(0, Math.round((order.total - v8Sum) * 1000) / 1000);
+  }
   // The day's order number, shared by the site and the counter: 1, 2, 3 … and back to 1 after 500.
   const [exists] = await redis([['EXISTS', `order:${order.ref}`]]);
   if (exists) return json({ ok: true, duplicate: true });
