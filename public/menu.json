@@ -75,8 +75,7 @@
      "priceFils": 3450
     }
    ],
-   "image": "/images/menu/shawarma-meal.webp",
-   "available": false
+   "image": "/images/menu/shawarma-meal.webp"
   },
   {
    "id": "shawarma-shilla",
