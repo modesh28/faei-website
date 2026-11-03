@@ -1399,7 +1399,8 @@
      "label": "",
      "priceFils": 350
     }
-   ]
+   ],
+   "available": false
   },
   {
    "id": "sham-spinach",
