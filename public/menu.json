@@ -129,7 +129,8 @@
      "priceFils": 3500
     }
    ],
-   "image": "/images/menu/shawarma-halabi.webp"
+   "image": "/images/menu/shawarma-halabi.webp",
+   "available": false
   },
   {
    "id": "smash-classic",
