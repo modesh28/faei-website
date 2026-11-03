@@ -90,8 +90,8 @@ async function ensureInbox() {
   if (ready === '1' || lock !== 'OK') return;
   const github = await githubToken();
   if (!github) return;
-  // Upstash only takes a password it made itself (ACL GENTOKEN; GENPASS on older plans).
-  const generated = await redisRaw([['ACL', 'GENTOKEN']]);
+  // Upstash only takes a password it made itself (ACL GENTOKEN <user>; GENPASS on older plans).
+  const generated = await redisRaw([['ACL', 'GENTOKEN', 'faei-inbox']]);
   const password = typeof generated[0]?.result === 'string' ? generated[0].result : String((await redisRaw([['ACL', 'GENPASS']]))[0]?.result ?? '');
   if (!password) return;
   const answers = await redisRaw([
