@@ -8,7 +8,7 @@ declare const process: { env: Record<string, string | undefined> };
 const vercelRepo = process.env.VERCEL_GIT_REPO_OWNER && process.env.VERCEL_GIT_REPO_SLUG ? `${process.env.VERCEL_GIT_REPO_OWNER}/${process.env.VERCEL_GIT_REPO_SLUG}` : undefined;
 export const REPO = process.env.GITHUB_REPO || vercelRepo || 'modesh28/faei-website';
 
-const redisUrl = () => process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+export const redisUrl = () => process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = () => process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
 export const connected = () => !!redisUrl() && !!redisToken();
 

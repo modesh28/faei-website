@@ -22,7 +22,7 @@ const HOURS_TEXT = BRAND.hours.text;
 const DELIVERY_INSIDE_FILS = BRAND.delivery.insideFils;
 
 // Edited on GitHub in public/settings.json: the Google Sheet that logs orders, and the CliQ alias for paying.
-type Settings = { sheetUrl: string; cliqAlias: string; cliqName: string };
+type Settings = { sheetUrl: string; cliqAlias: string; cliqName: string; inboxUrl?: string; inboxToken?: string };
 // Built-in values, so CliQ and order logging work even if settings.json fails to load.
 const DEFAULT_SETTINGS: Settings = { sheetUrl: BRAND.sheetUrl, cliqAlias: BRAND.cliq.alias, cliqName: BRAND.cliq.name };
 // Where the visitor came from, e.g. ?from=qr on the table cards.
@@ -720,8 +720,30 @@ type PendingOrder = { body: Record<string, unknown>; at: number };
 const readPending = (): PendingOrder[] => { try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]') as PendingOrder[]; } catch { return []; } };
 const writePending = (list: PendingOrder[]) => { try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch { /* fine */ } };
 const dropPending = (ref: unknown) => writePending(readPending().filter((entry) => entry.body.ref !== ref));
+// The second road: Upstash's own address (not vercel.app) with a key that can only add to the
+// "inbox" list; the shop's panel moves what lands there onto its screen. Remembered on the phone,
+// so it works even when settings.json can't be loaded next time.
+const INBOX_KEY = 'faei-inbox';
+type Inbox = { url: string; token: string };
+let inbox: Inbox | null = (() => { try { return JSON.parse(localStorage.getItem(INBOX_KEY) || 'null') as Inbox | null; } catch { return null; } })();
+function rememberInbox(data: Partial<Settings>) {
+  if (!data.inboxUrl || !data.inboxToken || !/^https:\/\/[\w.-]+\.upstash\.io$/.test(data.inboxUrl)) return;
+  inbox = { url: data.inboxUrl, token: data.inboxToken };
+  try { localStorage.setItem(INBOX_KEY, JSON.stringify(inbox)); } catch { /* fine */ }
+}
+async function dropInInbox(body: Record<string, unknown>): Promise<boolean> {
+  if (!inbox) return false;
+  try {
+    const response = await fetch(inbox.url, { method: 'POST', keepalive: true, headers: { Authorization: `Bearer ${inbox.token}` }, body: JSON.stringify(['RPUSH', 'inbox', JSON.stringify(body)]) });
+    return response.ok;
+  } catch { return false; }
+}
+
 function postOrder(body: Record<string, unknown>): Promise<{ num?: number } | null> {
+  if (!body.placedAt) body = { ...body, placedAt: Date.now() };
   if (!readPending().some((entry) => entry.body.ref === body.ref)) writePending([...readPending(), { body, at: Date.now() }]);
+  // Both roads at once, every time; the first that answers takes the order off the phone.
+  void dropInInbox(body).then((ok) => { if (ok) dropPending(body.ref); });
   const attempt = async (): Promise<{ num?: number } | null | 'retry'> => {
     // Each try gives up after 6 s, so a weak connection gets a fresh try instead of hanging.
     const controller = new AbortController();
@@ -825,7 +847,7 @@ function App() {
   useEffect(() => {
     fetch('/settings.json', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
-      .then((data: Partial<Settings> | null) => { if (data) setSettings({ ...DEFAULT_SETTINGS, ...data }); })
+      .then((data: Partial<Settings> | null) => { if (data) { setSettings({ ...DEFAULT_SETTINGS, ...data }); rememberInbox(data); } })
       .catch(() => {});
   }, []);
   // Free-text extras from the cafeteria shelf (juices, chips, sweets), priced on WhatsApp.

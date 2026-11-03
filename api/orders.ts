@@ -19,7 +19,7 @@
 //                              the cashier screen (الكاش) rings up a walk-in order (needs a signed-in FAEI account).
 //                              Rung up offline, it arrives later with its own time; the ref makes a resend harmless.
 
-import { adjustStock, connected, CORS, countCustomerOrder, validPid, json, notConnected, preflight, redis, type Role, sessionAccount } from './_lib.js';
+import { adjustStock, connected, CORS, countCustomerOrder, githubFile, githubToken, githubWrite, randomId, redisUrl, validPid, json, notConnected, preflight, redis, type Role, sessionAccount } from './_lib.js';
 
 // The admin screens ask for the version every few seconds. An instance that answered in the
 // last second and a half reuses its answer, which keeps the free Redis plan well within limits.
@@ -42,6 +42,56 @@ const text = (value: unknown, max = 300) => String(value ?? '').slice(0, max);
 const amount = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value < 1000 ? value : 0);
 
 export function OPTIONS(): Response { return preflight(); }
+
+// When the customer pressed send (an order that came the long way, through the inbox, keeps its time).
+function placedAt(value: unknown): number {
+  const at = Number(value);
+  const now = Date.now();
+  return Number.isFinite(at) && at > now - 6 * 3600_000 && at <= now ? at : now;
+}
+
+// The second road for site orders (mohammad approved 2026-11-03: every sent order must reach the panel).
+// Besides POST /api/orders, the site also drops every order straight into the Redis list "inbox"
+// (Upstash's own address, not vercel.app), with a key that can only add to that one list. The key is
+// public in settings.json, so it can do nothing else. The panel's polling empties the inbox through
+// the same POST code below, and the order's ref makes a copy that already arrived harmless.
+let lastDrain = 0;
+async function drainInbox() {
+  if (Date.now() - lastDrain < 15_000) return;
+  lastDrain = Date.now();
+  const [items] = await redis([['LPOP', 'inbox', 25]]) as [string[] | null];
+  for (const raw of items ?? []) {
+    if (typeof raw !== 'string' || raw.length > 8000) continue;
+    let status = 500;
+    try { status = (await POST(new Request('https://inbox.local/api/orders', { method: 'POST', body: raw }))).status; } catch { /* again below */ }
+    // A server hiccup: back in the inbox for the next round.
+    if (status >= 500) await redis([['RPUSH', 'inbox', raw]]).catch(() => {});
+  }
+  if (items?.length) lastVersion.at = 0;
+}
+
+// Once: make the add-only key and put it in public/settings.json for the site.
+let inboxChecked = false;
+async function ensureInbox() {
+  if (inboxChecked) return;
+  inboxChecked = true;
+  const [ready, lock] = await redis([['GET', 'config:inbox'], ['SET', 'config:inbox-try', '1', 'NX', 'EX', 1800]]);
+  if (ready === '1' || lock !== 'OK') return;
+  const github = await githubToken();
+  if (!github) return;
+  const password = randomId(24);
+  const [, token] = await redis([
+    ['ACL', 'SETUSER', 'faei-inbox', 'on', 'resetpass', `>${password}`, 'resetkeys', '~inbox', 'resetchannels', '-@all', '+rpush'],
+    ['ACL', 'RESTTOKEN', 'faei-inbox', password],
+  ]);
+  if (typeof token !== 'string' || !token) return;
+  const file = await githubFile(github, 'public/settings.json');
+  const settings = JSON.parse(file.text) as Record<string, unknown>;
+  settings.inboxUrl = redisUrl();
+  settings.inboxToken = token;
+  const status = await githubWrite(github, 'public/settings.json', `${JSON.stringify(settings, null, 2)}\n`, file.sha, 'Second road for site orders (add-only inbox key)');
+  if (status === 200 || status === 201) await redis([['SET', 'config:inbox', '1']]);
+}
 
 export async function POST(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
@@ -74,7 +124,7 @@ export async function POST(request: Request): Promise<Response> {
     ...(pos ? { source: 'pos', by: pos.by, paid: amount(body.paid) } : {}),
     // Orders for V8 (the coffee house inside FAEI) show on their own list.
     ...(body.shop === 'v8' ? { shop: 'v8' } : {}),
-    createdAt: pos ? pos.createdAt : Date.now(),
+    createdAt: pos ? pos.createdAt : placedAt(body.placedAt),
     status: pos ? pos.status : 'جديد',
     items,
     extras: text(body.extras, 500),
@@ -201,6 +251,8 @@ export async function GET(request: Request): Promise<Response> {
   if (!connected()) return notConnected();
   const params = new URL(request.url).searchParams;
   if (params.has('version')) {
+    await ensureInbox().catch(() => {});
+    await drainInbox().catch(() => {});
     if (Date.now() - lastVersion.at < 1500) return json({ version: lastVersion.value });
     const [version] = await redis([['GET', 'orders:version']]);
     lastVersion = { value: Number(version) || 0, at: Date.now() };
