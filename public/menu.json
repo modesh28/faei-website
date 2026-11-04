@@ -1054,7 +1054,8 @@
      "priceFils": 1250
     }
    ],
-   "image": "/images/menu/halloumi.webp"
+   "image": "/images/menu/halloumi.webp",
+   "available": false
   },
   {
    "id": "cold-turkey",
