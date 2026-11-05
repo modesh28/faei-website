@@ -1,0 +1,39 @@
+{
+  "title": "قعدة الفَيّ",
+  "photos": [
+    {
+      "src": "/faei-website/images/faei-seating.webp",
+      "alt": "القعدة في FAEI مع إطلالة على الشجر",
+      "caption": "قعدة بين الشجر",
+      "size": "big"
+    },
+    {
+      "src": "/faei-website/images/faei-table.webp",
+      "alt": "طاولة في FAEI قدام رسمة فيروز على الحيط",
+      "caption": "فيروز والشلة والأكل",
+      "size": "tall",
+      "position": "center 60%"
+    },
+    {
+      "src": "/faei-website/images/faei-sign.webp",
+      "alt": "قارمة FAEI على الخشب",
+      "caption": "أهلاً بالفَيّ",
+      "position": "center 75%"
+    },
+    {
+      "src": "/faei-website/images/smash-classic.webp",
+      "alt": "سماش برغر طازة من FAEI",
+      "caption": "سماش طازة"
+    },
+    {
+      "src": "/faei-website/images/smash-cheese.webp",
+      "alt": "تحضير السماش برغر على الصاج",
+      "caption": "بينعمل قدامك"
+    },
+    {
+      "src": "/faei-website/images/pizza-zinger.webp",
+      "alt": "بيتزا زنجر من FAEI",
+      "caption": "بيتزا زنجر"
+    }
+  ]
+}
