@@ -933,7 +933,8 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/calzone.webp"
+   "image": "/images/menu/calzone.webp",
+   "available": false
   },
   {
    "id": "manakish-cheese-mix",
