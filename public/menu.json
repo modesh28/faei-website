@@ -995,7 +995,8 @@
      "priceFils": 750
     }
    ],
-   "image": "/images/menu/manakeesh.webp"
+   "image": "/images/menu/manakeesh.webp",
+   "available": false
   },
   {
    "id": "manakish-zaatar-cheese",
