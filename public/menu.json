@@ -219,8 +219,7 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/chicken2.webp",
-   "available": false
+   "image": "/images/menu/chicken2.webp"
   },
   {
    "id": "chicken-honey-mayo",
