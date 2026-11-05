@@ -984,8 +984,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/salami.webp",
-   "available": false
+   "image": "/images/menu/salami.webp"
   },
   {
    "id": "manakish-zaatar",
