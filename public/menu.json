@@ -235,8 +235,7 @@
      "priceFils": 2750
     }
    ],
-   "image": "/images/menu/chicken2.webp",
-   "available": false
+   "image": "/images/menu/chicken2.webp"
   },
   {
    "id": "chicken-hot",
