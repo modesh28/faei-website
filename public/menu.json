@@ -909,8 +909,7 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/calzone.webp",
-   "available": false
+   "image": "/images/menu/calzone.webp"
   },
   {
    "id": "calzone-mexican",
