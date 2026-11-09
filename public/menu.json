@@ -1008,8 +1008,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/zaatar-cheese.webp",
-   "available": false
+   "image": "/images/menu/zaatar-cheese.webp"
   },
   {
    "id": "manakish-turkey",
