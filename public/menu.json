@@ -959,8 +959,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/cheese-mix.webp",
-   "available": false
+   "image": "/images/menu/cheese-mix.webp"
   },
   {
    "id": "manakish-muhammara",
