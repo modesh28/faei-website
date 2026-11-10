@@ -38,7 +38,8 @@
      "priceFils": 1300
     }
    ],
-   "image": "/images/menu/shawarma-sandwich.webp"
+   "image": "/images/menu/shawarma-sandwich.webp",
+   "available": false
   },
   {
    "id": "shawarma-meal",
