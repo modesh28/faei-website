@@ -117,7 +117,8 @@
      "priceFils": 3500
     }
    ],
-   "image": "/images/menu/shawarma-italian.webp"
+   "image": "/images/menu/shawarma-italian.webp",
+   "available": false
   },
   {
    "id": "shawarma-halabi",
