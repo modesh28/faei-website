@@ -823,8 +823,7 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/pizza2.webp",
-   "available": false
+   "image": "/images/menu/pizza2.webp"
   },
   {
    "id": "pizza-shawarma",
