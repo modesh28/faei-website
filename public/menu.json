@@ -622,7 +622,8 @@
      "priceFils": 3250
     }
    ],
-   "image": "/images/menu/boxes2.webp"
+   "image": "/images/menu/boxes2.webp",
+   "available": false
   },
   {
    "id": "box-mexican",
