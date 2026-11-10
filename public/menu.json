@@ -961,7 +961,8 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/cheese-mix.webp"
+   "image": "/images/menu/cheese-mix.webp",
+   "available": false
   },
   {
    "id": "manakish-white-cheese",
