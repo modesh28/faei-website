@@ -63,7 +63,8 @@
      "priceFils": 2750
     }
    ],
-   "image": "/images/menu/shawarma-meal.webp"
+   "image": "/images/menu/shawarma-meal.webp",
+   "available": false
   },
   {
    "id": "shawarma-meal-double",
