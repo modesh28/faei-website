@@ -1337,7 +1337,8 @@
      "label": "",
      "priceFils": 900
     }
-   ]
+   ],
+   "available": false
   },
   {
    "id": "sham-white-cheese",
