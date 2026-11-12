@@ -100,8 +100,7 @@
      "priceFils": 3000
     }
    ],
-   "image": "/images/menu/toast2.webp",
-   "available": false
+   "image": "/images/menu/toast2.webp"
   },
   {
    "id": "shawarma-italian",
