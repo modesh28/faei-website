@@ -1017,8 +1017,7 @@
      "priceFils": 1500
     }
    ],
-   "image": "/images/menu/manakish-turkey.webp",
-   "available": false
+   "image": "/images/menu/manakish-turkey.webp"
   },
   {
    "id": "cold-cheese-mix",
