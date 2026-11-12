@@ -801,3 +801,5 @@ html.lite .v8-window { animation: none; }
 .v8-extras div { display: flex; flex-wrap: wrap; gap: 8px; }
 .v8-extras button { flex: 1; height: 42px; border: 1px solid #333; border-radius: 10px; background: #0b0b0b; color: var(--v8-cream); font: inherit; font-weight: 700; }
 .v8-extras button.is-active { border-color: var(--v8-gold); color: var(--v8-gold); }
+
+.footer .footer-copy { margin:18px auto 0; padding:12px 16px 0; border-top:1px solid rgba(255,255,255,.12); text-align:center; font-size:11px; opacity:.7; max-width:1200px; }
