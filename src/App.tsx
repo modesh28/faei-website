@@ -1289,7 +1289,7 @@ function App() {
             <a className="button button-outline" href={MAPS_URL} target="_blank" rel="noreferrer" aria-label={`موقع ${BRAND.name} على الخريطة`}><MapPin size={17} /> الخريطة</a>
           </div>
         </div>
-        <p className="footer-copy">© {new Date().getFullYear()} {BRAND.name} — جميع الحقوق محفوظة · تصميم وتطوير: محمد</p>
+        <p className="footer-copy">© {new Date().getFullYear()} {BRAND.name} — جميع الحقوق محفوظة</p>
       </footer>
 
       {cartOpen && <>
