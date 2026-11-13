@@ -1,0 +1,31 @@
+{
+  "id": "/faei-website/admin/",
+  "name": "لوحة FAEI",
+  "short_name": "لوحة FAEI",
+  "description": "طلبات FAEI ومبيعاتها والأصناف",
+  "lang": "ar",
+  "dir": "rtl",
+  "display": "standalone",
+  "background_color": "#182b3a",
+  "theme_color": "#182b3a",
+  "start_url": "/faei-website/admin/",
+  "scope": "/faei-website/admin/",
+  "icons": [
+    {
+      "src": "/faei-website/admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/faei-website/admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/faei-website/admin-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
