@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, BarChart3, Calculator, Coffee, Images, Printer, Bell, Contact, Download, Gift, Camera, ClipboardList, Eye, ExternalLink, GripVertical, List, Columns3, Maximize, LogOut, MessageCircle, Moon, Sun, Pencil, Plus, Search, Tag, Trash2, UserPlus, Users, UtensilsCrossed, X } from 'lucide-react';
 
 import type { Menu, Product } from '../menu';
@@ -170,7 +170,12 @@ function Setup({ onDone }: { onDone: (session: Session) => void }) {
 const DevUi = createContext(false);
 let devUiOn = false;
 // The manager sees order numbers as before 2026-11-01 (the order id); the daily number is for the developer screen.
-const shownNo = (order: LiveOrder) => (devUiOn ? orderNo(order) : order.id);
+// The developer's order cards (delivery badge + strip, set-time countdown, daily number, edited flag, extra
+// cancel) and the loud order alarm + scheduled-order reminders reach the manager and staff on Sunday
+// 2026-11-15 at 09:00 Amman (mohammad, 2026-11-13). Checked live, so an open panel switches by itself.
+const STAFF_NEW_ORDERS_AT = Date.parse('2026-11-15T06:00:00Z');
+const newOrdersUi = () => devUiOn || Date.now() >= STAFF_NEW_ORDERS_AT;
+const shownNo = (order: LiveOrder) => (newOrdersUi() ? orderNo(order) : order.id);
 const TAB_KEY = 'faei-admin-tab';
 type Tab = 'cashier' | 'orders' | 'items' | 'offer' | 'sales' | 'customers' | 'gallery' | 'v8' | 'accounts';
 
@@ -383,7 +388,7 @@ function Dashboard({ me, onLogout, onRole }: { me: Session; onLogout: () => void
         {isDev && v8Opened && <div hidden={tab !== 'v8'}><V8Editor session={token} onLogout={onLogout} /></div>}
         {tab === 'accounts' && <Accounts me={me} />}
       </main>
-      {isDev && <DueAlert live={live} />}
+      {newOrdersUi() && <DueAlert live={live} />}
       {(dirty || saving !== 'idle') && (
         <div className={`admin-savebar is-${saving}`} data-testid="savebar">
           {saving === 'saving' ? <span>عم نحفظ…</span>
@@ -724,7 +729,7 @@ export type Live = {
 
 // New website orders and scheduled-order reminders: loud and long on the developer's panel (sounds.ts),
 // the earlier ring for everyone else.
-function ring() { if (devUiOn) siteOrder(); else classicRing(); }
+function ring() { if (newOrdersUi()) siteOrder(); else classicRing(); }
 let classicAudio: AudioContext | null = null;
 function classicRing() {
   try {
@@ -876,7 +881,7 @@ p { margin: 3px 0; }
 </style></head><body>
 <h1>${escapeHtml(BRAND.name)}</h1><div class="sub">${order.source === 'pos' ? 'طلب كاش' : 'طلب من الموقع'} · ${time}</div>
 <div class="id">#${escapeHtml(shownNo(order))}</div>
-${devUiOn && scheduledAt(order) ? `<p class="big">⏰ للساعة ${escapeHtml(order.time)}</p>` : ''}${devUiOn && order.fulfillment.startsWith('توصيل') ? `<p class="big">توصيل${order.address ? `: ${escapeHtml(order.address)}` : ''}</p>` : ''}${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}${devUiOn && order.editedAt ? '<p class="note">طلب معدّل</p>' : ''}
+${newOrdersUi() && scheduledAt(order) ? `<p class="big">⏰ للساعة ${escapeHtml(order.time)}</p>` : ''}${newOrdersUi() && order.fulfillment.startsWith('توصيل') ? `<p class="big">توصيل${order.address ? `: ${escapeHtml(order.address)}` : ''}</p>` : ''}${order.preorder ? '<p class="note">طلب مسبق</p>' : ''}${newOrdersUi() && order.editedAt ? '<p class="note">طلب معدّل</p>' : ''}
 <table>${rows}</table>
 ${order.extras ? `<p class="note">ملاحظات: ${escapeHtml(order.extras)}</p>` : ''}
 ${line('الاستلام', `${order.fulfillment}${order.address ? ` · ${order.address}` : ''}`)}
@@ -1055,11 +1060,12 @@ function useOrders(session: string, onLogout: () => void): Live {
   // Any first tap on the panel switches the order sound on (browsers need one touch before playing sound).
   useEffect(() => {
     const first = () => {
-      if (!devUiOn) return;
+      if (!newOrdersUi()) return;
+      window.removeEventListener('pointerdown', first);
       unlock(); soundRef.current = true; setSoundOn(true);
       if (typeof Notification !== 'undefined' && Notification.permission === 'default') void Notification.requestPermission().catch(() => {});
     };
-    window.addEventListener('pointerdown', first, { once: true });
+    window.addEventListener('pointerdown', first);
     return () => window.removeEventListener('pointerdown', first);
   }, []);
   function enableSound() {
@@ -1073,7 +1079,7 @@ function useOrders(session: string, onLogout: () => void): Live {
   ordersRef.current = orders;
   useEffect(() => {
     const check = () => {
-      if (!devUiOn) return;
+      if (!newOrdersUi()) return;
       let alerts: Record<string, number> = {};
       try { alerts = JSON.parse(read(DUE_KEY) || '{}') as Record<string, number>; } catch { alerts = {}; }
       const now = Date.now();
@@ -1233,7 +1239,7 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
     <div className="admin-board" data-testid="kitchen-board">
       {COLUMNS.map((column) => {
         // Orders for a set time line up by that time, the rest by when they came in.
-        const list = orders.filter((order) => order.status === column.status).sort((a, b) => (devUiOn ? (scheduledAt(a) ?? a.createdAt) - (scheduledAt(b) ?? b.createdAt) : a.createdAt - b.createdAt));
+        const list = orders.filter((order) => order.status === column.status).sort((a, b) => (newOrdersUi() ? (scheduledAt(a) ?? a.createdAt) - (scheduledAt(b) ?? b.createdAt) : a.createdAt - b.createdAt));
         return (
           <section key={column.status} className={`admin-col is-${COLUMNS.indexOf(column)}${drag?.moved && drag.over === column.status && drag.from !== column.status ? ' is-over' : ''}`} data-column={column.status}>
             <h2>{column.title} <i>{list.length}</i></h2>
@@ -1248,8 +1254,8 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
                     <GripVertical size={16} aria-hidden="true" />
                     <b dir="ltr">#{shownNo(order)}</b>
                     {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
-                    {devUiOn && order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
-                    {devUiOn && order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
+                    {newOrdersUi() && order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
+                    {newOrdersUi() && order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
                     <span className="admin-order-time">{ago(order.createdAt)}</span>
                   </header>
                   <OrderBanners order={order} />
@@ -1269,9 +1275,8 @@ function Board({ orders, fresh, onStatus }: { orders: LiveOrder[]; fresh: Set<st
 
 // Big, hard-to-miss strips for the kitchen: a delivery (with where to) and an order for a set time.
 function OrderBanners({ order }: { order: LiveOrder }) {
-  const dev = useContext(DevUi);
   const at = scheduledAt(order);
-  if (!dev) return null;
+  if (!newOrdersUi()) return null;
   const delivery = order.fulfillment.startsWith('توصيل');
   if (!at && !delivery) return null;
   const soon = at !== null && at - Date.now() < 30 * 60_000;
@@ -1290,14 +1295,14 @@ function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh
       <header>
         <b dir="ltr">#{shownNo(order)}</b>
         {order.shop === 'v8' && <span className="admin-order-shop">V8</span>}
-        {devUiOn && order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
-        {devUiOn && order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
+        {newOrdersUi() && order.source === 'pos' && <span className="admin-order-shop is-pos">كاش</span>}
+        {newOrdersUi() && order.fulfillment.startsWith('توصيل') && <span className="admin-order-shop is-delivery">🛵 توصيل</span>}
         <span className="admin-order-status">{order.status}</span>
         <span className="admin-order-time">{ago(order.createdAt)}</span>
       </header>
       <OrderBanners order={order} />
       {order.preorder && <p className="admin-order-flag">طلب مسبق (انبعت والمحل مسكّر)</p>}
-      {devUiOn && order.editedAt && <p className="admin-order-flag is-edited">انعدّل{order.edits && order.edits > 1 ? ` ${order.edits} مرات` : ''} · {ago(order.editedAt)}</p>}
+      {newOrdersUi() && order.editedAt && <p className="admin-order-flag is-edited">انعدّل{order.edits && order.edits > 1 ? ` ${order.edits} مرات` : ''} · {ago(order.editedAt)}</p>}
       {order.status === 'ملغي' && order.cancelledBy && <p className="admin-order-flag">{order.cancelledBy === 'edit' ? 'الزبون رجع عدّله (بيوصل الطلب الجديد لحاله)' : 'الزبون لغاه'}</p>}
       <ul>
         {order.items.map((item, index) => <li key={index}><b>{item.quantity}×</b> {item.name}</li>)}
@@ -1313,7 +1318,7 @@ function OrderCard({ order, fresh, onStatus, onEdit }: { order: LiveOrder; fresh
       <footer>
         {order.status === 'جديد' && <><button type="button" className="admin-primary" onClick={() => onStatus('عم يتحضّر')} data-testid="button-start">بلّش تحضير</button><button type="button" className="admin-danger" onClick={() => { if (confirm(`إلغاء الطلب #${shownNo(order)}؟`)) onStatus('ملغي'); }}>إلغاء</button></>}
         {order.status === 'عم يتحضّر' && <button type="button" className="admin-green" onClick={() => onStatus('جاهز')} data-testid="button-ready">جاهز ✅ (بيوصل للزبون)</button>}
-        {devUiOn && (order.status === 'عم يتحضّر' || order.status === 'جاهز') && <button type="button" className="admin-print is-danger" onClick={() => { if (confirm(`إلغاء الطلب #${shownNo(order)}؟`)) onStatus('ملغي'); }} aria-label="إلغاء" title="إلغاء"><X size={15} /></button>}
+        {newOrdersUi() && (order.status === 'عم يتحضّر' || order.status === 'جاهز') && <button type="button" className="admin-print is-danger" onClick={() => { if (confirm(`إلغاء الطلب #${shownNo(order)}؟`)) onStatus('ملغي'); }} aria-label="إلغاء" title="إلغاء"><X size={15} /></button>}
         {order.status === 'جاهز' && <button type="button" className="admin-primary" onClick={() => onStatus('تم')} data-testid="button-picked">استلمه 👍</button>}
         {(order.status === 'تم' || order.status === 'ملغي') && <button type="button" className="admin-link" onClick={() => onStatus('جديد')}>رجّعه للطلبات المفتوحة</button>}
         {onEdit && <button type="button" className="admin-print" onClick={onEdit} aria-label={`عدّل الطلب ${order.id}`} title="عدّل الطلب" data-testid="button-edit"><Pencil size={15} /></button>}
